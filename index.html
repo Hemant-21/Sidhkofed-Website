@@ -1,0 +1,580 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta
+      name="description"
+      content="SIDHKOFED public portal prototype for cooperative activities, capacity building, procurement, notices, tenders, and digital services."
+    >
+    <title>SIDHKOFED | Cooperative Ecosystem Platform</title>
+    <link rel="stylesheet" href="src/css/main.css">
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to main content</a>
+
+    <div class="utility-bar">
+      <div class="container utility-inner">
+        <span data-i18n="utilityContact">SIDHKOFED, Jharkhand</span>
+        <div class="utility-actions" aria-label="Utility controls">
+          <a href="#digital-services" data-i18n="utilityErp">ERP Login</a>
+          <a href="#digital-services" data-i18n="utilityMis">MIS Dashboard</a>
+          <button class="icon-button" id="decreaseText" type="button" aria-label="Decrease text size">A-</button>
+          <button class="icon-button" id="increaseText" type="button" aria-label="Increase text size">A+</button>
+          <button class="lang-toggle" id="languageToggle" type="button" aria-label="Switch language">हिन्दी</button>
+        </div>
+      </div>
+    </div>
+
+    <header class="site-header">
+      <div class="container header-inner">
+        <a class="brand" href="#home" aria-label="SIDHKOFED home">
+          <span class="brand-mark" aria-hidden="true">S</span>
+          <span>
+            <strong>SIDHKOFED</strong>
+            <small data-i18n="brandSub">Jharkhand Cooperative Federation</small>
+          </span>
+        </a>
+        <button class="menu-button" id="menuButton" type="button" aria-expanded="false" aria-controls="primaryNav">
+          <span></span><span></span><span></span>
+          <span class="sr-only">Menu</span>
+        </button>
+        <nav class="primary-nav" id="primaryNav" aria-label="Primary navigation">
+          <a href="#about" data-i18n="navAbout">About Us</a>
+          <a href="#activities" data-i18n="navActivities">Activities</a>
+          <a href="#members" data-i18n="navMembers">Members</a>
+          <a href="#capacity" data-i18n="navCapacity">Capacity Building</a>
+          <a href="#procurement" data-i18n="navProcurement">Procurement</a>
+          <a href="#trade-network" data-i18n="navTradeNetwork">Trade Network</a>
+          <a href="#notices" data-i18n="navNotices">Notices</a>
+          <a href="#knowledge" data-i18n="navKnowledge">Knowledge Hub</a>
+          <a href="#contact" data-i18n="navContact">Contact</a>
+        </nav>
+      </div>
+    </header>
+
+    <main id="main">
+      <section class="hero section-band" id="home">
+        <div class="container hero-grid">
+          <div class="hero-copy">
+            <span class="eyebrow" data-i18n="heroEyebrow">Public cooperative ecosystem dashboard</span>
+            <h1 data-i18n="heroTitle">A modern digital gateway for Jharkhand's cooperative livelihoods.</h1>
+            <p data-i18n="heroText">
+              Discover SIDHKOFED activities, forest produce value chains, capacity building,
+              procurement opportunities, public notices, and future-ready digital services.
+            </p>
+            <div class="hero-actions">
+              <a class="button primary" href="#activities" data-i18n="heroCta1">Explore Activities</a>
+              <a class="button secondary" href="#capacity" data-i18n="heroCta2">View Trainings</a>
+              <a class="button ghost" href="#procurement" data-i18n="heroCta3">Procurement & Trade</a>
+            </div>
+          </div>
+          <div class="hero-visual" aria-label="Illustration of Jharkhand cooperative produce and training">
+            <div class="photo-panel photo-panel-main">
+              <div>
+                <span data-i18n="visualTag">Lac, honey, millets and forest produce</span>
+                <strong data-i18n="visualTitle">Cooperative value chains</strong>
+              </div>
+            </div>
+            <div class="floating-stat">
+              <strong>24</strong>
+              <span data-i18n="districts">Districts covered</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="container quick-metrics" aria-label="Impact metrics">
+        <article class="metric-card"><strong>500+</strong><span data-i18n="metricCoops">Cooperatives connected</span></article>
+        <article class="metric-card"><strong>120+</strong><span data-i18n="metricTraining">Trainings conducted</span></article>
+        <article class="metric-card"><strong>35k+</strong><span data-i18n="metricBeneficiaries">Beneficiaries reached</span></article>
+        <article class="metric-card"><strong>8</strong><span data-i18n="metricCommodities">Priority commodities</span></article>
+      </section>
+
+      <section class="section-block" aria-labelledby="quickAccessTitle">
+        <div class="container">
+          <div class="section-heading">
+            <span class="eyebrow" data-i18n="quickEyebrow">Fast pathways</span>
+            <h2 id="quickAccessTitle" data-i18n="quickTitle">Quick Access</h2>
+          </div>
+          <div class="quick-grid">
+            <a class="access-card" href="#digital-services"><span>01</span><strong data-i18n="quickErp">ERP Login</strong></a>
+            <a class="access-card" href="#dashboard"><span>02</span><strong data-i18n="quickMis">MIS Dashboard</strong></a>
+            <a class="access-card" href="#members"><span>03</span><strong data-i18n="quickMembership">Membership</strong></a>
+            <a class="access-card" href="#procurement"><span>04</span><strong data-i18n="quickRates">Procurement Rates</strong></a>
+            <a class="access-card" href="#notices"><span>05</span><strong data-i18n="quickTenders">Tenders</strong></a>
+            <a class="access-card" href="#knowledge"><span>06</span><strong data-i18n="quickLibrary">Digi Library</strong></a>
+            <a class="access-card" href="#buyer-enquiry"><span>07</span><strong data-i18n="quickBuyer">Buyer Enquiry</strong></a>
+            <a class="access-card" href="#seller-enquiry"><span>08</span><strong data-i18n="quickSeller">Seller Enquiry</strong></a>
+            <a class="access-card" href="#godown-network"><span>09</span><strong data-i18n="quickGodown">Godown Network</strong></a>
+          </div>
+        </div>
+      </section>
+
+      <section class="section-band" id="prototype-review">
+        <div class="container">
+          <div class="section-heading">
+            <div>
+              <span class="eyebrow" data-i18n="reviewEyebrow">Prototype review rhythm</span>
+              <h2 data-i18n="reviewTitle">Review, classify feedback, and deepen one slice at a time</h2>
+              <p data-i18n="reviewText">Use this prototype as the stakeholder demo surface. Each review comment should become either an immediate UI/content change, official-data requirement, future CMS feature, or ERP/MIS integration item.</p>
+            </div>
+          </div>
+          <div class="readiness-grid">
+            <article><span>01</span><strong data-i18n="reviewCard1Title">Immediate UI / content change</strong><p data-i18n="reviewCard1Text">Wording, layout, CTAs, mobile spacing, and navigation improvements that can be handled in the prototype.</p></article>
+            <article><span>02</span><strong data-i18n="reviewCard2Title">Needs official data</strong><p data-i18n="reviewCard2Text">Logo, contacts, photos, tenders, notices, cooperative records, commodity details, and godown information.</p></article>
+            <article><span>03</span><strong data-i18n="reviewCard3Title">Future CMS / backend feature</strong><p data-i18n="reviewCard3Text">Admin publishing, enquiry storage, document workflows, search, approvals, and role-based content management.</p></article>
+            <article><span>04</span><strong data-i18n="reviewCard4Title">ERP / MIS integration later</strong><p data-i18n="reviewCard4Text">Live procurement, beneficiaries, payment summaries, dashboards, GIS, and system-to-system data exchange.</p></article>
+          </div>
+        </div>
+      </section>
+
+      <section class="section-band" id="about">
+        <div class="container two-column">
+          <div>
+            <span class="eyebrow" data-i18n="aboutEyebrow">Institutional identity</span>
+            <h2 data-i18n="aboutTitle">SIDHKOFED as the apex cooperative platform</h2>
+          </div>
+          <div class="content-stack">
+            <p data-i18n="aboutText">
+              The portal presents SIDHKOFED's role in cooperative development, agriculture,
+              minor forest produce, livelihoods, training, procurement, and public governance.
+            </p>
+            <div class="info-list">
+              <span data-i18n="aboutItem1">Government credibility with modern usability</span>
+              <span data-i18n="aboutItem2">Public-first information architecture</span>
+              <span data-i18n="aboutItem3">Service-enabled and data-ready foundation</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section-block" id="activities">
+        <div class="container">
+          <div class="section-heading">
+            <span class="eyebrow" data-i18n="activityEyebrow">Activities & commodities</span>
+            <h2 data-i18n="activityTitle">Forest economy and cooperative value chains</h2>
+          </div>
+          <div class="card-grid commodity-grid">
+            <article class="commodity-card lac"><h3>Lac <span>लाह</span></h3><p data-i18n="lacText">Production support, processing awareness, market linkage, and procurement visibility.</p></article>
+            <article class="commodity-card honey"><h3 data-i18n="honey">Honey</h3><p data-i18n="honeyText">Training, aggregation, quality awareness, and buyer connect pathways.</p></article>
+            <article class="commodity-card ragi"><h3 data-i18n="ragi">Ragi</h3><p data-i18n="ragiText">Millet promotion, nutrition-linked livelihoods, and cooperative marketing.</p></article>
+            <article class="commodity-card sal"><h3 data-i18n="sal">Sal Seed</h3><p data-i18n="salText">Seasonal procurement, storage awareness, and trade announcement support.</p></article>
+            <article class="commodity-card karanj"><h3 data-i18n="karanj">Karanj</h3><p data-i18n="karanjText">Minor forest produce value-chain information and cooperative participation.</p></article>
+            <article class="commodity-card tamarind"><h3 data-i18n="tamarind">Tamarind</h3><p data-i18n="tamarindText">Aggregation, processing, grading, and buyer-facing commodity profile.</p></article>
+          </div>
+        </div>
+      </section>
+
+      <section class="section-band" id="members">
+        <div class="container split-panel">
+          <div>
+            <span class="eyebrow" data-i18n="membersEyebrow">Members & cooperatives</span>
+            <h2 data-i18n="membersTitle">Clear pathways for MPCS, LAMPS, buyers, and partners</h2>
+            <p data-i18n="membersText">The first release provides guided public information and prepares for future cooperative directory, buyer registration, and membership application workflows.</p>
+            <div class="hero-actions compact-actions">
+              <a class="button secondary" href="#seller-enquiry" data-i18n="memberSellerCta">Seller / Cooperative Enquiry</a>
+              <a class="button ghost" href="#godown-network" data-i18n="memberGodownCta">View Godown Network</a>
+            </div>
+          </div>
+          <div class="mini-dashboard">
+            <div><strong>MPCS/LAMPS</strong><span data-i18n="memberBox1">Directory-ready structure</span></div>
+            <div><strong data-i18n="buyers">Buyers</strong><span data-i18n="memberBox2">Procurement and trade access</span></div>
+            <div><strong data-i18n="partners">Partners</strong><span data-i18n="memberBox3">Collaboration highlights</span></div>
+          </div>
+        </div>
+        <div class="container detail-grid section-followup">
+          <article class="path-card">
+            <span class="sample-note" data-i18n="sampleContent">Representative prototype content</span>
+            <h3 data-i18n="memberDirectoryTitle">Cooperative directory concept</h3>
+            <p data-i18n="memberDirectoryText">Future directory records can include district, block, society type, commodities handled, contact channel, active programs, and procurement linkage.</p>
+          </article>
+          <article class="path-card">
+            <span class="sample-note" data-i18n="sampleContent">Representative prototype content</span>
+            <h3 data-i18n="membershipPathTitle">Membership and onboarding path</h3>
+            <p data-i18n="membershipPathText">The prototype separates public guidance from future controlled workflows for application, verification, document upload, and admin review.</p>
+          </article>
+          <article class="path-card">
+            <span class="sample-note" data-i18n="sampleContent">Representative prototype content</span>
+            <h3 data-i18n="cooperativeCategoriesTitle">Cooperative categories</h3>
+            <p data-i18n="cooperativeCategoriesText">MPCS, LAMPS, producer groups, SHGs, FPOs, and buyer/partner organizations can be surfaced as distinct audience pathways.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="section-block" id="capacity">
+        <div class="container capacity-layout">
+          <div>
+            <span class="eyebrow" data-i18n="capacityEyebrow">Capacity building</span>
+            <h2 data-i18n="capacityTitle">Training visibility for districts, trainers, and beneficiaries</h2>
+            <p data-i18n="capacityText">Training programs become a major homepage and section highlight, with future hooks for trainer tracking, materials, galleries, and district coverage.</p>
+            <a class="button primary" href="#knowledge" data-i18n="trainingMaterials">Training Materials</a>
+          </div>
+          <div class="timeline">
+            <article><span>May</span><strong data-i18n="training1">Lac cultivation orientation</strong><small data-i18n="trainingDist1">Ranchi and Khunti districts</small></article>
+            <article><span>Jun</span><strong data-i18n="training2">Honey processing workshop</strong><small data-i18n="trainingDist2">Gumla cluster</small></article>
+            <article><span>Jul</span><strong data-i18n="training3">Millet value chain training</strong><small data-i18n="trainingDist3">State-level program</small></article>
+          </div>
+        </div>
+        <div class="container depth-grid section-followup">
+          <article>
+            <h3 data-i18n="trainingCalendarTitle">Training calendar</h3>
+            <p data-i18n="trainingCalendarText">A CMS version should allow training title, district, date, trainer, material links, gallery, and beneficiary count.</p>
+          </article>
+          <article>
+            <h3 data-i18n="districtCoverageTitle">District coverage</h3>
+            <p data-i18n="districtCoverageText">District-wise coverage can begin as manual dashboard data and later connect to MIS or trainer reports.</p>
+          </article>
+          <article>
+            <h3 data-i18n="trainingGalleryTitle">Materials and galleries</h3>
+            <p data-i18n="trainingGalleryText">Training PDFs, photos, videos, and field demonstration archives should be tagged by commodity and district.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="section-band dashboard-band" id="dashboard">
+        <div class="container">
+          <div class="section-heading">
+            <span class="eyebrow" data-i18n="dashboardEyebrow">Public impact dashboard</span>
+            <h2 data-i18n="dashboardTitle">Static now, API-ready later</h2>
+          </div>
+          <div class="dashboard-grid">
+            <article><span data-i18n="dashDistricts">Districts covered</span><strong>24</strong></article>
+            <article><span data-i18n="dashProcurement">Procurement volume</span><strong>18k MT</strong></article>
+            <article><span data-i18n="dashPayments">Payments processed</span><strong>₹42 Cr</strong></article>
+            <article><span data-i18n="dashTrainings">Training programs</span><strong>120+</strong></article>
+          </div>
+        </div>
+      </section>
+
+      <section class="section-block" id="procurement">
+        <div class="container two-column">
+          <div>
+            <span class="eyebrow" data-i18n="procureEyebrow">Procurement & trade</span>
+            <h2 data-i18n="procureTitle">Market information, buyer partnerships, and trade announcements</h2>
+            <p data-i18n="procureText">This section gives buyers and cooperatives visible access to procurement notices, commodity highlights, tenders, and trade updates.</p>
+            <div class="hero-actions compact-actions">
+              <a class="button primary" href="#buyer-enquiry" data-i18n="buyerCta">Submit Buyer Enquiry</a>
+              <a class="button secondary" href="#seller-enquiry" data-i18n="sellerCta">Submit Seller Enquiry</a>
+              <a class="button ghost" href="#godown-network" data-i18n="godownCta">Find Godowns</a>
+            </div>
+          </div>
+          <div class="notice-list">
+            <article data-type="tender"><span>Tender</span><strong data-i18n="tender1">Supply of packaging material for MFP products</strong><small>10 May 2026</small></article>
+            <article data-type="procurement"><span data-i18n="procurement">Procurement</span><strong data-i18n="procurement1">Seasonal lac procurement window announced</strong><small>08 May 2026</small></article>
+            <article data-type="trade"><span data-i18n="trade">Trade</span><strong data-i18n="trade1">Buyer meet for honey and tamarind value chains</strong><small>02 May 2026</small></article>
+          </div>
+        </div>
+        <div class="container procurement-depth section-followup">
+          <div class="rates-panel">
+            <div class="panel-heading">
+              <span class="sample-note" data-i18n="sampleContent">Representative prototype content</span>
+              <h3 data-i18n="ratesTitle">Commodity rate board concept</h3>
+            </div>
+            <div class="responsive-table">
+              <table>
+                <thead><tr><th data-i18n="commodity">Commodity</th><th data-i18n="unit">Unit</th><th data-i18n="sampleRate">Sample rate</th><th data-i18n="updated">Updated</th></tr></thead>
+                <tbody>
+                  <tr><td>Lac</td><td>Kg</td><td>To be confirmed</td><td>Official data pending</td></tr>
+                  <tr><td>Honey</td><td>Kg</td><td>To be confirmed</td><td>Official data pending</td></tr>
+                  <tr><td>Ragi</td><td>Quintal</td><td>To be confirmed</td><td>Official data pending</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div class="calendar-list">
+            <div class="panel-heading">
+              <span class="sample-note" data-i18n="sampleContent">Representative prototype content</span>
+              <h3 data-i18n="procurementCalendarTitle">Procurement calendar concept</h3>
+            </div>
+            <article><span>Q1</span><strong data-i18n="calendar1">Collect official commodity windows and district coverage.</strong></article>
+            <article><span>Q2</span><strong data-i18n="calendar2">Publish active procurement, buyer meets, and logistics notices.</strong></article>
+            <article><span>Q3</span><strong data-i18n="calendar3">Connect selected items to ERP/MIS after integration approval.</strong></article>
+          </div>
+        </div>
+      </section>
+
+      <section class="section-band" id="trade-network">
+        <div class="container">
+          <div class="section-heading">
+            <div>
+              <span class="eyebrow" data-i18n="tradeNetworkEyebrow">Trade & network access</span>
+              <h2 data-i18n="tradeNetworkTitle">Buyer, seller, and godown enquiry pathways</h2>
+              <p data-i18n="tradeNetworkText">A static review prototype for connecting buyers, cooperative sellers, and storage enquiries through SIDHKOFED's network.</p>
+            </div>
+          </div>
+
+          <div class="enquiry-shell">
+            <div class="segmented-control" role="tablist" aria-label="Enquiry type">
+              <button class="segment-button active" type="button" role="tab" aria-selected="true" aria-controls="buyer-enquiry" data-enquiry-tab="buyer" data-i18n="buyerTab">Buyer Enquiry</button>
+              <button class="segment-button" type="button" role="tab" aria-selected="false" aria-controls="seller-enquiry" data-enquiry-tab="seller" data-i18n="sellerTab">Seller / Cooperative Enquiry</button>
+              <button class="segment-button" type="button" role="tab" aria-selected="false" aria-controls="godown-enquiry" data-enquiry-tab="godown" data-i18n="godownTab">Godown Enquiry</button>
+            </div>
+
+            <div class="enquiry-panels">
+              <form class="enquiry-form active" id="buyer-enquiry" data-enquiry-panel="buyer" aria-label="Buyer enquiry prototype">
+                <div class="form-heading">
+                  <span data-i18n="prototypeBadge">Prototype only</span>
+                  <h3 data-i18n="buyerFormTitle">Buyer Enquiry</h3>
+                  <p data-i18n="buyerFormText">Capture buyer interest for lac, honey, millets, sal seed, tamarind, and other cooperative products.</p>
+                </div>
+                <div class="form-grid">
+                  <label><span data-i18n="buyerOrg">Buyer / organization name</span><input type="text" name="buyerName" required></label>
+                  <label><span data-i18n="commodityInterest">Commodity interest</span><select name="commodity"><option>Lac</option><option>Honey</option><option>Ragi</option><option>Sal Seed</option><option>Karanj</option><option>Tamarind</option><option>Other MFPs</option></select></label>
+                  <label><span data-i18n="quantityRange">Quantity range</span><select name="quantity"><option>Below 1 MT</option><option>1-5 MT</option><option>5-20 MT</option><option>20+ MT</option></select></label>
+                  <label><span data-i18n="districtPreference">District preference</span><input type="text" name="district" placeholder="Ranchi, Gumla, Khunti"></label>
+                  <label><span data-i18n="formEmail">Email or phone</span><input type="text" name="contact" required></label>
+                  <label class="full-span"><span data-i18n="formMessage">Message</span><textarea name="message" rows="4"></textarea></label>
+                </div>
+                <button class="button primary" type="submit" data-i18n="buyerSubmit">Send Buyer Enquiry</button>
+                <p class="form-feedback" role="status" aria-live="polite"></p>
+              </form>
+
+              <form class="enquiry-form" id="seller-enquiry" data-enquiry-panel="seller" aria-label="Seller enquiry prototype">
+                <div class="form-heading">
+                  <span data-i18n="prototypeBadge">Prototype only</span>
+                  <h3 data-i18n="sellerFormTitle">Seller / Cooperative Enquiry</h3>
+                  <p data-i18n="sellerFormText">Collect interest from cooperative societies, producer groups, and sellers who want to connect with SIDHKOFED procurement pathways.</p>
+                </div>
+                <div class="form-grid">
+                  <label><span data-i18n="sellerName">Seller / cooperative name</span><input type="text" name="sellerName" required></label>
+                  <label><span data-i18n="sellerType">Seller type</span><select name="sellerType"><option>MPCS / LAMPS</option><option>Producer Group</option><option>SHG / FPO</option><option>Individual Producer</option></select></label>
+                  <label><span data-i18n="commodityOffered">Commodity offered</span><select name="commodity"><option>Lac</option><option>Honey</option><option>Ragi</option><option>Sal Seed</option><option>Karanj</option><option>Tamarind</option><option>Other MFPs</option></select></label>
+                  <label><span data-i18n="districtBlock">District / block</span><input type="text" name="districtBlock" required></label>
+                  <label><span data-i18n="availability">Expected availability</span><input type="text" name="availability" placeholder="Month / season / quantity"></label>
+                  <label><span data-i18n="formEmail">Email or phone</span><input type="text" name="contact" required></label>
+                  <label class="full-span"><span data-i18n="formMessage">Message</span><textarea name="message" rows="4"></textarea></label>
+                </div>
+                <button class="button primary" type="submit" data-i18n="sellerSubmit">Send Seller Enquiry</button>
+                <p class="form-feedback" role="status" aria-live="polite"></p>
+              </form>
+
+              <form class="enquiry-form" id="godown-enquiry" data-enquiry-panel="godown" aria-label="Godown enquiry prototype">
+                <div class="form-heading">
+                  <span data-i18n="prototypeBadge">Prototype only</span>
+                  <h3 data-i18n="godownFormTitle">Godown Enquiry</h3>
+                  <p data-i18n="godownFormText">Capture storage interest for cooperative produce, procurement lots, and buyer/seller logistics planning.</p>
+                </div>
+                <div class="form-grid">
+                  <label><span data-i18n="selectedGodown">Selected godown</span><select name="godown"><option>Ranchi Central Cooperative Godown</option><option>Gumla MFP Aggregation Godown</option><option>Khunti Lac Storage Point</option><option>Dumka Regional Storage Hub</option></select></label>
+                  <label><span data-i18n="storageRequirement">Storage requirement</span><input type="text" name="storage" placeholder="Approx. MT / bags / crates" required></label>
+                  <label><span data-i18n="commodity">Commodity</span><select name="commodity"><option>Lac</option><option>Honey</option><option>Ragi</option><option>Sal Seed</option><option>Karanj</option><option>Tamarind</option><option>Other MFPs</option></select></label>
+                  <label><span data-i18n="duration">Duration</span><select name="duration"><option>Less than 15 days</option><option>15-30 days</option><option>1-3 months</option><option>Seasonal</option></select></label>
+                  <label><span data-i18n="formName">Name</span><input type="text" name="name" required></label>
+                  <label><span data-i18n="formEmail">Email or phone</span><input type="text" name="contact" required></label>
+                  <label class="full-span"><span data-i18n="formMessage">Message</span><textarea name="message" rows="4"></textarea></label>
+                </div>
+                <button class="button primary" type="submit" data-i18n="godownSubmit">Send Godown Enquiry</button>
+                <p class="form-feedback" role="status" aria-live="polite"></p>
+              </form>
+            </div>
+          </div>
+
+          <div class="godown-directory" id="godown-network">
+            <div class="section-heading with-tools">
+              <div>
+                <span class="eyebrow" data-i18n="godownEyebrow">Cooperative storage network</span>
+                <h2 data-i18n="godownTitle">Representative godown directory</h2>
+                <p data-i18n="godownText">Sample entries show the intended listing, filters, and enquiry flow. Official capacity and availability data can replace these later.</p>
+              </div>
+            </div>
+            <div class="godown-filters" aria-label="Godown filters">
+              <label><span data-i18n="districtFilter">District</span><select id="godownDistrictFilter"><option value="all">All districts</option><option value="Ranchi">Ranchi</option><option value="Gumla">Gumla</option><option value="Khunti">Khunti</option><option value="Dumka">Dumka</option></select></label>
+              <label><span data-i18n="statusFilter">Status</span><select id="godownStatusFilter"><option value="all">All status</option><option value="Available">Available</option><option value="Limited">Limited</option><option value="Seasonal">Seasonal</option></select></label>
+              <label><span data-i18n="typeFilter">Network type</span><select id="godownTypeFilter"><option value="all">All types</option><option value="Central">Central</option><option value="Aggregation">Aggregation</option><option value="Commodity">Commodity</option><option value="Regional">Regional</option></select></label>
+            </div>
+            <div class="godown-grid" id="godownList">
+              <article class="godown-card" data-district="Ranchi" data-status="Available" data-type="Central">
+                <span class="status-pill available" data-i18n="statusAvailable">Available</span>
+                <h3>Ranchi Central Cooperative Godown</h3>
+                <dl>
+                  <div><dt data-i18n="districtLabel">District</dt><dd>Ranchi</dd></div>
+                  <div><dt data-i18n="networkTypeLabel">Type</dt><dd>Central</dd></div>
+                  <div><dt data-i18n="capacityLabel">Indicative capacity</dt><dd>1,200 MT</dd></div>
+                  <div><dt data-i18n="suitableLabel">Suitable for</dt><dd>Lac, Ragi, Packaged MFP</dd></div>
+                </dl>
+                <a class="button ghost godown-action" href="#godown-enquiry" data-godown-name="Ranchi Central Cooperative Godown" data-i18n="enquireStorage">Enquire Storage</a>
+              </article>
+              <article class="godown-card" data-district="Gumla" data-status="Limited" data-type="Aggregation">
+                <span class="status-pill limited" data-i18n="statusLimited">Limited</span>
+                <h3>Gumla MFP Aggregation Godown</h3>
+                <dl>
+                  <div><dt data-i18n="districtLabel">District</dt><dd>Gumla</dd></div>
+                  <div><dt data-i18n="networkTypeLabel">Type</dt><dd>Aggregation</dd></div>
+                  <div><dt data-i18n="capacityLabel">Indicative capacity</dt><dd>650 MT</dd></div>
+                  <div><dt data-i18n="suitableLabel">Suitable for</dt><dd>Honey, Tamarind, Sal Seed</dd></div>
+                </dl>
+                <a class="button ghost godown-action" href="#godown-enquiry" data-godown-name="Gumla MFP Aggregation Godown" data-i18n="enquireStorage">Enquire Storage</a>
+              </article>
+              <article class="godown-card" data-district="Khunti" data-status="Seasonal" data-type="Commodity">
+                <span class="status-pill seasonal" data-i18n="statusSeasonal">Seasonal</span>
+                <h3>Khunti Lac Storage Point</h3>
+                <dl>
+                  <div><dt data-i18n="districtLabel">District</dt><dd>Khunti</dd></div>
+                  <div><dt data-i18n="networkTypeLabel">Type</dt><dd>Commodity</dd></div>
+                  <div><dt data-i18n="capacityLabel">Indicative capacity</dt><dd>420 MT</dd></div>
+                  <div><dt data-i18n="suitableLabel">Suitable for</dt><dd>Lac, Karanj, Local MFP</dd></div>
+                </dl>
+                <a class="button ghost godown-action" href="#godown-enquiry" data-godown-name="Khunti Lac Storage Point" data-i18n="enquireStorage">Enquire Storage</a>
+              </article>
+              <article class="godown-card" data-district="Dumka" data-status="Available" data-type="Regional">
+                <span class="status-pill available" data-i18n="statusAvailable">Available</span>
+                <h3>Dumka Regional Storage Hub</h3>
+                <dl>
+                  <div><dt data-i18n="districtLabel">District</dt><dd>Dumka</dd></div>
+                  <div><dt data-i18n="networkTypeLabel">Type</dt><dd>Regional</dd></div>
+                  <div><dt data-i18n="capacityLabel">Indicative capacity</dt><dd>900 MT</dd></div>
+                  <div><dt data-i18n="suitableLabel">Suitable for</dt><dd>Ragi, Sal Seed, Tamarind</dd></div>
+                </dl>
+                <a class="button ghost godown-action" href="#godown-enquiry" data-godown-name="Dumka Regional Storage Hub" data-i18n="enquireStorage">Enquire Storage</a>
+              </article>
+            </div>
+            <p class="empty-state is-hidden" id="godownEmpty" data-i18n="godownEmpty">No sample godowns match the selected filters.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="section-block" id="notices">
+        <div class="container">
+          <div class="section-heading with-tools">
+            <div>
+              <span class="eyebrow" data-i18n="noticeEyebrow">Governance & transparency</span>
+              <h2 data-i18n="noticeTitle">Notices, tenders, reports, and circulars</h2>
+            </div>
+            <label class="search-box">
+              <span class="sr-only">Search notices</span>
+              <input id="noticeSearch" type="search" placeholder="Search notices and tenders">
+            </label>
+          </div>
+          <div class="filter-row" aria-label="Notice filters">
+            <button class="filter-button active" type="button" data-filter="all" data-i18n="filterAll">All</button>
+            <button class="filter-button" type="button" data-filter="notice" data-i18n="filterNotices">Notices</button>
+            <button class="filter-button" type="button" data-filter="tender" data-i18n="filterTenders">Tenders</button>
+            <button class="filter-button" type="button" data-filter="report" data-i18n="filterReports">Reports</button>
+          </div>
+          <div class="document-table" id="documentList">
+            <article data-category="notice"><span>Notice</span><strong data-i18n="notice1">Training calendar for district cooperative societies</strong><time>2026-05-10</time><a href="#notices">View</a></article>
+            <article data-category="tender"><span>Tender</span><strong data-i18n="notice2">Procurement and logistics support empanelment</strong><time>2026-05-08</time><a href="#notices">View</a></article>
+            <article data-category="report"><span>Report</span><strong data-i18n="notice3">Annual cooperative impact summary</strong><time>2026-04-30</time><a href="#notices">View</a></article>
+            <article data-category="notice"><span>Notice</span><strong data-i18n="notice4">Membership documentation guidelines</strong><time>2026-04-22</time><a href="#notices">View</a></article>
+          </div>
+        </div>
+      </section>
+
+      <section class="section-band" id="knowledge">
+        <div class="container">
+          <div class="section-heading">
+            <span class="eyebrow" data-i18n="knowledgeEyebrow">Knowledge hub</span>
+            <h2 data-i18n="knowledgeTitle">Acts, SOPs, reports, training materials, and publications</h2>
+          </div>
+          <div class="card-grid knowledge-grid">
+            <article><span data-i18n="categoryActs">Acts & Bye-laws</span><strong data-i18n="knowledge1">Cooperative governance reference library</strong></article>
+            <article><span>SOP</span><strong data-i18n="knowledge2">Procurement and quality handling procedures</strong></article>
+            <article><span data-i18n="categoryTraining">Training</span><strong data-i18n="knowledge3">Commodity-wise learning resources</strong></article>
+            <article><span data-i18n="categoryVideo">Videos</span><strong data-i18n="knowledge4">Awareness and field demonstration archive</strong></article>
+          </div>
+          <div class="knowledge-depth section-followup">
+            <div>
+              <h3 data-i18n="knowledgeTagTitle">Document tagging model</h3>
+              <p data-i18n="knowledgeTagText">Future documents should carry category, commodity, district, language, publication date, file type, and public/archive status.</p>
+            </div>
+            <div class="tag-list" aria-label="Knowledge hub tags">
+              <span>Acts</span><span>SOP</span><span>Training</span><span>Reports</span><span>Videos</span><span>Hindi</span><span>English</span><span>District</span><span>Commodity</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section-block" id="digital-services">
+        <div class="container split-panel">
+          <div>
+            <span class="eyebrow" data-i18n="servicesEyebrow">Digital services</span>
+            <h2 data-i18n="servicesTitle">Controlled access now, integrated services later</h2>
+            <p data-i18n="servicesText">ERP, MIS, beneficiary tracking, digital forms, and membership workflows are represented as controlled pathways until integration scope is approved.</p>
+          </div>
+          <div class="service-actions">
+            <a class="button primary" href="#digital-services" data-i18n="serviceErp">Open ERP</a>
+            <a class="button secondary" href="#dashboard" data-i18n="serviceMis">View MIS Dashboard</a>
+            <a class="button ghost" href="#members" data-i18n="serviceMember">Membership Application</a>
+            <a class="button ghost" href="#trade-network" data-i18n="serviceTrade">Trade Enquiries</a>
+          </div>
+        </div>
+        <div class="container cms-panel section-followup" id="cms-decision">
+          <div>
+            <span class="eyebrow" data-i18n="cmsEyebrow">Sprint 4 decision</span>
+            <h2 data-i18n="cmsTitle">CMS stack decision after prototype and content review</h2>
+            <p data-i18n="cmsText">Default recommendation remains Django + Wagtail if publishing, documents, bilingual content, notices, tenders, trainings, and enquiry management are the core needs.</p>
+          </div>
+          <div class="cms-options">
+            <article><strong>Django + Wagtail</strong><span data-i18n="cmsOption1">Best for CMS-first government/institutional publishing.</span></article>
+            <article><strong>Next.js + Headless CMS</strong><span data-i18n="cmsOption2">Use if the final site needs a highly interactive frontend.</span></article>
+            <article><strong data-i18n="cmsAudit">Legacy audit</strong><span data-i18n="cmsOption3">Finalize after official data, content workflow, and existing system review.</span></article>
+          </div>
+        </div>
+      </section>
+
+      <section class="section-block" id="content-checklist">
+        <div class="container">
+          <div class="section-heading">
+            <div>
+              <span class="eyebrow" data-i18n="checklistEyebrow">Content collection</span>
+              <h2 data-i18n="checklistTitle">Official data needed before production</h2>
+              <p data-i18n="checklistText">These items convert the prototype from representative content into a production-ready SIDHKOFED portal.</p>
+            </div>
+          </div>
+          <div class="checklist-grid">
+            <article><h3 data-i18n="identityData">Identity and contact</h3><p data-i18n="identityDataText">Official logo, address, phone, email, office hours, social links, government marks, and policy links.</p></article>
+            <article><h3 data-i18n="contentData">Public content</h3><p data-i18n="contentDataText">Approved About text, commodity notes, photos, success stories, trainings, events, and impact metrics.</p></article>
+            <article><h3 data-i18n="governanceData">Governance documents</h3><p data-i18n="governanceDataText">Notices, tenders, circulars, RTI resources, reports, acts, bye-laws, SOPs, and publications.</p></article>
+            <article><h3 data-i18n="networkData">Network data</h3><p data-i18n="networkDataText">Cooperative/member records, buyer/seller categories, godown locations, capacities, contacts, and current availability.</p></article>
+          </div>
+        </div>
+      </section>
+
+      <section class="section-band" id="contact">
+        <div class="container contact-grid">
+          <div>
+            <span class="eyebrow" data-i18n="contactEyebrow">Contact</span>
+            <h2 data-i18n="contactTitle">Connect with SIDHKOFED</h2>
+            <p data-i18n="contactText">Use this section for public contact, office address, partner enquiries, and future form-based communication.</p>
+          </div>
+          <form class="contact-form" aria-label="Contact form prototype">
+            <label><span data-i18n="formName">Name</span><input type="text" name="name"></label>
+            <label><span data-i18n="formEmail">Email or phone</span><input type="text" name="contact"></label>
+            <label><span data-i18n="formMessage">Message</span><textarea name="message" rows="4"></textarea></label>
+            <button class="button primary" type="button" data-i18n="formSubmit">Submit Enquiry</button>
+          </form>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="container footer-grid">
+        <div>
+          <strong>SIDHKOFED</strong>
+          <p data-i18n="footerText">A bilingual, public-first cooperative ecosystem platform for Jharkhand.</p>
+        </div>
+        <nav aria-label="Footer governance links">
+          <strong data-i18n="footerGovernance">Governance</strong>
+          <a href="#notices">RTI</a>
+          <a href="#notices" data-i18n="policies">Policies</a>
+          <a href="#notices" data-i18n="reports">Reports</a>
+        </nav>
+        <nav aria-label="Footer service links">
+          <strong data-i18n="footerServices">Services</strong>
+          <a href="#digital-services">ERP</a>
+          <a href="#dashboard">MIS</a>
+          <a href="#procurement" data-i18n="procurement">Procurement</a>
+        </nav>
+        <nav aria-label="Footer knowledge links">
+          <strong data-i18n="footerKnowledge">Knowledge</strong>
+          <a href="#knowledge">SOPs</a>
+          <a href="#capacity" data-i18n="trainings">Trainings</a>
+          <a href="#activities" data-i18n="commodities">Commodities</a>
+        </nav>
+      </div>
+    </footer>
+
+    <script src="src/js/app.js"></script>
+  </body>
+</html>
