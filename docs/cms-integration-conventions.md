@@ -11,6 +11,9 @@ Treat that full context as canonical for CMS behavior. This file is the compact
 implementation naming and integration guide for connecting the static prototype
 to that CMS scope.
 
+Module-specific API context is maintained in `docs/api-context/`. Read
+`docs/api-context/00-api-foundation.md` before any individual module API file.
+
 ## CMS Purpose
 
 Build a lightweight, efficient, bilingual-ready CMS for SIDHKOFED public website
@@ -343,6 +346,8 @@ grouping changes:
 
 Use REST-style endpoints. Listing endpoints return lightweight summaries; detail
 endpoints return full relationships.
+
+Detailed endpoint contracts live in `docs/api-context/`.
 
 Suggested public endpoints:
 

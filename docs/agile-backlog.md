@@ -15,6 +15,7 @@ The full CMS scope is mirrored in `docs/sidhkofed-cms-codex-context.md`.
 Compact CMS/backend naming conventions are captured in
 `docs/cms-integration-conventions.md` so model names, field names, slugs, and
 API payloads stay stable when the prototype is converted.
+Module-based API planning context is captured in `docs/api-context/`.
 
 ## Working Assumption
 

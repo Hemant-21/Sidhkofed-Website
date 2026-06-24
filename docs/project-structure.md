@@ -20,10 +20,12 @@ D:\Sidhkofed-Website
 |   `-- js/
 |       `-- app.js
 |-- docs/
+|   |-- api-context/
 |   |-- agile-backlog.md
 |   |-- codex-infra-handover.md
 |   |-- cms-integration-conventions.md
 |   |-- sidhkofed-cms-codex-context.md
+|   |-- progress-log.md
 |   `-- project-structure.md
 `-- README.md
 ```
@@ -39,6 +41,8 @@ D:\Sidhkofed-Website
 - Keep the full CMS scope in `docs/sidhkofed-cms-codex-context.md`.
 - Keep compact future CMS model and field naming in
   `docs/cms-integration-conventions.md`.
+- Keep module-based API implementation context in `docs/api-context/`.
+- Keep multi-device handoff notes in `docs/progress-log.md`.
 - Keep official-data gaps visible in the prototype instead of hiding them behind
   production-sounding placeholder claims.
 
@@ -53,3 +57,4 @@ When the CMS stack is selected, this structure can map cleanly into:
 - content models informed by the prototype sections, the full CMS context, and
   `docs/agile-backlog.md`
 - CMS/API names from `docs/cms-integration-conventions.md`
+- module-specific API contracts from `docs/api-context/`

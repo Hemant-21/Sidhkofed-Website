@@ -28,3 +28,5 @@ Open `index.html` in a browser.
 - `docs/project-structure.md` - prototype structure and conventions
 - `docs/sidhkofed-cms-codex-context.md` - full CMS scope mirrored from the shared OneDrive context
 - `docs/cms-integration-conventions.md` - compact CMS naming, model, field, and API conventions
+- `docs/api-context/` - module-based API context for future CMS backend implementation
+- `docs/progress-log.md` - multi-device progress tracker and handoff log
