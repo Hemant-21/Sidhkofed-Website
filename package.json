@@ -1,0 +1,65 @@
+{
+  "name": "sidhkofed-cms",
+  "version": "0.1.0",
+  "private": true,
+  "description": "SIDHKOFED Phase 1 public-website CMS — backend foundation (infrastructure only).",
+  "license": "UNLICENSED",
+  "type": "commonjs",
+  "engines": {
+    "node": ">=20"
+  },
+  "main": "dist/server.js",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc -p tsconfig.json && tsc-alias -p tsconfig.json",
+    "start": "node dist/server.js",
+    "smoke": "tsx scripts/smoke.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint \"src/**/*.ts\"",
+    "format": "prettier --write \"src/**/*.ts\"",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:deploy": "prisma migrate deploy",
+    "prisma:status": "prisma migrate status",
+    "prisma:studio": "prisma studio",
+    "prisma:format": "prisma format",
+    "db:up": "docker compose up -d postgres redis",
+    "db:down": "docker compose down"
+  },
+  "prisma": {
+    "schema": "prisma/schema.prisma"
+  },
+  "overrides": {
+    "ioredis": "^5.4.1"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.637.0",
+    "@aws-sdk/s3-request-presigner": "^3.637.0",
+    "@prisma/client": "^5.18.0",
+    "bullmq": "^5.12.0",
+    "compression": "^1.7.4",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "helmet": "^7.1.0",
+    "ioredis": "^5.4.1",
+    "pino": "^9.3.2",
+    "pino-http": "^10.2.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/compression": "^1.7.5",
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
+    "@types/node": "^22.5.0",
+    "@typescript-eslint/eslint-plugin": "^8.3.0",
+    "@typescript-eslint/parser": "^8.3.0",
+    "eslint": "^8.57.0",
+    "pino-pretty": "^11.2.2",
+    "prettier": "^3.3.3",
+    "prisma": "^5.18.0",
+    "tsc-alias": "^1.8.10",
+    "tsx": "^4.17.0",
+    "typescript": "^5.5.4"
+  }
+}

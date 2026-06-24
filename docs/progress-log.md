@@ -33,10 +33,10 @@ pulling changes from another machine.
 
 | Area | Status | Notes |
 |---|---|---|
-| Static prototype | Reviewable | Open `index.html` directly in browser. |
+| Static prototype | Relocated | Moved to `legacy-prototype/`; open `legacy-prototype/index.html`. |
 | CMS scope | Context ready | Full CMS context mirrored in repo docs. |
 | API context | In progress | Module-based API context has been drafted. |
-| Backend implementation | Not started | Awaiting stack/foundation decision. |
+| Backend implementation | Foundation done | Infra only (Express+TS+Prisma+Redis+BullMQ+storage+health). See foundation/07. |
 
 ## Open Decisions
 
@@ -104,3 +104,59 @@ Open items:
 Commit/push status:
 
 - 
+
+---
+
+### 2026-06-25 - Backend foundation (infrastructure) implemented
+
+Type: Session End
+Device: Windows / d:\Ranchi_web\Sidhkofed-Website
+Branch: anant-dev
+
+Changed:
+
+- Bootstrapped Node.js + Express + TypeScript (strict) backend at the repo root
+  per docs/foundation/02. Relocated the static prototype to `legacy-prototype/`
+  to free `src/`.
+- Added: package.json, tsconfig.json, .eslintrc.cjs, .prettierrc, docker-compose.yml
+  (postgres + redis), .env (local, gitignored).
+- `src/config` (Zod env validation + typed config), `src/db/prisma.ts` (singleton),
+  `src/services/redis.ts`, `src/jobs/*` (BullMQ foundation, no jobs yet),
+  `src/services/storage/*` (local + S3 drivers behind one interface),
+  `src/services/audit.ts` (audit hook, log-only foundation),
+  `src/shared/*` (logger, errors, envelope, pagination),
+  `src/middleware/*` (request-id, pino-http logging, error handler, 404),
+  `src/routes/health.routes.ts` (/health, /ready, /live) + `src/routes/index.ts`,
+  `src/app.ts`, `src/server.ts`, `scripts/smoke.ts`.
+- `prisma/schema.prisma`: datasource + generator + canonical self-contained
+  `Setting` model (governance). No content/business models.
+
+Decisions:
+
+- Backend root = `Sidhkofed-Website/`, Prisma at root, source under `src/` (doc 02).
+- Added only the governance `Setting` model so `prisma generate` produces a client
+  (a model-less schema cannot generate). AuditLog deferred — it relates to `users`
+  and would pull in the identity graph; audit foundation logs structurally for now.
+- Did NOT apply the existing FTS migration: `20260624154500_metadata_full_text_search`
+  is raw SQL that ALTERs content tables (events/documents/…) which do not exist yet.
+  It must run AFTER the base content-table migration (a later business-schema
+  deliverable). For local foundation bring-up use `prisma db push`; do not
+  `migrate deploy` on a fresh DB until the base migration exists.
+
+Verified:
+
+- `npm run build`, `npm run typecheck`, `npm run lint` all clean.
+- `npm run smoke`: Redis ✓ (PONG), BullMQ ✓ (enqueue ok), Storage ✓,
+  HTTP /live=200 and /health=503-degraded correctly reporting per-dependency status.
+  PostgreSQL pending only because no DB server was running locally (Docker daemon
+  was not up); connectivity logic uses `$connect` + `SELECT 1` (needs no tables).
+
+Open items:
+
+- Start Postgres (`npm run db:up` once Docker is running) then `npx prisma db push`
+  and re-run `npm run smoke` to confirm Prisma connects (expect 5/5, /health=200).
+- Next tier (out of this foundation): auth/RBAC, masters, then content modules.
+
+Commit/push status:
+
+- Not committed (left for review).

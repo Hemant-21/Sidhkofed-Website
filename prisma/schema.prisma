@@ -1,0 +1,52 @@
+// SIDHKOFED CMS — Prisma schema (Phase 1).
+//
+// FOUNDATION SCOPE: datasource + generator + the self-contained governance `Setting`
+// table only. No content/business models (events, documents, programmes, toolkits,
+// media, dashboard, …) are defined yet — that is intentional. They are added module
+// by module per the dependency graph (docs/foundation/03-module-dependency-graph.md).
+//
+// `Setting` is included verbatim from the approved schema (database-schema-design.md
+// Part 13). It is the one infrastructure table the foundation needs: it has no
+// foreign-key graph or enums, so it lets `prisma generate` produce a client without
+// pulling in business entities, and backs the typed `settings` config surface.
+// (AuditLog is deliberately NOT added yet — it relates to `users`, which would pull
+// in the identity graph; the audit foundation logs structurally until then.)
+//
+// Conventions (docs/foundation/04-coding-standards.md §3) for when models are added:
+//   - Model names PascalCase + @@map("snake_case"); fields camelCase + @map("snake_case").
+//   - UUID primary keys; explicit @db.Uuid foreign keys; Decimal for money/quantities.
+//   - onDelete is part of the contract: Restrict (masters/linked), Cascade (junction
+//     children), SetNull (optional refs). Do not change without a reviewed migration.
+//
+// NOTE ON THE EXISTING FTS MIGRATION:
+//   prisma/migrations/20260624154500_metadata_full_text_search adds metadata
+//   `search_vector` columns + GIN indexes to content tables. It is hand-written raw
+//   SQL and MUST run AFTER the base migration that creates those content tables.
+//   Do not `migrate deploy` it against a fresh database until the content models and
+//   their migration exist. The foundation verifies DB connectivity with `SELECT 1`,
+//   which needs no tables.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────── Governance: Settings ───────────────
+// Schema-backed key/value config (site/footer/social/translation, enquiry recipient,
+// upload restrictions). Editable by Super Admin via /admin/settings; the env layer
+// provides bootstrap defaults/secrets (docs/foundation/05-environment-variables.md).
+model Setting {
+  id          String   @id @default(uuid()) @db.Uuid
+  key         String   @unique
+  valueText   String?  @map("value_text")
+  valueJson   Json?    @map("value_json")
+  description String?
+  updatedById String?  @map("updated_by") @db.Uuid
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("settings")
+}
