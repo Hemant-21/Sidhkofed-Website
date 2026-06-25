@@ -3,6 +3,7 @@
  * every response envelope's `meta.request_id` and in request logs.
  */
 import 'express';
+import type { AuthenticatedUser, ResolvedAuthorization } from '@/modules/auth/auth.types';
 
 declare global {
   // eslint-disable-next-line @typescript-eslint/no-namespace
@@ -10,6 +11,10 @@ declare global {
     interface Request {
       /** Correlation id, format `req_<uuid>`. Set by the requestId middleware. */
       id: string;
+      /** Authenticated identity, set by the `authenticate()` middleware. */
+      user?: AuthenticatedUser;
+      /** Resolved roles/permissions, memoized per-request by the authorization guards. */
+      authz?: ResolvedAuthorization;
     }
   }
 }

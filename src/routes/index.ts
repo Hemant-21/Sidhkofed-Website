@@ -10,6 +10,13 @@
 import { Router, type Request, type Response } from 'express';
 import { success } from '@/shared/envelope';
 import { appConfig } from '@/config';
+import { authRouter } from '@/modules/auth/auth.routes';
+import { settingsRouter } from '@/modules/settings/settings.routes';
+import { auditRouter } from '@/modules/audit/audit.routes';
+import { mediaRouter, mediaPublicRouter } from '@/modules/media/media.routes';
+import { galleryRouter } from '@/modules/galleries/gallery.routes';
+import { videoRouter } from '@/modules/videos/video.routes';
+import { mastersAdminRouter, mastersPublicRouter } from '@/modules/masters/masters.routes';
 
 export const apiRouter = Router();
 
@@ -28,7 +35,17 @@ apiRouter.get('/', (req: Request, res: Response) => {
   );
 });
 
-// ── Module routers mount below as modules are implemented (out of foundation scope).
-// apiRouter.use('/auth', authRouter);
-// apiRouter.use('/public', publicRouter);
-// apiRouter.use('/admin', adminRouter);
+// ── Module routers. Auth/RBAC (Phase 2) + shared infrastructure (Phase 3) are live.
+apiRouter.use('/auth', authRouter);
+
+// Admin namespace (bearer token + RBAC enforced inside each router).
+apiRouter.use('/admin/settings', settingsRouter);
+apiRouter.use('/admin/audit-logs', auditRouter);
+apiRouter.use('/admin/media', mediaRouter);
+apiRouter.use('/admin/galleries', galleryRouter);
+apiRouter.use('/admin/videos', videoRouter);
+apiRouter.use('/admin/masters', mastersAdminRouter);
+
+// Public namespace (no auth; active + visible records only).
+apiRouter.use('/public/masters', mastersPublicRouter);
+apiRouter.use('/public/media', mediaPublicRouter);

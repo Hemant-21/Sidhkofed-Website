@@ -1,30 +1,30 @@
 // SIDHKOFED CMS — Prisma schema (Phase 1).
 //
-// FOUNDATION SCOPE: datasource + generator + the self-contained governance `Setting`
-// table only. No content/business models (events, documents, programmes, toolkits,
-// media, dashboard, …) are defined yet — that is intentional. They are added module
-// by module per the dependency graph (docs/foundation/03-module-dependency-graph.md).
+// CURRENT SCOPE: infrastructure + Phase 2 Identity/Access/RBAC + governance.
+// Defined: the Identity & access graph (users, roles, permissions, role_permissions,
+// user_roles), the governance tables (audit_logs, settings). Content/business models
+// (events, documents, programmes, toolkits, media, dashboard, …) are still added
+// module by module per the dependency graph (docs/foundation/03-module-dependency-graph.md).
 //
-// `Setting` is included verbatim from the approved schema (database-schema-design.md
-// Part 13). It is the one infrastructure table the foundation needs: it has no
-// foreign-key graph or enums, so it lets `prisma generate` produce a client without
-// pulling in business entities, and backs the typed `settings` config surface.
-// (AuditLog is deliberately NOT added yet — it relates to `users`, which would pull
-// in the identity graph; the audit foundation logs structurally until then.)
+// All models below are copied VERBATIM from the approved schema (database-schema-design.md
+// Part 13) — this is the documented module-by-module process, NOT a redesign. The
+// identity graph is Tier 1–3 of the build order and a prerequisite for every later
+// module's `created_by`/`updated_by` and for audit logging.
 //
-// Conventions (docs/foundation/04-coding-standards.md §3) for when models are added:
+// Conventions (docs/foundation/04-coding-standards.md §3):
 //   - Model names PascalCase + @@map("snake_case"); fields camelCase + @map("snake_case").
 //   - UUID primary keys; explicit @db.Uuid foreign keys; Decimal for money/quantities.
 //   - onDelete is part of the contract: Restrict (masters/linked), Cascade (junction
 //     children), SetNull (optional refs). Do not change without a reviewed migration.
 //
-// NOTE ON THE EXISTING FTS MIGRATION:
-//   prisma/migrations/20260624154500_metadata_full_text_search adds metadata
-//   `search_vector` columns + GIN indexes to content tables. It is hand-written raw
-//   SQL and MUST run AFTER the base migration that creates those content tables.
-//   Do not `migrate deploy` it against a fresh database until the content models and
-//   their migration exist. The foundation verifies DB connectivity with `SELECT 1`,
-//   which needs no tables.
+// NOTE ON THE FTS MIGRATION (parked — pre-Phase-5 audit fix, Issue 1):
+//   The metadata `search_vector` migration (adds tsvector columns + GIN indexes to the
+//   CONTENT tables events/documents/official_communications/procurement_updates/
+//   success_stories) lives in `prisma/parked-migrations/`, NOT in the applied chain,
+//   because those tables do not exist yet and a forward reference would break a fresh
+//   `prisma migrate deploy`. It is re-introduced with a later timestamp once the content
+//   modules + their base migration land (see prisma/parked-migrations/README.md).
+//   The applied chain is: init_identity_governance → media_system → masters.
 
 generator client {
   provider = "prisma-client-js"
@@ -33,6 +33,156 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+}
+
+// ─────────────── Enums (identity/governance subset of Part 13) ───────────────
+enum Language {
+  en
+  hi
+}
+
+enum AuditAction {
+  create
+  update
+  publish
+  unpublish
+  archive
+  restore
+  media_replace
+  config_change
+  master_change
+  login
+}
+
+// Publishing-workflow enums (Part 13). Added now because galleries/videos carry the
+// publishing-workflow mixin; content modules added later reuse the same enums.
+enum PublicationState {
+  draft
+  published
+  unpublished
+  archived
+}
+
+enum HighlightType {
+  new
+  latest
+  important
+  urgent
+  featured
+}
+
+// Reporting-period granularity (Part 13). Drives dashboard period selection:
+// Month / Financial Year / Calendar Year / Cumulative. Added with the masters module
+// (the `reporting_periods` master); content/dashboard models reuse it when they land.
+enum ReportingPeriodType {
+  month
+  financial_year
+  calendar_year
+  cumulative
+}
+
+// ─────────────── Users & RBAC ───────────────
+model User {
+  id                String    @id @default(uuid()) @db.Uuid
+  email             String    @unique
+  passwordHash      String    @map("password_hash")
+  fullName          String    @map("full_name")
+  preferredLanguage Language  @default(en) @map("preferred_language")
+  isActive          Boolean   @default(true) @map("is_active")
+  lastLoginAt       DateTime? @map("last_login_at")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+
+  userRoles UserRole[]
+  auditLogs AuditLog[]
+
+  // Audit-author back-relations (Issue 8). All use ON DELETE SET NULL so removing a user
+  // preserves the historical content rather than cascading or blocking the delete.
+  uploadedMedia    MediaAsset[] @relation("MediaUploadedBy")
+  createdGalleries Gallery[]    @relation("GalleryCreatedBy")
+  updatedGalleries Gallery[]    @relation("GalleryUpdatedBy")
+  createdVideos    Video[]      @relation("VideoCreatedBy")
+  updatedVideos    Video[]      @relation("VideoUpdatedBy")
+  updatedSettings  Setting[]    @relation("SettingUpdatedBy")
+
+  @@map("users")
+}
+
+model Role {
+  id          String   @id @default(uuid()) @db.Uuid
+  key         String   @unique
+  nameEn      String   @map("name_en")
+  description String?
+  isSystem    Boolean  @default(true) @map("is_system")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  rolePermissions RolePermission[]
+  userRoles       UserRole[]
+
+  @@map("roles")
+}
+
+model Permission {
+  id          String  @id @default(uuid()) @db.Uuid
+  key         String  @unique
+  module      String
+  action      String
+  description String?
+
+  rolePermissions RolePermission[]
+
+  @@unique([module, action])
+  @@map("permissions")
+}
+
+model RolePermission {
+  id           String @id @default(uuid()) @db.Uuid
+  roleId       String @map("role_id") @db.Uuid
+  permissionId String @map("permission_id") @db.Uuid
+
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+model UserRole {
+  id     String @id @default(uuid()) @db.Uuid
+  userId String @map("user_id") @db.Uuid
+  roleId String @map("role_id") @db.Uuid
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role Role @relation(fields: [roleId], references: [id], onDelete: Restrict)
+
+  @@unique([userId, roleId])
+  @@map("user_roles")
+}
+
+// ─────────────── Governance: Audit log ───────────────
+// Append-only record of every state-changing action (CMS requirements §17). Written by
+// the cross-cutting audit service; never updated/deleted in the app layer.
+model AuditLog {
+  id            String      @id @default(uuid()) @db.Uuid
+  userId        String?     @map("user_id") @db.Uuid
+  action        AuditAction
+  module        String
+  recordId      String?     @map("record_id") @db.Uuid
+  previousState String?     @map("previous_state")
+  newState      String?     @map("new_state")
+  changeSummary String?     @map("change_summary")
+  metadata      Json?
+  ipHash        String?     @map("ip_hash")
+  createdAt     DateTime    @default(now()) @map("created_at")
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([module, recordId])
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+  @@map("audit_logs")
 }
 
 // ─────────────── Governance: Settings ───────────────
@@ -48,5 +198,385 @@ model Setting {
   updatedById String?  @map("updated_by") @db.Uuid
   updatedAt   DateTime @updatedAt @map("updated_at")
 
+  updatedBy User? @relation("SettingUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+
   @@map("settings")
+}
+
+// ─────────────── Media System (Part 7 / Part 13) ───────────────
+// Added VERBATIM from Part 13, TRIMMED to the relations whose counterpart models exist
+// in this phase (self-replace chain, gallery images, media usages, gallery/video covers).
+// The content back-relations in Part 13 (event/news/programme/toolkit/institution/
+// document/story/service/commodity/dataset covers) are intentionally omitted here and
+// re-added additively when those content modules land — the documented module-by-module
+// process. `created_by`/`updated_by`/`uploaded_by` are scalar UUID columns (as in Part 13),
+// not modeled relations.
+model MediaAsset {
+  id            String    @id @default(uuid()) @db.Uuid
+  storageKey    String    @unique @map("storage_key")
+  url           String
+  fileName      String    @map("file_name")
+  mimeType      String    @map("mime_type")
+  fileSizeBytes BigInt    @map("file_size_bytes")
+  width         Int?
+  height        Int?
+  title         String?
+  altText       String?   @map("alt_text")
+  caption       String?
+  checksum      String?
+  replacedById  String?   @map("replaced_by_id") @db.Uuid
+  archivedAt    DateTime? @map("archived_at")
+  uploadedById  String?   @map("uploaded_by") @db.Uuid
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  uploadedBy      User?          @relation("MediaUploadedBy", fields: [uploadedById], references: [id], onDelete: SetNull)
+  replacedBy      MediaAsset?    @relation("MediaReplace", fields: [replacedById], references: [id])
+  replaces        MediaAsset[]   @relation("MediaReplace")
+  usages          MediaUsage[]
+  galleryImages   GalleryImage[]
+  galleryCovers   Gallery[]      @relation("GalleryCover")
+  videoThumbnails Video[]        @relation("VideoThumb")
+  commodityIcons  Commodity[]    @relation("CommodityIcon")
+
+  @@index([mimeType])
+  @@index([archivedAt])
+  @@index([checksum])
+  @@map("media_assets")
+}
+
+model Gallery {
+  id               String           @id @default(uuid()) @db.Uuid
+  titleEn          String           @map("title_en")
+  titleHi          String?          @map("title_hi")
+  descriptionEn    String?          @map("description_en")
+  descriptionHi    String?          @map("description_hi")
+  coverMediaId     String?          @map("cover_media_id") @db.Uuid
+  slug             String           @unique
+  publicationState PublicationState @default(draft) @map("publication_state")
+  publicVisibility Boolean          @default(true) @map("public_visibility")
+  publishStartAt   DateTime?        @map("publish_start_at")
+  publishedAt      DateTime?        @map("published_at")
+  archivedAt       DateTime?        @map("archived_at")
+  highlightType    HighlightType?   @map("highlight_type")
+  highlightStartAt DateTime?        @map("highlight_start_at")
+  highlightEndAt   DateTime?        @map("highlight_end_at")
+  displayOrder     Int?             @map("display_order")
+  showOnHomepage   Boolean          @default(false) @map("show_on_homepage")
+  createdById      String?          @map("created_by") @db.Uuid
+  updatedById      String?          @map("updated_by") @db.Uuid
+  createdAt        DateTime         @default(now()) @map("created_at")
+  updatedAt        DateTime         @updatedAt @map("updated_at")
+
+  coverMedia MediaAsset?    @relation("GalleryCover", fields: [coverMediaId], references: [id])
+  createdBy  User?          @relation("GalleryCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedBy  User?          @relation("GalleryUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+  images     GalleryImage[]
+
+  @@index([publicationState, publicVisibility, archivedAt, publishedAt])
+  @@map("galleries")
+}
+
+model GalleryImage {
+  id           String  @id @default(uuid()) @db.Uuid
+  galleryId    String  @map("gallery_id") @db.Uuid
+  mediaId      String  @map("media_id") @db.Uuid
+  displayOrder Int     @default(0) @map("display_order")
+  captionEn    String? @map("caption_en")
+  captionHi    String? @map("caption_hi")
+
+  gallery Gallery    @relation(fields: [galleryId], references: [id], onDelete: Cascade)
+  media   MediaAsset @relation(fields: [mediaId], references: [id], onDelete: Restrict)
+
+  @@unique([galleryId, mediaId])
+  @@map("gallery_images")
+}
+
+model Video {
+  id               String           @id @default(uuid()) @db.Uuid
+  titleEn          String           @map("title_en")
+  titleHi          String?          @map("title_hi")
+  descriptionEn    String?          @map("description_en")
+  descriptionHi    String?          @map("description_hi")
+  youtubeId        String           @map("youtube_id")
+  youtubeUrl       String           @map("youtube_url")
+  thumbnailMediaId String?          @map("thumbnail_media_id") @db.Uuid
+  slug             String           @unique
+  publicationState PublicationState @default(draft) @map("publication_state")
+  publicVisibility Boolean          @default(true) @map("public_visibility")
+  publishStartAt   DateTime?        @map("publish_start_at")
+  publishedAt      DateTime?        @map("published_at")
+  archivedAt       DateTime?        @map("archived_at")
+  highlightType    HighlightType?   @map("highlight_type")
+  highlightStartAt DateTime?        @map("highlight_start_at")
+  highlightEndAt   DateTime?        @map("highlight_end_at")
+  displayOrder     Int?             @map("display_order")
+  showOnHomepage   Boolean          @default(false) @map("show_on_homepage")
+  createdById      String?          @map("created_by") @db.Uuid
+  updatedById      String?          @map("updated_by") @db.Uuid
+  createdAt        DateTime         @default(now()) @map("created_at")
+  updatedAt        DateTime         @updatedAt @map("updated_at")
+
+  thumbnailMedia MediaAsset? @relation("VideoThumb", fields: [thumbnailMediaId], references: [id])
+  createdBy      User?       @relation("VideoCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedBy      User?       @relation("VideoUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  @@index([publicationState, publicVisibility, archivedAt, publishedAt])
+  @@index([showOnHomepage, displayOrder])
+  @@map("videos")
+}
+
+model MediaUsage {
+  id         String   @id @default(uuid()) @db.Uuid
+  mediaId    String   @map("media_id") @db.Uuid
+  entityType String   @map("entity_type")
+  entityId   String   @map("entity_id") @db.Uuid
+  field      String
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  media MediaAsset @relation(fields: [mediaId], references: [id], onDelete: Restrict)
+
+  @@unique([mediaId, entityType, entityId, field])
+  @@index([entityType, entityId])
+  @@map("media_usages")
+}
+
+// ─────────────── Masters (Phase 4 — database-schema-design.md Part 4 / Part 13) ───────────────
+// Added VERBATIM from Part 13, TRIMMED to the relations whose counterpart models exist in
+// this phase (only `commodities.icon_media_id` → MediaAsset, and the District↔Block and
+// FinancialYear↔ReportingPeriod intra-masters relations). The content back-relations in
+// Part 13 (events, documents, toolkits, institutions, communications, tenders, procurement,
+// stories, enquiries, faqs, dashboard metrics/datasets, document junctions) are intentionally
+// omitted here and re-added additively when those content modules land — the documented
+// module-by-module process (foundation/03-module-dependency-graph.md, Tier 5).
+//
+// Shared shape (Part 4): id, name_en (UNIQUE), name_hi?, slug (UNIQUE), is_active,
+// display_order?, timestamps. FKs use onDelete: Restrict so a master in use cannot be removed.
+
+model EventType {
+  id           String   @id @default(uuid()) @db.Uuid
+  nameEn       String   @unique @map("name_en")
+  nameHi       String?  @map("name_hi")
+  slug         String   @unique
+  isActive     Boolean  @default(true) @map("is_active")
+  displayOrder Int?     @map("display_order")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@map("event_types")
+}
+
+model TrainingType {
+  id           String   @id @default(uuid()) @db.Uuid
+  nameEn       String   @unique @map("name_en")
+  nameHi       String?  @map("name_hi")
+  slug         String   @unique
+  isActive     Boolean  @default(true) @map("is_active")
+  displayOrder Int?     @map("display_order")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@map("training_types")
+}
+
+model Commodity {
+  id            String   @id @default(uuid()) @db.Uuid
+  nameEn        String   @unique @map("name_en")
+  nameHi        String?  @map("name_hi")
+  slug          String   @unique
+  descriptionEn String?  @map("description_en")
+  descriptionHi String?  @map("description_hi")
+  iconMediaId   String?  @map("icon_media_id") @db.Uuid
+  isActive      Boolean  @default(true) @map("is_active")
+  displayOrder  Int?     @map("display_order")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  iconMedia MediaAsset? @relation("CommodityIcon", fields: [iconMediaId], references: [id])
+
+  @@map("commodities")
+}
+
+model District {
+  id           String   @id @default(uuid()) @db.Uuid
+  nameEn       String   @unique @map("name_en")
+  nameHi       String?  @map("name_hi")
+  slug         String   @unique
+  state        String   @default("Jharkhand")
+  isActive     Boolean  @default(true) @map("is_active")
+  displayOrder Int?     @map("display_order")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  blocks Block[]
+
+  @@map("districts")
+}
+
+model Block {
+  id           String   @id @default(uuid()) @db.Uuid
+  districtId   String   @map("district_id") @db.Uuid
+  nameEn       String   @map("name_en")
+  nameHi       String?  @map("name_hi")
+  slug         String   @unique
+  isActive     Boolean  @default(true) @map("is_active")
+  displayOrder Int?     @map("display_order")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  district District @relation(fields: [districtId], references: [id], onDelete: Restrict)
+
+  @@unique([districtId, nameEn])
+  @@index([districtId])
+  @@map("blocks")
+}
+
+model InstitutionType {
+  id           String   @id @default(uuid()) @db.Uuid
+  nameEn       String   @unique @map("name_en")
+  nameHi       String?  @map("name_hi")
+  slug         String   @unique
+  isActive     Boolean  @default(true) @map("is_active")
+  displayOrder Int?     @map("display_order")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@map("institution_types")
+}
+
+model DocumentType {
+  id           String   @id @default(uuid()) @db.Uuid
+  nameEn       String   @unique @map("name_en")
+  nameHi       String?  @map("name_hi")
+  slug         String   @unique
+  isActive     Boolean  @default(true) @map("is_active")
+  displayOrder Int?     @map("display_order")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@map("document_types")
+}
+
+model KnowledgeCategory {
+  id           String   @id @default(uuid()) @db.Uuid
+  nameEn       String   @unique @map("name_en")
+  nameHi       String?  @map("name_hi")
+  slug         String   @unique
+  isActive     Boolean  @default(true) @map("is_active")
+  displayOrder Int?     @map("display_order")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@map("knowledge_categories")
+}
+
+model CommunicationType {
+  id           String   @id @default(uuid()) @db.Uuid
+  nameEn       String   @unique @map("name_en")
+  nameHi       String?  @map("name_hi")
+  slug         String   @unique
+  isActive     Boolean  @default(true) @map("is_active")
+  displayOrder Int?     @map("display_order")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@map("communication_types")
+}
+
+model TenderType {
+  id           String   @id @default(uuid()) @db.Uuid
+  nameEn       String   @unique @map("name_en")
+  nameHi       String?  @map("name_hi")
+  slug         String   @unique
+  isActive     Boolean  @default(true) @map("is_active")
+  displayOrder Int?     @map("display_order")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@map("tender_types")
+}
+
+model ProcurementUpdateType {
+  id           String   @id @default(uuid()) @db.Uuid
+  nameEn       String   @unique @map("name_en")
+  nameHi       String?  @map("name_hi")
+  slug         String   @unique
+  isActive     Boolean  @default(true) @map("is_active")
+  displayOrder Int?     @map("display_order")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@map("procurement_update_types")
+}
+
+model FaqCategory {
+  id           String   @id @default(uuid()) @db.Uuid
+  nameEn       String   @unique @map("name_en")
+  nameHi       String?  @map("name_hi")
+  slug         String   @unique
+  isActive     Boolean  @default(true) @map("is_active")
+  displayOrder Int?     @map("display_order")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@map("faq_categories")
+}
+
+model EnquiryType {
+  id           String   @id @default(uuid()) @db.Uuid
+  nameEn       String   @unique @map("name_en")
+  nameHi       String?  @map("name_hi")
+  slug         String   @unique
+  isActive     Boolean  @default(true) @map("is_active")
+  displayOrder Int?     @map("display_order")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@map("enquiry_types")
+}
+
+model FinancialYear {
+  id        String   @id @default(uuid()) @db.Uuid
+  label     String   @unique // e.g. 2025-2026
+  startDate DateTime @map("start_date") @db.Date
+  endDate   DateTime @map("end_date") @db.Date
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  reportingPeriods ReportingPeriod[]
+
+  @@map("financial_years")
+}
+
+model ReportingPeriod {
+  id              String              @id @default(uuid()) @db.Uuid
+  financialYearId String?             @map("financial_year_id") @db.Uuid
+  nameEn          String              @map("name_en")
+  nameHi          String?             @map("name_hi")
+  slug            String              @unique
+  periodType      ReportingPeriodType @map("period_type") // month | financial_year | calendar_year | cumulative
+  calendarYear    Int?                @map("calendar_year")
+  startDate       DateTime            @map("start_date") @db.Date
+  endDate         DateTime            @map("end_date") @db.Date
+  isActive        Boolean             @default(true) @map("is_active")
+  createdAt       DateTime            @default(now()) @map("created_at")
+  updatedAt       DateTime            @updatedAt @map("updated_at")
+
+  financialYear FinancialYear? @relation(fields: [financialYearId], references: [id])
+
+  @@index([financialYearId])
+  @@map("reporting_periods")
+}
+
+model Tag {
+  id        String   @id @default(uuid()) @db.Uuid
+  nameEn    String   @unique @map("name_en")
+  nameHi    String?  @map("name_hi")
+  slug      String   @unique
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("tags")
 }

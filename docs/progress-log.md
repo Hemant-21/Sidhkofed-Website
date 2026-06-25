@@ -160,3 +160,77 @@ Open items:
 Commit/push status:
 
 - Not committed (left for review).
+
+---
+
+## Session — Phase 4: Master Data Management (Masters module)
+
+Scope: implemented ONLY master data (no business modules), per the approved contracts.
+
+Added/changed:
+
+- `prisma/schema.prisma`: 16 master models + `ReportingPeriodType` enum, copied verbatim
+  from schema Part 13 with content back-relations TRIMMED to this phase (only
+  `commodities.icon_media_id → media_assets`, District↔Block, FinancialYear↔ReportingPeriod);
+  `MediaAsset.commodityIcons` back-relation added.
+- `prisma/migrations/20260625100000_masters/migration.sql`: hand-written; verified against
+  `prisma migrate diff --from-empty` (FK onDelete clauses match exactly).
+- `src/modules/masters/*`: generic framework — registry (16 defs), base service/repository/
+  validator, dto, controller, routes, permissions, tests. One config-driven CRUD pipeline.
+- `src/services/cache.ts`: reusable fail-open Redis JSON cache (SCAN-based invalidation).
+- `src/modules/audit/audit.events.ts`: MASTER_CREATE/UPDATE/ACTIVATE/DEACTIVATE → master_change.
+- `src/modules/auth/auth.permissions.ts`: masters.view/create/update/activate/deactivate/restore;
+  content_editor + publisher get masters.view.
+- `src/routes/index.ts`: mounted `/admin/masters` and `/public/masters`.
+- `prisma/seed/masters.ts` (+ index hook): idempotent seed — 24 districts, representative
+  blocks, all canonical types, FY 2024–2027, reporting periods.
+- `docs/modules/masters.md`: full module doc.
+
+Verified: `npm run typecheck` clean, `npm run lint` clean, `npm run test` 97 passed
+(+4 pre-existing skipped), masters suite 18/18. Migration not applied (no DB server in this
+environment); apply with `prisma migrate deploy` then `npm run db:seed`.
+
+Not implemented (correctly out of scope): Events, News, Programmes, Toolkits, Documents,
+Institutions, Communications, Tenders, Procurement, Memberships, Dashboard, Search.
+
+Commit/push status: not committed (left for review).
+
+---
+
+## Session — Pre-Phase-5 Remediation (audit Issues 1–11)
+
+Fixed all audited blockers; no new features, no Phase 5.
+
+- **#1 (migration chain):** moved the premature `metadata_full_text_search` migration (ALTERs
+  content tables that don't exist yet) to `prisma/parked-migrations/` + README. Active chain
+  `init → media → masters → audit_fk_relations` has zero forward references → fresh deploy-safe.
+- **#2 (media URLs):** store a stable app delivery endpoint (`/api/v1/public/media/:id/file`),
+  never a signed URL; `GET /public/media/:id/file` streams local / 302-redirects S3 signed
+  URLs; `GET /admin/media/:id/url` resolves a fresh URL on demand.
+- **#3 (upload security):** removed SVG from the registry/policy, reject XML/SVG byte content,
+  replaced the fake virus scanner (`media.scanner.ts`) — it can never report a false "clean";
+  enabled-but-unconfigured uploads are rejected, disabled = explicit "unscanned" + security log.
+- **#4 (upload policy):** validation now uses the configured `uploads.allowed_*_types`
+  (Settings/env) allow-list; no hardcoded acceptance.
+- **#5 (rate limiting):** Redis fixed-window limiter (`middleware/rate-limit.ts`) on login
+  (5/15m), refresh + logout (30/15m), uploads (configurable). 429 + structured logs, fail-open.
+- **#6 (media-usage atomicity):** gallery/video create + cover/thumbnail changes now register
+  media usage inside `prisma.$transaction`.
+- **#7 (storage readiness):** boot fails when storage health check fails; removed `gcs` from the
+  provider enum so an unimplemented provider fails config validation.
+- **#8 (audit FK fields):** `created_by/updated_by/uploaded_by` are now nullable `User`
+  relations with `onDelete: SetNull` (migration `20260625110000_audit_fk_relations`); services
+  pass null, not ''.
+- **#9 (route validation):** shared `uuidParam`/`requireUuidParams` (422 not 500) wired via
+  `router.param` on media/gallery/video/masters; P2023/P2000/P2005/P2006 backstop in the error
+  handler.
+- **#10 (audit reliability):** audit writes go through `auditRepository.create`; failures emit
+  an alertable `audit_write_failed` error log (alert:true) without breaking the operation.
+- **#11 (gallery list):** list query returns a summary (cover + image_count via `_count`), not
+  every image; detail keeps the full collection.
+
+Verified: `prisma validate` ✓, `tsc --noEmit` ✓, `eslint` ✓, `vitest` 107 passed (+10 new),
+active migration chain forward-reference-free. Live `migrate deploy` not run here (no local
+Postgres/Docker); apply with `prisma migrate deploy` then `npm run db:seed`.
+
+Commit/push status: not committed (left for review).

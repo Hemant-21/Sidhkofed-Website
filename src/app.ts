@@ -11,6 +11,7 @@ import express, { type Express } from 'express';
 import helmet from 'helmet';
 import cors, { type CorsOptions } from 'cors';
 import compression from 'compression';
+import cookieParser from 'cookie-parser';
 import { appConfig, isProduction } from '@/config';
 import { requestId } from '@/middleware/request-id';
 import { requestLogger } from '@/middleware/request-logger';
@@ -68,6 +69,9 @@ export function createApp(): Express {
   // 6. Body parsing with conservative limits (uploads use multipart in the media module).
   app.use(express.json({ limit: '1mb' }));
   app.use(express.urlencoded({ extended: true, limit: '1mb' }));
+
+  // 6b. Cookie parsing — required to read the HttpOnly refresh-token cookie (auth).
+  app.use(cookieParser());
 
   // 7. Operational probes at the root.
   app.use(healthRouter);

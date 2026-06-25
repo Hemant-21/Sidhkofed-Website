@@ -17,6 +17,7 @@ import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { storageConfig } from '@/config';
 import { logger } from '@/shared/logger';
 import type {
+  ObjectMetadata,
   PutObjectInput,
   PutObjectResult,
   SignedUrlOptions,
@@ -27,6 +28,8 @@ const storeLog = logger.child({ component: 'storage', driver: 's3' });
 
 export class S3StorageService implements StorageService {
   readonly provider = 's3' as const;
+  /** S3 delivers via time-limited signed URLs (redirect), not through the app (Issue 2). */
+  readonly servesThroughApp = false;
   private readonly client: S3Client;
   private readonly bucket: string;
 
@@ -60,6 +63,11 @@ export class S3StorageService implements StorageService {
     return { key: input.key, size: body.byteLength };
   }
 
+  /** Overwrite the object at the same key (S3 PUT is last-writer-wins). */
+  async replace(input: PutObjectInput): Promise<PutObjectResult> {
+    return this.put(input);
+  }
+
   async get(key: string): Promise<Buffer> {
     const res = await this.client.send(new GetObjectCommand({ Bucket: this.bucket, Key: key }));
     const bytes = await res.Body?.transformToByteArray();
@@ -80,10 +88,29 @@ export class S3StorageService implements StorageService {
     }
   }
 
+  async stat(key: string): Promise<ObjectMetadata | null> {
+    try {
+      const head = await this.client.send(new HeadObjectCommand({ Bucket: this.bucket, Key: key }));
+      return {
+        key,
+        size: Number(head.ContentLength ?? 0),
+        contentType: head.ContentType,
+        lastModified: head.LastModified,
+      };
+    } catch {
+      return null;
+    }
+  }
+
   async getUrl(key: string, options?: SignedUrlOptions): Promise<string> {
     return getSignedUrl(this.client, new GetObjectCommand({ Bucket: this.bucket, Key: key }), {
       expiresIn: options?.expiresInSeconds ?? storageConfig.signedUrlTtlSeconds,
     });
+  }
+
+  /** Alias of getUrl for the TASK 4 `getPublicUrl` vocabulary. */
+  getPublicUrl(key: string, options?: SignedUrlOptions): Promise<string> {
+    return this.getUrl(key, options);
   }
 
   async healthCheck(): Promise<boolean> {

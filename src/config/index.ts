@@ -44,6 +44,17 @@ export const jwtConfig = {
   passwordHashRounds: env.PASSWORD_HASH_ROUNDS,
 } as const;
 
+/**
+ * Default Super Admin credentials, consumed ONLY by the seeder (prisma/seed).
+ * They are intentionally not part of the always-required boot set — the API runs
+ * without them; the seeder validates their presence when it runs (TASK 13).
+ */
+export const seedConfig = {
+  superAdminEmail: env.SEED_SUPERADMIN_EMAIL,
+  superAdminPassword: env.SEED_SUPERADMIN_PASSWORD,
+  superAdminName: env.SEED_SUPERADMIN_NAME,
+} as const;
+
 export const storageConfig = {
   provider: env.STORAGE_PROVIDER,
   localRoot: env.STORAGE_LOCAL_ROOT,
@@ -92,6 +103,13 @@ export const abuseConfig = {
   ipHashSalt: env.IP_HASH_SALT,
 } as const;
 
+export const rateLimitConfig = {
+  enabled: env.RATE_LIMIT_ENABLED,
+  login: { max: env.RATE_LIMIT_LOGIN_MAX, windowSec: env.RATE_LIMIT_LOGIN_WINDOW_SEC },
+  refresh: { max: env.RATE_LIMIT_REFRESH_MAX, windowSec: env.RATE_LIMIT_REFRESH_WINDOW_SEC },
+  upload: { max: env.RATE_LIMIT_UPLOAD_MAX, windowSec: env.RATE_LIMIT_UPLOAD_WINDOW_SEC },
+} as const;
+
 export const localizationConfig = {
   defaultLanguage: env.DEFAULT_LANGUAGE,
   supportedLanguages: env.SUPPORTED_LANGUAGES,
@@ -103,10 +121,12 @@ export const config = {
   db: dbConfig,
   redis: redisConfig,
   jwt: jwtConfig,
+  seed: seedConfig,
   storage: storageConfig,
   upload: uploadConfig,
   email: emailConfig,
   abuse: abuseConfig,
+  rateLimit: rateLimitConfig,
   localization: localizationConfig,
 } as const;
 

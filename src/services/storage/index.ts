@@ -17,21 +17,23 @@ function createStorageService(): StorageService {
       return new S3StorageService();
     case 'local':
       return new LocalStorageService();
-    case 'gcs':
-      // GCS driver not implemented in Phase 1; fail loudly rather than silently.
-      throw new Error('STORAGE_PROVIDER=gcs is not implemented yet');
     default:
-      throw new Error(`Unknown STORAGE_PROVIDER: ${storageConfig.provider as string}`);
+      // Unreachable once config validation restricts the enum, but keep the guard.
+      throw new Error(`Unknown STORAGE_PROVIDER: ${String(storageConfig.provider)}`);
   }
 }
 
 export const storage: StorageService = createStorageService();
 
-/** Verify storage is reachable at boot (logs, does not throw). */
+/**
+ * Verify storage is reachable at boot. Returns the result; the caller (server bootstrap)
+ * treats a failure as fatal so the app never serves traffic with broken media storage
+ * (pre-Phase-5 audit, Issue 7).
+ */
 export async function checkStorage(): Promise<boolean> {
   const ok = await storage.healthCheck();
   if (ok) storeLog.info({ provider: storage.provider }, 'Storage ready');
-  else storeLog.warn({ provider: storage.provider }, 'Storage health check failed');
+  else storeLog.error({ provider: storage.provider }, 'Storage health check failed');
   return ok;
 }
 

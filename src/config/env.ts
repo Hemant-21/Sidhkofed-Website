@@ -68,8 +68,15 @@ const envSchema = z
     REFRESH_COOKIE_SAMESITE: z.enum(['lax', 'strict', 'none']).default('lax'),
     PASSWORD_HASH_ROUNDS: intWithDefault(12, 4),
 
+    // ── Seed (default Super Admin; only the seeder reads these, not the app) ────
+    SEED_SUPERADMIN_EMAIL: z.string().optional().transform((v) => (v && v.trim() !== '' ? v.trim() : undefined)),
+    SEED_SUPERADMIN_PASSWORD: z.string().optional().transform((v) => (v && v.trim() !== '' ? v : undefined)),
+    SEED_SUPERADMIN_NAME: z.string().optional().transform((v) => (v && v.trim() !== '' ? v.trim() : undefined)),
+
     // ── Storage ──────────────────────────────────────────────────────────────
-    STORAGE_PROVIDER: z.enum(['local', 's3', 'gcs']).default('local'),
+    // Only implemented providers are accepted; an unimplemented value (e.g. `gcs`) must
+    // fail config validation rather than crash at first use (pre-Phase-5 audit, Issue 7).
+    STORAGE_PROVIDER: z.enum(['local', 's3']).default('local'),
     STORAGE_LOCAL_ROOT: z.string().default('./storage'),
     STORAGE_PUBLIC_BASE_URL: z.string().url(),
     S3_ENDPOINT: z.string().optional().transform((v) => (v && v.trim() !== '' ? v : undefined)),
@@ -85,7 +92,8 @@ const envSchema = z
     UPLOAD_MAX_DOCUMENT_MB: intWithDefault(25, 1),
     UPLOAD_MAX_DATASET_MB: intWithDefault(15, 1),
     UPLOAD_BULK_MAX_FILES: intWithDefault(50, 1),
-    UPLOAD_ALLOWED_IMAGE_TYPES: csv('image/jpeg,image/png,image/webp,image/svg+xml'),
+    // SVG intentionally excluded (Issue 3): XML-based images can carry scripts.
+    UPLOAD_ALLOWED_IMAGE_TYPES: csv('image/jpeg,image/png,image/webp,image/gif'),
     UPLOAD_ALLOWED_DOCUMENT_TYPES: csv(
       'application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document',
     ),
@@ -111,6 +119,15 @@ const envSchema = z
     ENQUIRY_RATELIMIT_PER_IP_HOUR: intWithDefault(5, 0),
     ENQUIRY_RATELIMIT_PER_CONTACT_HOUR: intWithDefault(3, 0),
     IP_HASH_SALT: z.string().min(8, 'IP_HASH_SALT should be a random salt'),
+
+    // ── Rate limiting (Redis-backed; pre-Phase-5 audit Issue 5) ───────────────
+    RATE_LIMIT_ENABLED: boolish(true),
+    RATE_LIMIT_LOGIN_MAX: intWithDefault(5, 1),
+    RATE_LIMIT_LOGIN_WINDOW_SEC: intWithDefault(900, 1),
+    RATE_LIMIT_REFRESH_MAX: intWithDefault(30, 1),
+    RATE_LIMIT_REFRESH_WINDOW_SEC: intWithDefault(900, 1),
+    RATE_LIMIT_UPLOAD_MAX: intWithDefault(60, 1),
+    RATE_LIMIT_UPLOAD_WINDOW_SEC: intWithDefault(900, 1),
 
     // ── Localization ─────────────────────────────────────────────────────────
     DEFAULT_LANGUAGE: z.enum(['en', 'hi']).default('en'),

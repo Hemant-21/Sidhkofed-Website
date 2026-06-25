@@ -23,11 +23,16 @@ let server: Server | undefined;
 let shuttingDown = false;
 
 async function start(): Promise<void> {
-  // 1–4: connect/verify every backing dependency before listening.
+  // 1–4: connect/verify every backing dependency before listening. A failed storage
+  // health check is fatal — the app must not serve traffic when media storage is
+  // unreachable (pre-Phase-5 audit, Issue 7).
   await connectDatabase();
   await connectRedis();
   await initJobs();
-  await checkStorage();
+  const storageOk = await checkStorage();
+  if (!storageOk) {
+    throw new Error('Storage health check failed — refusing to start.');
+  }
 
   // 5: background workers (none registered in the foundation phase).
   startWorkers();

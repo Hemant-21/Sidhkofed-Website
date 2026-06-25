@@ -52,6 +52,13 @@ function toAppError(err: unknown): AppError {
         return new ConflictError('A record with these unique values already exists.');
       case 'P2025':
         return new NotFoundError('Resource not found.');
+      // Malformed input that reached Prisma (e.g. a bad UUID / out-of-range value) is a
+      // client error, not a server fault — map to 422 instead of a 500 (Issue 9 backstop).
+      case 'P2023': // inconsistent column data (e.g. invalid UUID)
+      case 'P2000': // value too long for column
+      case 'P2005': // invalid value for field type
+      case 'P2006':
+        return new ValidationError({ _: ['Invalid value for one or more fields.'] });
       default:
         break;
     }

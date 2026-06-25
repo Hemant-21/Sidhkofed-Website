@@ -20,7 +20,8 @@ Everything else has a safe default in `.env.example`.
 | **App** | `NODE_ENV`, `APP_PORT`, `API_BASE_PATH`, `PUBLIC_WEBSITE_URL`, `LOG_LEVEL` | immutable `/api/v1` base; CORS/SEO links |
 | **Database** | `DATABASE_URL`, `DATABASE_REPLICA_URL`, `DB_POOL_MAX` | Prisma datasource; optional read replica for public reads; PgBouncer pooling |
 | **Redis** | `REDIS_URL`, `CACHE_TTL_SECONDS`, `QUEUE_PREFIX` | master/home cache + ETag, BullMQ job queue |
-| **Auth/JWT** | `JWT_SECRET`, `JWT_ACCESS_TTL`, `JWT_REFRESH_TTL`, `REFRESH_COOKIE_*`, `PASSWORD_HASH_ROUNDS` | short-lived access token, rotating refresh in Secure/HttpOnly/SameSite cookie (API spec §1.2) |
+| **Auth/JWT** | `JWT_SECRET`, `JWT_ACCESS_TTL`, `JWT_REFRESH_TTL`, `REFRESH_COOKIE_*`, `PASSWORD_HASH_ROUNDS` | short-lived access token, rotating refresh in Secure/HttpOnly/SameSite cookie (API spec §1.2). Refresh-token session state is held in Redis (foundation "sessions/refresh"), not a DB table. |
+| **Seed** | `SEED_SUPERADMIN_EMAIL`, `SEED_SUPERADMIN_PASSWORD`, `SEED_SUPERADMIN_NAME` | default Super Admin account created by `npm run db:seed`. Read **only** by the seeder, not the running API; required when the seeder runs (TASK 13). |
 | **Storage** | `STORAGE_PROVIDER`, `STORAGE_LOCAL_ROOT`, `STORAGE_PUBLIC_BASE_URL`, `S3_*`, `SIGNED_URL_TTL_SECONDS` | private object storage; DB stores metadata only; signed delivery URLs |
 | **Upload limits** | `UPLOAD_MAX_*_MB`, `UPLOAD_BULK_MAX_FILES`, `UPLOAD_ALLOWED_*_TYPES`, `MALWARE_SCAN_ENABLED` | server-side MIME/size validation; quarantine before public |
 | **Email** | `EMAIL_ENABLED`, `EMAIL_FROM`, `EMAIL_ENQUIRY_RECIPIENT`, `EMAIL_SUBJECT_PREFIX`, `SMTP_*` | single configurable enquiry recipient; **no** acknowledgement email to enquirer |
