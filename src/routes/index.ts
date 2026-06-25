@@ -36,6 +36,15 @@ import {
 } from '@/modules/events/events.routes';
 import { eventToolkitDistributionRouter } from '@/modules/events/toolkit-distributions/toolkit-distributions.routes';
 import { newsAdminRouter, newsPublicRouter } from '@/modules/events/news/news.routes';
+import {
+  officialCommunicationAdminRouter,
+  officialCommunicationPublicRouter,
+} from '@/modules/official-communications/official-communications.routes';
+import { tenderAdminRouter, tenderPublicRouter } from '@/modules/tenders/tenders.routes';
+import {
+  procurementUpdateAdminRouter,
+  procurementUpdatePublicRouter,
+} from '@/modules/procurement-updates/procurement-updates.routes';
 
 export const apiRouter = Router();
 
@@ -73,6 +82,9 @@ apiRouter.use('/admin/events', eventAdminRouter);
 apiRouter.use('/admin/events', eventToolkitDistributionRouter);
 apiRouter.use('/admin/event-types', eventTypeFieldDefinitionsRouter);
 apiRouter.use('/admin/news', newsAdminRouter);
+apiRouter.use('/admin/official-communications', officialCommunicationAdminRouter);
+apiRouter.use('/admin/tenders', tenderAdminRouter);
+apiRouter.use('/admin/procurement-updates', procurementUpdateAdminRouter);
 
 // Public namespace (no auth; active + visible records only).
 apiRouter.use('/public/masters', mastersPublicRouter);
@@ -85,3 +97,6 @@ apiRouter.use('/public/programmes', programmePublicRouter);
 apiRouter.use('/public/toolkits', toolkitPublicRouter);
 apiRouter.use('/public/events', eventPublicRouter);
 apiRouter.use('/public/news', newsPublicRouter);
+apiRouter.use('/public/official-communications', officialCommunicationPublicRouter);
+apiRouter.use('/public/tenders', tenderPublicRouter);
+apiRouter.use('/public/procurement-updates', procurementUpdatePublicRouter);

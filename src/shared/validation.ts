@@ -50,6 +50,13 @@ export const httpUrl = z
   .max(500)
   .refine((s) => /^https?:\/\//i.test(s), 'Must be an http(s) URL.');
 
+/** An https-only URL (tender GeM links, digital services — API spec §6 requires HTTPS). */
+export const httpsUrl = z
+  .string()
+  .trim()
+  .max(500)
+  .refine((s) => /^https:\/\//i.test(s), 'Must be a valid HTTPS URL.');
+
 /** Bilingual text helpers — `*_en` required where the field is required; `*_hi` always optional. */
 export const requiredText = (max = 255): z.ZodString => z.string().trim().min(1, 'This field is required.').max(max);
 export const optionalText = (max = 20000): z.ZodType<string | null | undefined> =>

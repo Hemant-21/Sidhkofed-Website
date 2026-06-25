@@ -152,28 +152,35 @@ model User {
 
   // Audit-author back-relations (Issue 8). All use ON DELETE SET NULL so removing a user
   // preserves the historical content rather than cascading or blocking the delete.
-  uploadedMedia               MediaAsset[]                 @relation("MediaUploadedBy")
-  createdGalleries            Gallery[]                    @relation("GalleryCreatedBy")
-  updatedGalleries            Gallery[]                    @relation("GalleryUpdatedBy")
-  createdVideos               Video[]                      @relation("VideoCreatedBy")
-  updatedVideos               Video[]                      @relation("VideoUpdatedBy")
-  updatedSettings             Setting[]                    @relation("SettingUpdatedBy")
-  createdDocuments            Document[]                   @relation("DocumentCreatedBy")
-  updatedDocuments            Document[]                   @relation("DocumentUpdatedBy")
+  uploadedMedia                 MediaAsset[]                 @relation("MediaUploadedBy")
+  createdGalleries              Gallery[]                    @relation("GalleryCreatedBy")
+  updatedGalleries              Gallery[]                    @relation("GalleryUpdatedBy")
+  createdVideos                 Video[]                      @relation("VideoCreatedBy")
+  updatedVideos                 Video[]                      @relation("VideoUpdatedBy")
+  updatedSettings               Setting[]                    @relation("SettingUpdatedBy")
+  createdDocuments              Document[]                   @relation("DocumentCreatedBy")
+  updatedDocuments              Document[]                   @relation("DocumentUpdatedBy")
   // Phase 6 content authors (same SET NULL convention as above).
-  createdEvents               Event[]                      @relation("EventCreatedBy")
-  updatedEvents               Event[]                      @relation("EventUpdatedBy")
-  createdEventNews            EventNews[]                  @relation("EventNewsCreatedBy")
-  updatedEventNews            EventNews[]                  @relation("EventNewsUpdatedBy")
-  createdProgrammes           ProgrammeScheme[]            @relation("ProgrammeCreatedBy")
-  updatedProgrammes           ProgrammeScheme[]            @relation("ProgrammeUpdatedBy")
-  createdInstitutions         Institution[]                @relation("InstitutionCreatedBy")
-  updatedInstitutions         Institution[]                @relation("InstitutionUpdatedBy")
+  createdEvents                 Event[]                      @relation("EventCreatedBy")
+  updatedEvents                 Event[]                      @relation("EventUpdatedBy")
+  createdEventNews              EventNews[]                  @relation("EventNewsCreatedBy")
+  updatedEventNews              EventNews[]                  @relation("EventNewsUpdatedBy")
+  createdProgrammes             ProgrammeScheme[]            @relation("ProgrammeCreatedBy")
+  updatedProgrammes             ProgrammeScheme[]            @relation("ProgrammeUpdatedBy")
+  createdInstitutions           Institution[]                @relation("InstitutionCreatedBy")
+  updatedInstitutions           Institution[]                @relation("InstitutionUpdatedBy")
   // Phase 7 content authors (same SET NULL convention as above).
-  createdToolkits             Toolkit[]                    @relation("ToolkitCreatedBy")
-  updatedToolkits             Toolkit[]                    @relation("ToolkitUpdatedBy")
-  createdToolkitDistributions ToolkitDistributionSummary[] @relation("ToolkitDistributionCreatedBy")
-  updatedToolkitDistributions ToolkitDistributionSummary[] @relation("ToolkitDistributionUpdatedBy")
+  createdToolkits               Toolkit[]                    @relation("ToolkitCreatedBy")
+  updatedToolkits               Toolkit[]                    @relation("ToolkitUpdatedBy")
+  createdToolkitDistributions   ToolkitDistributionSummary[] @relation("ToolkitDistributionCreatedBy")
+  updatedToolkitDistributions   ToolkitDistributionSummary[] @relation("ToolkitDistributionUpdatedBy")
+  // Phase 9 content authors (same SET NULL convention as above).
+  createdOfficialCommunications OfficialCommunication[]      @relation("OfficialCommunicationCreatedBy")
+  updatedOfficialCommunications OfficialCommunication[]      @relation("OfficialCommunicationUpdatedBy")
+  createdTenders                Tender[]                     @relation("TenderCreatedBy")
+  updatedTenders                Tender[]                     @relation("TenderUpdatedBy")
+  createdProcurementUpdates     ProcurementUpdate[]          @relation("ProcurementUpdateCreatedBy")
+  updatedProcurementUpdates     ProcurementUpdate[]          @relation("ProcurementUpdateUpdatedBy")
 
   @@map("users")
 }
@@ -477,11 +484,12 @@ model Commodity {
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")
 
-  iconMedia      MediaAsset?          @relation("CommodityIcon", fields: [iconMediaId], references: [id])
-  documentLinks  DocumentCommodity[]
-  eventLinks     EventCommodity[]
-  programmeLinks ProgrammeCommodity[]
-  toolkits       Toolkit[]
+  iconMedia          MediaAsset?          @relation("CommodityIcon", fields: [iconMediaId], references: [id])
+  documentLinks      DocumentCommodity[]
+  eventLinks         EventCommodity[]
+  programmeLinks     ProgrammeCommodity[]
+  toolkits           Toolkit[]
+  procurementUpdates ProcurementUpdate[]
 
   @@map("commodities")
 }
@@ -497,10 +505,11 @@ model District {
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
-  blocks        Block[]
-  documentLinks DocumentDistrict[]
-  events        Event[]
-  institutions  Institution[]
+  blocks             Block[]
+  documentLinks      DocumentDistrict[]
+  events             Event[]
+  institutions       Institution[]
+  procurementUpdates ProcurementUpdate[]
 
   @@map("districts")
 }
@@ -516,8 +525,9 @@ model Block {
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
-  district District @relation(fields: [districtId], references: [id], onDelete: Restrict)
-  events   Event[]
+  district           District            @relation(fields: [districtId], references: [id], onDelete: Restrict)
+  events             Event[]
+  procurementUpdates ProcurementUpdate[]
 
   @@unique([districtId, nameEn])
   @@index([districtId])
@@ -579,6 +589,8 @@ model CommunicationType {
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
+  officialCommunications OfficialCommunication[]
+
   @@map("communication_types")
 }
 
@@ -592,6 +604,8 @@ model TenderType {
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
+  tenders Tender[]
+
   @@map("tender_types")
 }
 
@@ -604,6 +618,8 @@ model ProcurementUpdateType {
   displayOrder Int?     @map("display_order")
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
+
+  procurementUpdates ProcurementUpdate[]
 
   @@map("procurement_update_types")
 }
@@ -728,22 +744,25 @@ model Document {
   createdAt             DateTime         @default(now()) @map("created_at")
   updatedAt             DateTime         @updatedAt @map("updated_at")
 
-  documentType      DocumentType          @relation(fields: [documentTypeId], references: [id], onDelete: Restrict)
-  fileAsset         MediaAsset            @relation("DocumentFile", fields: [fileAssetId], references: [id], onDelete: Restrict)
-  knowledgeCategory KnowledgeCategory?    @relation(fields: [knowledgeCategoryId], references: [id])
-  financialYear     FinancialYear?        @relation(fields: [financialYearId], references: [id])
+  documentType           DocumentType            @relation(fields: [documentTypeId], references: [id], onDelete: Restrict)
+  fileAsset              MediaAsset              @relation("DocumentFile", fields: [fileAssetId], references: [id], onDelete: Restrict)
+  knowledgeCategory      KnowledgeCategory?      @relation(fields: [knowledgeCategoryId], references: [id])
+  financialYear          FinancialYear?          @relation(fields: [financialYearId], references: [id])
   // Audit-author relations (remediation Issue 1) — nullable, ON DELETE SET NULL, consistent
   // with Media/Gallery/Video/Settings so removing a user preserves the historical document.
-  createdBy         User?                 @relation("DocumentCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
-  updatedBy         User?                 @relation("DocumentUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
-  commodities       DocumentCommodity[]
-  districts         DocumentDistrict[]
-  tags              DocumentTag[]
+  createdBy              User?                   @relation("DocumentCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedBy              User?                   @relation("DocumentUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+  commodities            DocumentCommodity[]
+  districts              DocumentDistrict[]
+  tags                   DocumentTag[]
   // Phase 6 additive junctions/back-references (re-added when programmes/institutions/events
   // land — Tiers 7/10). Document table shape itself is unchanged.
-  programmes        DocumentProgramme[]
-  institutions      DocumentInstitution[]
-  events            EventDocument[]
+  programmes             DocumentProgramme[]
+  institutions           DocumentInstitution[]
+  events                 EventDocument[]
+  // Phase 9 optional single-document links (official communications, procurement updates).
+  officialCommunications OfficialCommunication[]
+  procurementUpdates     ProcurementUpdate[]
 
   @@index([publicationState, publicVisibility, archivedAt, publishedAt])
   @@index([publicationDate])
@@ -1092,6 +1111,7 @@ model ProgrammeScheme {
   commodities            ProgrammeCommodity[]
   permittedTrainingTypes ProgrammePermittedTrainingType[]
   toolkits               Toolkit[] // Phase 7 (re-added additively per the trim note above)
+  procurementUpdates     ProcurementUpdate[] // Phase 9
 
   @@index([publicationState, publicVisibility, archivedAt, publishedAt])
   @@index([showOnHomepage, displayOrder])
@@ -1292,4 +1312,157 @@ model Institution {
   @@index([districtId])
   @@index([showOnHomepage, displayOrder])
   @@map("institutions")
+}
+
+// ─────────────── Phase 9 — Official Communications ───────────────
+// One operation for notices, circulars, office orders, notifications, advisories, public
+// announcements (CMS requirements §4.6 / API spec §5/§6). Expiry is informational only — it never
+// auto-unpublishes/auto-archives (development-rules / build-context). createdBy/updatedBy follow the
+// project SET NULL convention (nullable) so removing a user preserves the historical record.
+model OfficialCommunication {
+  id                  String           @id @default(uuid()) @db.Uuid
+  titleEn             String           @map("title_en")
+  titleHi             String?          @map("title_hi")
+  summaryEn           String?          @map("summary_en")
+  summaryHi           String?          @map("summary_hi")
+  bodyEn              String?          @map("body_en")
+  bodyHi              String?          @map("body_hi")
+  communicationTypeId String           @map("communication_type_id") @db.Uuid
+  referenceNumber     String?          @map("reference_number")
+  issueDate           DateTime?        @map("issue_date") @db.Date
+  effectiveDate       DateTime?        @map("effective_date") @db.Date
+  expiryDate          DateTime?        @map("expiry_date") @db.Date
+  issuingAuthority    String?          @map("issuing_authority")
+  documentId          String?          @map("document_id") @db.Uuid
+  slug                String           @unique
+  publicationState    PublicationState @default(draft) @map("publication_state")
+  publicVisibility    Boolean          @default(true) @map("public_visibility")
+  publishStartAt      DateTime?        @map("publish_start_at")
+  publishedAt         DateTime?        @map("published_at")
+  archivedAt          DateTime?        @map("archived_at")
+  highlightType       HighlightType?   @map("highlight_type")
+  highlightStartAt    DateTime?        @map("highlight_start_at")
+  highlightEndAt      DateTime?        @map("highlight_end_at")
+  displayOrder        Int?             @map("display_order")
+  showOnHomepage      Boolean          @default(false) @map("show_on_homepage")
+  createdById         String?          @map("created_by") @db.Uuid
+  updatedById         String?          @map("updated_by") @db.Uuid
+  createdAt           DateTime         @default(now()) @map("created_at")
+  updatedAt           DateTime         @updatedAt @map("updated_at")
+
+  communicationType CommunicationType @relation(fields: [communicationTypeId], references: [id], onDelete: Restrict)
+  document          Document?         @relation(fields: [documentId], references: [id], onDelete: Restrict)
+  createdBy         User?             @relation("OfficialCommunicationCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedBy         User?             @relation("OfficialCommunicationUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  @@index([publicationState, publicVisibility, archivedAt, publishedAt])
+  @@index([communicationTypeId])
+  @@index([issueDate])
+  @@index([showOnHomepage, displayOrder])
+  @@map("official_communications")
+}
+
+// ─────────────── Phase 9 — Tenders ───────────────
+// Lightweight structured tender metadata + external GeM link only. CMS never stores BOQ,
+// corrigenda, clarifications, award/cancellation notices, tender files, or bid data — those stay on
+// GeM (CMS requirements §4.7 / API spec §6). An expired tender stays public until manually
+// unpublished/archived.
+model Tender {
+  id                 String           @id @default(uuid()) @db.Uuid
+  titleEn            String           @map("title_en")
+  titleHi            String?          @map("title_hi")
+  summaryEn          String?          @map("summary_en")
+  summaryHi          String?          @map("summary_hi")
+  tenderTypeId       String           @map("tender_type_id") @db.Uuid
+  tenderNumber       String?          @map("tender_number")
+  publishDate        DateTime?        @map("publish_date") @db.Date
+  submissionDeadline DateTime?        @map("submission_deadline")
+  openingDate        DateTime?        @map("opening_date")
+  tenderStatus       String?          @map("tender_status")
+  gemUrl             String?          @map("gem_url")
+  slug               String           @unique
+  publicationState   PublicationState @default(draft) @map("publication_state")
+  publicVisibility   Boolean          @default(true) @map("public_visibility")
+  publishStartAt     DateTime?        @map("publish_start_at")
+  publishedAt        DateTime?        @map("published_at")
+  archivedAt         DateTime?        @map("archived_at")
+  highlightType      HighlightType?   @map("highlight_type")
+  highlightStartAt   DateTime?        @map("highlight_start_at")
+  highlightEndAt     DateTime?        @map("highlight_end_at")
+  displayOrder       Int?             @map("display_order")
+  showOnHomepage     Boolean          @default(false) @map("show_on_homepage")
+  createdById        String?          @map("created_by") @db.Uuid
+  updatedById        String?          @map("updated_by") @db.Uuid
+  createdAt          DateTime         @default(now()) @map("created_at")
+  updatedAt          DateTime         @updatedAt @map("updated_at")
+
+  tenderType TenderType @relation(fields: [tenderTypeId], references: [id], onDelete: Restrict)
+  createdBy  User?      @relation("TenderCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedBy  User?      @relation("TenderUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  @@index([publicationState, publicVisibility, archivedAt, publishedAt])
+  @@index([tenderTypeId])
+  @@index([submissionDeadline])
+  @@index([showOnHomepage, displayOrder])
+  @@map("tenders")
+}
+
+// ─────────────── Phase 9 — Procurement Updates ───────────────
+// One operation for all public procurement-related updates: rates, announcements, schedules, centre
+// updates, trade opportunities (CMS requirements §4.8 / API spec §6). INFORMATIONAL ONLY — no
+// procurement transactions, inventory, warehousing, beneficiary, or payment data. Rate/date/location
+// fields are conditional (filled only where the update type is relevant).
+model ProcurementUpdate {
+  id                      String           @id @default(uuid()) @db.Uuid
+  titleEn                 String           @map("title_en")
+  titleHi                 String?          @map("title_hi")
+  summaryEn               String?          @map("summary_en")
+  summaryHi               String?          @map("summary_hi")
+  descriptionEn           String?          @map("description_en")
+  descriptionHi           String?          @map("description_hi")
+  procurementUpdateTypeId String           @map("procurement_update_type_id") @db.Uuid
+  commodityId             String?          @map("commodity_id") @db.Uuid
+  rate                    Decimal?         @db.Decimal(14, 2)
+  unit                    String?
+  effectiveDate           DateTime?        @map("effective_date") @db.Date
+  periodStart             DateTime?        @map("period_start") @db.Date
+  periodEnd               DateTime?        @map("period_end") @db.Date
+  districtId              String?          @map("district_id") @db.Uuid
+  blockId                 String?          @map("block_id") @db.Uuid
+  locationText            String?          @map("location_text")
+  programmeSchemeId       String?          @map("programme_scheme_id") @db.Uuid
+  documentId              String?          @map("document_id") @db.Uuid
+  status                  String?
+  slug                    String           @unique
+  publicationState        PublicationState @default(draft) @map("publication_state")
+  publicVisibility        Boolean          @default(true) @map("public_visibility")
+  publishStartAt          DateTime?        @map("publish_start_at")
+  publishedAt             DateTime?        @map("published_at")
+  archivedAt              DateTime?        @map("archived_at")
+  highlightType           HighlightType?   @map("highlight_type")
+  highlightStartAt        DateTime?        @map("highlight_start_at")
+  highlightEndAt          DateTime?        @map("highlight_end_at")
+  displayOrder            Int?             @map("display_order")
+  showOnHomepage          Boolean          @default(false) @map("show_on_homepage")
+  createdById             String?          @map("created_by") @db.Uuid
+  updatedById             String?          @map("updated_by") @db.Uuid
+  createdAt               DateTime         @default(now()) @map("created_at")
+  updatedAt               DateTime         @updatedAt @map("updated_at")
+
+  procurementUpdateType ProcurementUpdateType @relation(fields: [procurementUpdateTypeId], references: [id], onDelete: Restrict)
+  commodity             Commodity?            @relation(fields: [commodityId], references: [id], onDelete: Restrict)
+  district              District?             @relation(fields: [districtId], references: [id], onDelete: Restrict)
+  block                 Block?                @relation(fields: [blockId], references: [id], onDelete: Restrict)
+  programmeScheme       ProgrammeScheme?      @relation(fields: [programmeSchemeId], references: [id], onDelete: Restrict)
+  document              Document?             @relation(fields: [documentId], references: [id], onDelete: Restrict)
+  createdBy             User?                 @relation("ProcurementUpdateCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedBy             User?                 @relation("ProcurementUpdateUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  @@index([publicationState, publicVisibility, archivedAt, publishedAt])
+  @@index([procurementUpdateTypeId])
+  @@index([commodityId])
+  @@index([districtId])
+  @@index([effectiveDate])
+  @@index([showOnHomepage, displayOrder])
+  @@map("procurement_updates")
 }
