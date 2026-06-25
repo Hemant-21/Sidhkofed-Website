@@ -78,6 +78,13 @@ export function hasAllPermissions(auth: ResolvedAuthorization, required: string[
   return required.every((p) => owned.has(p));
 }
 
+/** True when the user holds ANY of the required permission keys (super admin bypasses). */
+export function hasAnyPermission(auth: ResolvedAuthorization, required: string[]): boolean {
+  if (auth.isSuperAdmin) return true;
+  const owned = new Set(auth.permissions);
+  return required.some((p) => owned.has(p));
+}
+
 /** True when the user holds any of the required role keys (super admin bypasses). */
 export function hasAnyRole(auth: ResolvedAuthorization, required: string[]): boolean {
   if (auth.isSuperAdmin) return true;
@@ -89,5 +96,6 @@ export const permissionService = {
   getUserAuthorization,
   invalidateUserAuthorization,
   hasAllPermissions,
+  hasAnyPermission,
   hasAnyRole,
 };

@@ -31,8 +31,8 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
 }
 
 // ─────────────── Enums (identity/governance subset of Part 13) ───────────────
@@ -81,6 +81,47 @@ enum ReportingPeriodType {
   cumulative
 }
 
+// ─────────────── Phase 6 content enums (Part 13 verbatim) ───────────────
+// Added with the Events/Programmes/Institutions modules (dependency-graph Tiers 7/10/11).
+// Casing is lower-case snake_case everywhere per the §C enum-casing reconciliation
+// (architecture-validation §C7); the requirements doc's `upcoming` maps to `scheduled` (§C1)
+// and `single_date|date_range` to `single|range|multi_day` (§C2).
+enum DateMode {
+  single
+  range
+  multi_day
+}
+
+enum EventStatus {
+  scheduled // public UI may label "Upcoming" (§C1)
+  ongoing
+  completed
+  postponed
+  cancelled
+}
+
+// Controlled dynamic-field data types (Part 13). NOT a form builder: an event type may
+// define a small, fixed set of typed fields validated against events.dynamic_values.
+// `select` = single-choice dropdown. Extended types (multi_select / reference / file /
+// datetime) are deliberately NOT added — they would require an approved enum change
+// (development-rules §3); see docs/modules/events.md.
+enum FieldDataType {
+  text
+  textarea
+  number
+  date
+  boolean
+  select
+}
+
+// Bilingual fallback provenance (master-build-context §7.1): manual Hindi always wins;
+// `automatic` is labeled machine translation; `missing` when no Hindi exists.
+enum TranslationSource {
+  manual
+  automatic
+  missing
+}
+
 // ─────────────── Users & RBAC ───────────────
 model User {
   id                String    @id @default(uuid()) @db.Uuid
@@ -98,12 +139,23 @@ model User {
 
   // Audit-author back-relations (Issue 8). All use ON DELETE SET NULL so removing a user
   // preserves the historical content rather than cascading or blocking the delete.
-  uploadedMedia    MediaAsset[] @relation("MediaUploadedBy")
-  createdGalleries Gallery[]    @relation("GalleryCreatedBy")
-  updatedGalleries Gallery[]    @relation("GalleryUpdatedBy")
-  createdVideos    Video[]      @relation("VideoCreatedBy")
-  updatedVideos    Video[]      @relation("VideoUpdatedBy")
-  updatedSettings  Setting[]    @relation("SettingUpdatedBy")
+  uploadedMedia       MediaAsset[]      @relation("MediaUploadedBy")
+  createdGalleries    Gallery[]         @relation("GalleryCreatedBy")
+  updatedGalleries    Gallery[]         @relation("GalleryUpdatedBy")
+  createdVideos       Video[]           @relation("VideoCreatedBy")
+  updatedVideos       Video[]           @relation("VideoUpdatedBy")
+  updatedSettings     Setting[]         @relation("SettingUpdatedBy")
+  createdDocuments    Document[]        @relation("DocumentCreatedBy")
+  updatedDocuments    Document[]        @relation("DocumentUpdatedBy")
+  // Phase 6 content authors (same SET NULL convention as above).
+  createdEvents       Event[]           @relation("EventCreatedBy")
+  updatedEvents       Event[]           @relation("EventUpdatedBy")
+  createdEventNews    EventNews[]       @relation("EventNewsCreatedBy")
+  updatedEventNews    EventNews[]       @relation("EventNewsUpdatedBy")
+  createdProgrammes   ProgrammeScheme[] @relation("ProgrammeCreatedBy")
+  updatedProgrammes   ProgrammeScheme[] @relation("ProgrammeUpdatedBy")
+  createdInstitutions Institution[]     @relation("InstitutionCreatedBy")
+  updatedInstitutions Institution[]     @relation("InstitutionUpdatedBy")
 
   @@map("users")
 }
@@ -230,14 +282,21 @@ model MediaAsset {
   createdAt     DateTime  @default(now()) @map("created_at")
   updatedAt     DateTime  @updatedAt @map("updated_at")
 
-  uploadedBy      User?          @relation("MediaUploadedBy", fields: [uploadedById], references: [id], onDelete: SetNull)
-  replacedBy      MediaAsset?    @relation("MediaReplace", fields: [replacedById], references: [id])
-  replaces        MediaAsset[]   @relation("MediaReplace")
-  usages          MediaUsage[]
-  galleryImages   GalleryImage[]
-  galleryCovers   Gallery[]      @relation("GalleryCover")
-  videoThumbnails Video[]        @relation("VideoThumb")
-  commodityIcons  Commodity[]    @relation("CommodityIcon")
+  uploadedBy       User?             @relation("MediaUploadedBy", fields: [uploadedById], references: [id], onDelete: SetNull)
+  replacedBy       MediaAsset?       @relation("MediaReplace", fields: [replacedById], references: [id])
+  replaces         MediaAsset[]      @relation("MediaReplace")
+  usages           MediaUsage[]
+  galleryImages    GalleryImage[]
+  galleryCovers    Gallery[]         @relation("GalleryCover")
+  videoThumbnails  Video[]           @relation("VideoThumb")
+  commodityIcons   Commodity[]       @relation("CommodityIcon")
+  documentFiles    Document[]        @relation("DocumentFile")
+  // Phase 6 cover/logo references (optional; no onDelete = default Restrict so a linked
+  // media asset cannot be hard-deleted while in use — consistent with media-usage tracking).
+  eventCovers      Event[]           @relation("EventCover")
+  newsCovers       EventNews[]       @relation("NewsCover")
+  programmeCovers  ProgrammeScheme[] @relation("ProgrammeCover")
+  institutionLogos Institution[]     @relation("InstitutionLogo")
 
   @@index([mimeType])
   @@index([archivedAt])
@@ -272,6 +331,7 @@ model Gallery {
   createdBy  User?          @relation("GalleryCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
   updatedBy  User?          @relation("GalleryUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
   images     GalleryImage[]
+  eventLinks EventGallery[]
 
   @@index([publicationState, publicVisibility, archivedAt, publishedAt])
   @@map("galleries")
@@ -363,6 +423,9 @@ model EventType {
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
+  events           Event[]
+  fieldDefinitions EventFieldDefinition[]
+
   @@map("event_types")
 }
 
@@ -375,6 +438,9 @@ model TrainingType {
   displayOrder Int?     @map("display_order")
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
+
+  events                Event[]
+  permittedInProgrammes ProgrammePermittedTrainingType[]
 
   @@map("training_types")
 }
@@ -392,7 +458,10 @@ model Commodity {
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")
 
-  iconMedia MediaAsset? @relation("CommodityIcon", fields: [iconMediaId], references: [id])
+  iconMedia      MediaAsset?          @relation("CommodityIcon", fields: [iconMediaId], references: [id])
+  documentLinks  DocumentCommodity[]
+  eventLinks     EventCommodity[]
+  programmeLinks ProgrammeCommodity[]
 
   @@map("commodities")
 }
@@ -408,7 +477,10 @@ model District {
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
-  blocks Block[]
+  blocks        Block[]
+  documentLinks DocumentDistrict[]
+  events        Event[]
+  institutions  Institution[]
 
   @@map("districts")
 }
@@ -425,6 +497,7 @@ model Block {
   updatedAt    DateTime @updatedAt @map("updated_at")
 
   district District @relation(fields: [districtId], references: [id], onDelete: Restrict)
+  events   Event[]
 
   @@unique([districtId, nameEn])
   @@index([districtId])
@@ -441,6 +514,8 @@ model InstitutionType {
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
+  institutions Institution[]
+
   @@map("institution_types")
 }
 
@@ -454,6 +529,8 @@ model DocumentType {
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
+  documents Document[]
+
   @@map("document_types")
 }
 
@@ -466,6 +543,8 @@ model KnowledgeCategory {
   displayOrder Int?     @map("display_order")
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
+
+  documents Document[]
 
   @@map("knowledge_categories")
 }
@@ -545,6 +624,7 @@ model FinancialYear {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   reportingPeriods ReportingPeriod[]
+  documents        Document[]
 
   @@map("financial_years")
 }
@@ -578,5 +658,491 @@ model Tag {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
+  documentLinks DocumentTag[]
+
   @@map("tags")
+}
+
+// ─────────────── Documents (Phase 5 — database-schema-design.md Part 6 / Part 13) ───────────────
+// Added VERBATIM from the approved Part 13 `Document` model, TRIMMED to the relations whose
+// counterpart models exist in this phase: documentType, fileAsset (MediaAsset, "DocumentFile"),
+// knowledgeCategory, financialYear, and the commodity/district/tag junctions. The programme and
+// institution junctions (`document_programmes`, `document_institutions`) and the content
+// back-relations (`events EventDocument[]`, `communications OfficialCommunication[]`,
+// `procurementUpdates ProcurementUpdate[]`) are intentionally OMITTED here and re-added
+// additively when those modules land (programmes/institutions = Tier 7, events = Tier 10,
+// communications/procurement = Tier 12) — the documented module-by-module process
+// (docs/foundation/03-module-dependency-graph.md). This is NOT a redesign: the Document table
+// shape, field names, enums, and onDelete contract are unchanged from the approved schema.
+//
+// created_by / updated_by are scalar UUID columns (as in Part 13), not modeled User relations.
+// The metadata `search_vector` GIN column lands later via the parked FTS migration
+// (prisma/parked-migrations/) once all FTS content tables exist (see schema header note).
+model Document {
+  id                    String           @id @default(uuid()) @db.Uuid
+  titleEn               String           @map("title_en")
+  titleHi               String?          @map("title_hi")
+  descriptionEn         String?          @map("description_en")
+  descriptionHi         String?          @map("description_hi")
+  documentTypeId        String           @map("document_type_id") @db.Uuid
+  fileAssetId           String           @map("file_asset_id") @db.Uuid
+  publicationDate       DateTime?        @map("publication_date") @db.Date
+  language              Language         @default(en)
+  isPublic              Boolean          @default(true) @map("is_public")
+  showInKnowledgeCentre Boolean          @default(false) @map("show_in_knowledge_centre")
+  knowledgeCategoryId   String?          @map("knowledge_category_id") @db.Uuid
+  financialYearId       String?          @map("financial_year_id") @db.Uuid
+  slug                  String           @unique
+  publicationState      PublicationState @default(draft) @map("publication_state")
+  publicVisibility      Boolean          @default(true) @map("public_visibility")
+  publishStartAt        DateTime?        @map("publish_start_at")
+  publishedAt           DateTime?        @map("published_at")
+  archivedAt            DateTime?        @map("archived_at")
+  highlightType         HighlightType?   @map("highlight_type")
+  highlightStartAt      DateTime?        @map("highlight_start_at")
+  highlightEndAt        DateTime?        @map("highlight_end_at")
+  displayOrder          Int?             @map("display_order")
+  showOnHomepage        Boolean          @default(false) @map("show_on_homepage")
+  createdById           String?          @map("created_by") @db.Uuid
+  updatedById           String?          @map("updated_by") @db.Uuid
+  createdAt             DateTime         @default(now()) @map("created_at")
+  updatedAt             DateTime         @updatedAt @map("updated_at")
+
+  documentType      DocumentType          @relation(fields: [documentTypeId], references: [id], onDelete: Restrict)
+  fileAsset         MediaAsset            @relation("DocumentFile", fields: [fileAssetId], references: [id], onDelete: Restrict)
+  knowledgeCategory KnowledgeCategory?    @relation(fields: [knowledgeCategoryId], references: [id])
+  financialYear     FinancialYear?        @relation(fields: [financialYearId], references: [id])
+  // Audit-author relations (remediation Issue 1) — nullable, ON DELETE SET NULL, consistent
+  // with Media/Gallery/Video/Settings so removing a user preserves the historical document.
+  createdBy         User?                 @relation("DocumentCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedBy         User?                 @relation("DocumentUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+  commodities       DocumentCommodity[]
+  districts         DocumentDistrict[]
+  tags              DocumentTag[]
+  // Phase 6 additive junctions/back-references (re-added when programmes/institutions/events
+  // land — Tiers 7/10). Document table shape itself is unchanged.
+  programmes        DocumentProgramme[]
+  institutions      DocumentInstitution[]
+  events            EventDocument[]
+
+  @@index([publicationState, publicVisibility, archivedAt, publishedAt])
+  @@index([publicationDate])
+  @@index([showInKnowledgeCentre])
+  @@index([documentTypeId])
+  @@index([knowledgeCategoryId])
+  @@index([financialYearId])
+  // Public-listing hot path (remediation Issue 7): equality on the visibility predicate
+  // (published + public_visibility + is_public + not archived) then the default sort key.
+  @@index([publicationState, publicVisibility, isPublic, archivedAt, publicationDate])
+  @@map("documents")
+}
+
+model DocumentCommodity {
+  id          String @id @default(uuid()) @db.Uuid
+  documentId  String @map("document_id") @db.Uuid
+  commodityId String @map("commodity_id") @db.Uuid
+
+  document  Document  @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  commodity Commodity @relation(fields: [commodityId], references: [id], onDelete: Restrict)
+
+  @@unique([documentId, commodityId])
+  @@index([commodityId, documentId])
+  @@map("document_commodities")
+}
+
+model DocumentDistrict {
+  id         String @id @default(uuid()) @db.Uuid
+  documentId String @map("document_id") @db.Uuid
+  districtId String @map("district_id") @db.Uuid
+
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  district District @relation(fields: [districtId], references: [id], onDelete: Restrict)
+
+  @@unique([documentId, districtId])
+  @@index([districtId, documentId])
+  @@map("document_districts")
+}
+
+model DocumentTag {
+  id         String @id @default(uuid()) @db.Uuid
+  documentId String @map("document_id") @db.Uuid
+  tagId      String @map("tag_id") @db.Uuid
+
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  tag      Tag      @relation(fields: [tagId], references: [id], onDelete: Restrict)
+
+  @@unique([documentId, tagId])
+  @@index([tagId, documentId])
+  @@map("document_tags")
+}
+
+// ─────────────── Phase 6: Document additive junctions (programmes / institutions) ───────────────
+// Added with the Programmes/Institutions modules (Tier 7). They let an already-uploaded Document
+// be linked by reference to programmes/institutions (CMS requirements §4.5). Junction child →
+// CASCADE on the document; → RESTRICT on the master/content side (in-use record can't be removed).
+model DocumentProgramme {
+  id                String @id @default(uuid()) @db.Uuid
+  documentId        String @map("document_id") @db.Uuid
+  programmeSchemeId String @map("programme_scheme_id") @db.Uuid
+
+  document        Document        @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  programmeScheme ProgrammeScheme @relation(fields: [programmeSchemeId], references: [id], onDelete: Restrict)
+
+  @@unique([documentId, programmeSchemeId])
+  @@index([programmeSchemeId, documentId])
+  @@map("document_programmes")
+}
+
+model DocumentInstitution {
+  id            String @id @default(uuid()) @db.Uuid
+  documentId    String @map("document_id") @db.Uuid
+  institutionId String @map("institution_id") @db.Uuid
+
+  document    Document    @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  institution Institution @relation(fields: [institutionId], references: [id], onDelete: Restrict)
+
+  @@unique([documentId, institutionId])
+  @@index([institutionId, documentId])
+  @@map("document_institutions")
+}
+
+// ─────────────── Phase 6: Events (database-schema-design.md Part 6 / Part 13) ───────────────
+// The relational hub for all institutional activities (one Events operation, configurable type).
+// Status is derived from dates unless `status_override=true` (postponed/cancelled only).
+// `dynamic_values` is a CONTROLLED JSONB object validated against the active
+// event_field_definitions for the chosen type — not a form builder.
+//
+// TRIMMED (scope discipline): the `toolkitDistributions` back-relation from Part 13 is OMITTED
+// here because Toolkits are out of Phase 6 scope; it is re-added additively when the Toolkit
+// module lands (Tier 9). The Event table shape itself is unchanged from the approved schema.
+// createdBy/updatedBy follow the applied-codebase convention (nullable + ON DELETE SET NULL),
+// matching Document/Gallery/Video.
+model Event {
+  id                     String            @id @default(uuid()) @db.Uuid
+  eventTypeId            String            @map("event_type_id") @db.Uuid
+  trainingTypeId         String?           @map("training_type_id") @db.Uuid
+  titleEn                String            @map("title_en")
+  titleHi                String?           @map("title_hi")
+  summaryEn              String?           @map("summary_en")
+  summaryHi              String?           @map("summary_hi")
+  descriptionEn          String?           @map("description_en")
+  descriptionHi          String?           @map("description_hi")
+  dateMode               DateMode          @default(single) @map("date_mode")
+  startDate              DateTime          @map("start_date") @db.Date
+  endDate                DateTime?         @map("end_date") @db.Date
+  locationText           String?           @map("location_text")
+  districtId             String?           @map("district_id") @db.Uuid
+  blockId                String?           @map("block_id") @db.Uuid
+  coverMediaId           String?           @map("cover_media_id") @db.Uuid
+  eventStatus            EventStatus       @default(scheduled) @map("event_status")
+  statusOverride         Boolean           @default(false) @map("status_override")
+  cancellationReason     String?           @map("cancellation_reason")
+  revisedStartDate       DateTime?         @map("revised_start_date") @db.Date
+  dynamicValues          Json?             @map("dynamic_values")
+  // Completion fields — editable only when event_status = 'completed' (CMS requirements §4.1).
+  outcomeSummaryEn       String?           @map("outcome_summary_en")
+  outcomeSummaryHi       String?           @map("outcome_summary_hi")
+  keyHighlights          String?           @map("key_highlights")
+  finalParticipantCount  Int?              @map("final_participant_count")
+  participantMaleCount   Int?              @map("participant_male_count")
+  participantFemaleCount Int?              @map("participant_female_count")
+  participantOtherCount  Int?              @map("participant_other_count")
+  completionRemarksEn    String?           @map("completion_remarks_en")
+  completionRemarksHi    String?           @map("completion_remarks_hi")
+  completedDate          DateTime?         @map("completed_date") @db.Date
+  translationSource      TranslationSource @default(manual) @map("translation_source")
+  // publishing-workflow mixin
+  slug                   String            @unique
+  publicationState       PublicationState  @default(draft) @map("publication_state")
+  publicVisibility       Boolean           @default(true) @map("public_visibility")
+  publishStartAt         DateTime?         @map("publish_start_at")
+  publishedAt            DateTime?         @map("published_at")
+  archivedAt             DateTime?         @map("archived_at")
+  highlightType          HighlightType?    @map("highlight_type")
+  highlightStartAt       DateTime?         @map("highlight_start_at")
+  highlightEndAt         DateTime?         @map("highlight_end_at")
+  displayOrder           Int?              @map("display_order")
+  showOnHomepage         Boolean           @default(false) @map("show_on_homepage")
+  createdById            String?           @map("created_by") @db.Uuid
+  updatedById            String?           @map("updated_by") @db.Uuid
+  createdAt              DateTime          @default(now()) @map("created_at")
+  updatedAt              DateTime          @updatedAt @map("updated_at")
+
+  eventType    EventType          @relation(fields: [eventTypeId], references: [id], onDelete: Restrict)
+  trainingType TrainingType?      @relation(fields: [trainingTypeId], references: [id], onDelete: Restrict)
+  district     District?          @relation(fields: [districtId], references: [id], onDelete: Restrict)
+  block        Block?             @relation(fields: [blockId], references: [id], onDelete: Restrict)
+  coverMedia   MediaAsset?        @relation("EventCover", fields: [coverMediaId], references: [id])
+  createdBy    User?              @relation("EventCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedBy    User?              @relation("EventUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+  commodities  EventCommodity[]
+  programmes   EventProgramme[]
+  institutions EventInstitution[]
+  documents    EventDocument[]
+  galleries    EventGallery[]
+  news         EventNews[]
+
+  @@index([publicationState, publicVisibility, archivedAt, publishedAt])
+  @@index([startDate])
+  @@index([showOnHomepage, displayOrder])
+  @@index([eventTypeId])
+  @@index([districtId])
+  @@index([eventStatus])
+  @@map("events")
+}
+
+model EventFieldDefinition {
+  id           String        @id @default(uuid()) @db.Uuid
+  eventTypeId  String        @map("event_type_id") @db.Uuid
+  fieldKey     String        @map("field_key")
+  labelEn      String        @map("label_en")
+  labelHi      String?       @map("label_hi")
+  dataType     FieldDataType @map("data_type")
+  isRequired   Boolean       @default(false) @map("is_required")
+  options      Json? // only for data_type = 'select'
+  displayOrder Int           @default(0) @map("display_order")
+  isActive     Boolean       @default(true) @map("is_active")
+  createdAt    DateTime      @default(now()) @map("created_at")
+  updatedAt    DateTime      @updatedAt @map("updated_at")
+
+  eventType EventType @relation(fields: [eventTypeId], references: [id], onDelete: Cascade)
+
+  @@unique([eventTypeId, fieldKey])
+  @@index([eventTypeId])
+  @@map("event_field_definitions")
+}
+
+// Derived news: a completed event re-published as news, with independent editorial fields
+// and its OWN slug + lifecycle. Never mutates the source event (API spec §6).
+model EventNews {
+  id               String           @id @default(uuid()) @db.Uuid
+  eventId          String           @map("event_id") @db.Uuid
+  titleEn          String           @map("title_en")
+  titleHi          String?          @map("title_hi")
+  summaryEn        String?          @map("summary_en")
+  summaryHi        String?          @map("summary_hi")
+  bodyEn           String?          @map("body_en")
+  bodyHi           String?          @map("body_hi")
+  coverMediaId     String?          @map("cover_media_id") @db.Uuid
+  newsPublishedAt  DateTime?        @map("news_published_at")
+  slug             String           @unique
+  publicationState PublicationState @default(draft) @map("publication_state")
+  publicVisibility Boolean          @default(true) @map("public_visibility")
+  publishStartAt   DateTime?        @map("publish_start_at")
+  publishedAt      DateTime?        @map("published_at")
+  archivedAt       DateTime?        @map("archived_at")
+  highlightType    HighlightType?   @map("highlight_type")
+  highlightStartAt DateTime?        @map("highlight_start_at")
+  highlightEndAt   DateTime?        @map("highlight_end_at")
+  displayOrder     Int?             @map("display_order")
+  showOnHomepage   Boolean          @default(false) @map("show_on_homepage")
+  createdById      String?          @map("created_by") @db.Uuid
+  updatedById      String?          @map("updated_by") @db.Uuid
+  createdAt        DateTime         @default(now()) @map("created_at")
+  updatedAt        DateTime         @updatedAt @map("updated_at")
+
+  event      Event       @relation(fields: [eventId], references: [id], onDelete: Restrict)
+  coverMedia MediaAsset? @relation("NewsCover", fields: [coverMediaId], references: [id])
+  createdBy  User?       @relation("EventNewsCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedBy  User?       @relation("EventNewsUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  @@index([publicationState, publicVisibility, archivedAt, publishedAt])
+  @@index([newsPublishedAt])
+  @@index([eventId])
+  @@map("event_news")
+}
+
+// ─────────────── Event junctions (shared relationships) ───────────────
+model EventCommodity {
+  id          String @id @default(uuid()) @db.Uuid
+  eventId     String @map("event_id") @db.Uuid
+  commodityId String @map("commodity_id") @db.Uuid
+
+  event     Event     @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  commodity Commodity @relation(fields: [commodityId], references: [id], onDelete: Restrict)
+
+  @@unique([eventId, commodityId])
+  @@index([commodityId, eventId])
+  @@map("event_commodities")
+}
+
+model EventProgramme {
+  id                String @id @default(uuid()) @db.Uuid
+  eventId           String @map("event_id") @db.Uuid
+  programmeSchemeId String @map("programme_scheme_id") @db.Uuid
+
+  event           Event           @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  programmeScheme ProgrammeScheme @relation(fields: [programmeSchemeId], references: [id], onDelete: Restrict)
+
+  @@unique([eventId, programmeSchemeId])
+  @@index([programmeSchemeId, eventId])
+  @@map("event_programmes")
+}
+
+model EventInstitution {
+  id            String @id @default(uuid()) @db.Uuid
+  eventId       String @map("event_id") @db.Uuid
+  institutionId String @map("institution_id") @db.Uuid
+
+  event       Event       @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  institution Institution @relation(fields: [institutionId], references: [id], onDelete: Restrict)
+
+  @@unique([eventId, institutionId])
+  @@index([institutionId, eventId])
+  @@map("event_institutions")
+}
+
+model EventDocument {
+  id         String @id @default(uuid()) @db.Uuid
+  eventId    String @map("event_id") @db.Uuid
+  documentId String @map("document_id") @db.Uuid
+
+  event    Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  document Document @relation(fields: [documentId], references: [id], onDelete: Restrict)
+
+  @@unique([eventId, documentId])
+  @@index([documentId, eventId])
+  @@map("event_documents")
+}
+
+model EventGallery {
+  id        String @id @default(uuid()) @db.Uuid
+  eventId   String @map("event_id") @db.Uuid
+  galleryId String @map("gallery_id") @db.Uuid
+
+  event   Event   @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  gallery Gallery @relation(fields: [galleryId], references: [id], onDelete: Restrict)
+
+  @@unique([eventId, galleryId])
+  @@index([galleryId, eventId])
+  @@map("event_galleries")
+}
+
+// ─────────────── Programme & Scheme (Part 6 / Part 13) ───────────────
+// One reusable programme/scheme record. TRIMMED (scope discipline): the `toolkits`,
+// `procurementUpdates`, and `enquiries` back-relations from Part 13 are OMITTED (those modules
+// are out of Phase 6 scope) and re-added additively later (Tiers 9/12/13).
+model ProgrammeScheme {
+  id                   String           @id @default(uuid()) @db.Uuid
+  titleEn              String           @map("title_en")
+  titleHi              String?          @map("title_hi")
+  shortCode            String?          @map("short_code")
+  summaryEn            String?          @map("summary_en")
+  summaryHi            String?          @map("summary_hi")
+  descriptionEn        String?          @map("description_en")
+  descriptionHi        String?          @map("description_hi")
+  objectivesEn         String?          @map("objectives_en")
+  objectivesHi         String?          @map("objectives_hi")
+  eligibilityEn        String?          @map("eligibility_en")
+  eligibilityHi        String?          @map("eligibility_hi")
+  benefitsEn           String?          @map("benefits_en")
+  benefitsHi           String?          @map("benefits_hi")
+  applicationProcessEn String?          @map("application_process_en")
+  applicationProcessHi String?          @map("application_process_hi")
+  fundingSource        String?          @map("funding_source")
+  startDate            DateTime?        @map("start_date") @db.Date
+  endDate              DateTime?        @map("end_date") @db.Date
+  coverMediaId         String?          @map("cover_media_id") @db.Uuid
+  slug                 String           @unique
+  publicationState     PublicationState @default(draft) @map("publication_state")
+  publicVisibility     Boolean          @default(true) @map("public_visibility")
+  publishStartAt       DateTime?        @map("publish_start_at")
+  publishedAt          DateTime?        @map("published_at")
+  archivedAt           DateTime?        @map("archived_at")
+  highlightType        HighlightType?   @map("highlight_type")
+  highlightStartAt     DateTime?        @map("highlight_start_at")
+  highlightEndAt       DateTime?        @map("highlight_end_at")
+  displayOrder         Int?             @map("display_order")
+  showOnHomepage       Boolean          @default(false) @map("show_on_homepage")
+  createdById          String?          @map("created_by") @db.Uuid
+  updatedById          String?          @map("updated_by") @db.Uuid
+  createdAt            DateTime         @default(now()) @map("created_at")
+  updatedAt            DateTime         @updatedAt @map("updated_at")
+
+  coverMedia             MediaAsset?                      @relation("ProgrammeCover", fields: [coverMediaId], references: [id])
+  createdBy              User?                            @relation("ProgrammeCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedBy              User?                            @relation("ProgrammeUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+  events                 EventProgramme[]
+  documents              DocumentProgramme[]
+  commodities            ProgrammeCommodity[]
+  permittedTrainingTypes ProgrammePermittedTrainingType[]
+
+  @@index([publicationState, publicVisibility, archivedAt, publishedAt])
+  @@index([showOnHomepage, displayOrder])
+  @@map("programme_schemes")
+}
+
+model ProgrammeCommodity {
+  id                String @id @default(uuid()) @db.Uuid
+  programmeSchemeId String @map("programme_scheme_id") @db.Uuid
+  commodityId       String @map("commodity_id") @db.Uuid
+
+  programmeScheme ProgrammeScheme @relation(fields: [programmeSchemeId], references: [id], onDelete: Cascade)
+  commodity       Commodity       @relation(fields: [commodityId], references: [id], onDelete: Restrict)
+
+  @@unique([programmeSchemeId, commodityId])
+  @@index([commodityId, programmeSchemeId])
+  @@map("programme_commodities")
+}
+
+model ProgrammePermittedTrainingType {
+  id                String @id @default(uuid()) @db.Uuid
+  programmeSchemeId String @map("programme_scheme_id") @db.Uuid
+  trainingTypeId    String @map("training_type_id") @db.Uuid
+
+  programmeScheme ProgrammeScheme @relation(fields: [programmeSchemeId], references: [id], onDelete: Cascade)
+  trainingType    TrainingType    @relation(fields: [trainingTypeId], references: [id], onDelete: Restrict)
+
+  @@unique([programmeSchemeId, trainingTypeId])
+  @@index([trainingTypeId, programmeSchemeId])
+  @@map("programme_permitted_training_types")
+}
+
+// ─────────────── Institution (Part 6 / Part 13) ───────────────
+// One reusable Institution operation for all organisations. TRIMMED (scope discipline): the
+// `memberships`/`duMemberships` back-relations from Part 13 are OMITTED (Institutional
+// Membership is out of Phase 6 scope) and re-added additively later (Tier 14).
+model Institution {
+  id                String           @id @default(uuid()) @db.Uuid
+  institutionTypeId String           @map("institution_type_id") @db.Uuid
+  nameEn            String           @map("name_en")
+  nameHi            String?          @map("name_hi")
+  descriptionEn     String?          @map("description_en")
+  descriptionHi     String?          @map("description_hi")
+  addressEn         String?          @map("address_en")
+  addressHi         String?          @map("address_hi")
+  websiteUrl        String?          @map("website_url")
+  logoMediaId       String?          @map("logo_media_id") @db.Uuid
+  districtId        String?          @map("district_id") @db.Uuid
+  contactEmail      String?          @map("contact_email")
+  contactPhone      String?          @map("contact_phone")
+  slug              String           @unique
+  publicationState  PublicationState @default(draft) @map("publication_state")
+  publicVisibility  Boolean          @default(true) @map("public_visibility")
+  publishStartAt    DateTime?        @map("publish_start_at")
+  publishedAt       DateTime?        @map("published_at")
+  archivedAt        DateTime?        @map("archived_at")
+  highlightType     HighlightType?   @map("highlight_type")
+  highlightStartAt  DateTime?        @map("highlight_start_at")
+  highlightEndAt    DateTime?        @map("highlight_end_at")
+  displayOrder      Int?             @map("display_order")
+  showOnHomepage    Boolean          @default(false) @map("show_on_homepage")
+  createdById       String?          @map("created_by") @db.Uuid
+  updatedById       String?          @map("updated_by") @db.Uuid
+  createdAt         DateTime         @default(now()) @map("created_at")
+  updatedAt         DateTime         @updatedAt @map("updated_at")
+
+  institutionType InstitutionType       @relation(fields: [institutionTypeId], references: [id], onDelete: Restrict)
+  logoMedia       MediaAsset?           @relation("InstitutionLogo", fields: [logoMediaId], references: [id])
+  district        District?             @relation(fields: [districtId], references: [id], onDelete: Restrict)
+  createdBy       User?                 @relation("InstitutionCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedBy       User?                 @relation("InstitutionUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+  events          EventInstitution[]
+  documents       DocumentInstitution[]
+
+  @@index([publicationState, publicVisibility, archivedAt, publishedAt])
+  @@index([institutionTypeId])
+  @@index([districtId])
+  @@index([showOnHomepage, displayOrder])
+  @@map("institutions")
 }

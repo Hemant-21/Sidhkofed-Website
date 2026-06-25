@@ -9,6 +9,12 @@ import { resolve } from 'node:path';
  *   env at import and exits on a missing required var) loads cleanly under test.
  *   Integration suites under `tests/` self-skip unless `RUN_INTEGRATION=1` and a real
  *   DATABASE_URL/REDIS_URL are reachable; unit suites mock Prisma/Redis.
+ * - `RATE_LIMIT_ENABLED=false`: the auth/login limiter is keyed by client IP, but every
+ *   integration suite logs in from the same loopback IP against one shared Redis, so the
+ *   per-IP login window would trip `429` across suites and make runs non-deterministic.
+ *   It is turned off ONLY in this test process (NODE_ENV=test) via the existing config flag;
+ *   production keeps the limiter (default `true`). No integration test asserts rate-limiting,
+ *   so this weakens nothing.
  */
 export default defineConfig({
   resolve: {
@@ -27,6 +33,8 @@ export default defineConfig({
       PUBLIC_WEBSITE_URL: 'http://localhost:3000',
       STORAGE_PUBLIC_BASE_URL: 'http://localhost:4000/files',
       IP_HASH_SALT: 'test_ip_hash_salt_value',
+      // Deterministic auth integration runs — see the file header. Production is unaffected.
+      RATE_LIMIT_ENABLED: 'false',
     },
   },
 });

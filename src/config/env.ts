@@ -92,6 +92,9 @@ const envSchema = z
     UPLOAD_MAX_DOCUMENT_MB: intWithDefault(25, 1),
     UPLOAD_MAX_DATASET_MB: intWithDefault(15, 1),
     UPLOAD_BULK_MAX_FILES: intWithDefault(50, 1),
+    // Aggregate cap for a whole multipart upload request (remediation Issue 2). Bounds total
+    // memory a single request can buffer, independent of the per-file and file-count limits.
+    UPLOAD_MAX_REQUEST_MB: intWithDefault(60, 1),
     // SVG intentionally excluded (Issue 3): XML-based images can carry scripts.
     UPLOAD_ALLOWED_IMAGE_TYPES: csv('image/jpeg,image/png,image/webp,image/gif'),
     UPLOAD_ALLOWED_DOCUMENT_TYPES: csv(

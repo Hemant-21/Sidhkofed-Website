@@ -4,6 +4,7 @@
 import type { Request, Response, NextFunction } from 'express';
 import { success, paginated } from '@/shared/envelope';
 import { resolvePageParams, buildPagination } from '@/shared/pagination';
+import { parsePublicationState, parseSearch } from '@/shared/list-query';
 import { auditContext } from '@/shared/request-context';
 import type { LifecycleAction } from '@/shared/publishing';
 import { galleryService } from './gallery.service';
@@ -29,8 +30,9 @@ export const create = wrap(async (req) => {
 
 export const list = wrap(async (req) => {
   const page = resolvePageParams(req.query.page, req.query.page_size);
-  const state = req.query.publication_state as 'draft' | 'published' | 'unpublished' | 'archived' | undefined;
-  const search = typeof req.query.search === 'string' ? req.query.search : undefined;
+  // Validate the enum BEFORE it reaches the service/Prisma — invalid → 422 (no manual cast).
+  const state = parsePublicationState(req.query.publication_state);
+  const search = parseSearch(req.query.search);
   const { items, total } = await galleryService.list({ publicationState: state, search }, page.skip, page.take);
   return { status: 200, body: paginated(items, buildPagination(total, page), String(req.id)) };
 });

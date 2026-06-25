@@ -16,7 +16,8 @@
     "smoke": "tsx scripts/smoke.ts",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:integration": "vitest run tests",
+    "test:integration": "npm run db:test:setup && vitest run tests",
+    "test:integration:only": "vitest run tests",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint \"src/**/*.ts\"",
     "format": "prettier --write \"src/**/*.ts\"",
@@ -28,7 +29,12 @@
     "prisma:format": "prisma format",
     "db:up": "docker compose up -d postgres redis",
     "db:down": "docker compose down",
-    "db:seed": "prisma db seed"
+    "db:seed": "prisma db seed",
+    "db:test:create": "docker compose exec -T postgres psql -U sidhkofed -d postgres -v ON_ERROR_STOP=1 -f - < scripts/db/01-init-test-db.sql",
+    "db:test:migrate": "tsx scripts/db/with-test-env.ts prisma migrate deploy",
+    "db:test:seed": "tsx scripts/db/with-test-env.ts prisma db seed",
+    "db:test:setup": "npm run db:test:create && npm run db:test:migrate && npm run db:test:seed",
+    "db:test:reset": "docker compose exec -T postgres psql -U sidhkofed -d postgres -v ON_ERROR_STOP=1 -c \"DROP DATABASE IF EXISTS sidhkofed_test WITH (FORCE);\" && npm run db:test:setup"
   },
   "prisma": {
     "schema": "prisma/schema.prisma",

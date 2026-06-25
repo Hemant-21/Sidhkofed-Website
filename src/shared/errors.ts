@@ -25,6 +25,7 @@ export type ErrorCode =
   | 'protected_record'
   | 'rate_limited'
   | 'unsupported_file_type'
+  | 'payload_too_large'
   | 'bad_request'
   | 'internal_error';
 
@@ -37,6 +38,7 @@ const STATUS_BY_CODE: Record<ErrorCode, number> = {
   protected_record: 409,
   rate_limited: 429,
   unsupported_file_type: 415,
+  payload_too_large: 413,
   bad_request: 400,
   internal_error: 500,
 };
@@ -111,6 +113,12 @@ export class RateLimitError extends AppError {
 export class UnsupportedFileTypeError extends AppError {
   constructor(message = 'Unsupported file type.') {
     super('unsupported_file_type', message);
+  }
+}
+
+export class PayloadTooLargeError extends AppError {
+  constructor(message = 'Request payload is too large.') {
+    super('payload_too_large', message);
   }
 }
 

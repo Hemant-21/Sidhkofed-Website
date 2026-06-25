@@ -9,11 +9,17 @@ services:
     environment:
       POSTGRES_USER: sidhkofed
       POSTGRES_PASSWORD: sidhkofed_dev_password
+      # POSTGRES_DB creates the DEVELOPMENT database. The dedicated integration-test database
+      # (sidhkofed_test) + its `test` role are created by the init script mounted below, which the
+      # postgres entrypoint auto-runs once on a fresh volume. On an existing volume, (re)create
+      # them with `npm run db:test:create`. The two databases stay isolated — tests never touch
+      # dev data.
       POSTGRES_DB: sidhkofed_cms
     ports:
       - '5432:5432'
     volumes:
       - sidhkofed_pgdata:/var/lib/postgresql/data
+      - ./scripts/db/01-init-test-db.sql:/docker-entrypoint-initdb.d/01-init-test-db.sql:ro
     healthcheck:
       test: ['CMD-SHELL', 'pg_isready -U sidhkofed -d sidhkofed_cms']
       interval: 5s

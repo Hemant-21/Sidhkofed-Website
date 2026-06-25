@@ -75,6 +75,8 @@ export const uploadConfig = {
   maxDocumentMb: env.UPLOAD_MAX_DOCUMENT_MB,
   maxDatasetMb: env.UPLOAD_MAX_DATASET_MB,
   bulkMaxFiles: env.UPLOAD_BULK_MAX_FILES,
+  maxRequestMb: env.UPLOAD_MAX_REQUEST_MB,
+  maxRequestBytes: env.UPLOAD_MAX_REQUEST_MB * 1024 * 1024,
   allowedImageTypes: env.UPLOAD_ALLOWED_IMAGE_TYPES,
   allowedDocumentTypes: env.UPLOAD_ALLOWED_DOCUMENT_TYPES,
   allowedDatasetTypes: env.UPLOAD_ALLOWED_DATASET_TYPES,

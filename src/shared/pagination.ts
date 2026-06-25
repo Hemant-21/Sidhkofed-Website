@@ -2,8 +2,11 @@
  * Pagination helpers shared by every list endpoint.
  *
  * API spec §1.4: `page` defaults to 1; `page_size` defaults to 20, capped at 100.
- * Invalid pages return an empty list (handled by repositories), never an error.
+ * An out-of-range (too-high) `page` still returns an empty list (handled by repositories),
+ * never an error. But a MALFORMED value (non-numeric, negative, zero, fractional) is rejected
+ * with `422 validation_error` (remediation Issue 4) instead of silently defaulting.
  */
+import { ValidationError, type FieldErrors } from './errors';
 import type { Pagination } from './envelope';
 
 export const DEFAULT_PAGE = 1;
@@ -19,15 +22,41 @@ export interface PageParams {
   take: number;
 }
 
-function coerceInt(value: unknown, fallback: number): number {
-  const n = typeof value === 'number' ? value : Number(value);
-  return Number.isInteger(n) && n > 0 ? n : fallback;
+/** A raw query value is "absent" when undefined, null, or an empty string → use the default. */
+function isAbsent(value: unknown): boolean {
+  return value === undefined || value === null || value === '';
 }
 
-/** Normalize raw query params into safe page/skip/take values. */
+/**
+ * Parse one positive-integer pagination param. Absent → `fallback`. Present-but-malformed
+ * (non-numeric / negative / zero / fractional / array) → records a 422 field error.
+ */
+function parsePositiveInt(value: unknown, field: string, fallback: number, errors: FieldErrors): number {
+  if (isAbsent(value)) return fallback;
+  if (typeof value !== 'string' && typeof value !== 'number') {
+    (errors[field] ??= []).push('Must be a positive integer.');
+    return fallback;
+  }
+  const n = Number(value);
+  if (!Number.isInteger(n) || n < 1) {
+    (errors[field] ??= []).push('Must be a positive integer.');
+    return fallback;
+  }
+  return n;
+}
+
+/**
+ * Normalize raw query params into safe page/skip/take values, validating strictly.
+ * Throws `ValidationError` (422) for malformed `page`/`page_size`. `page_size` above the cap
+ * is clamped to `MAX_PAGE_SIZE` (not an error — the cap is a documented limit, not malformed).
+ */
 export function resolvePageParams(rawPage?: unknown, rawPageSize?: unknown): PageParams {
-  const page = coerceInt(rawPage, DEFAULT_PAGE);
-  const pageSize = Math.min(coerceInt(rawPageSize, DEFAULT_PAGE_SIZE), MAX_PAGE_SIZE);
+  const errors: FieldErrors = {};
+  const page = parsePositiveInt(rawPage, 'page', DEFAULT_PAGE, errors);
+  const requestedSize = parsePositiveInt(rawPageSize, 'page_size', DEFAULT_PAGE_SIZE, errors);
+  if (Object.keys(errors).length > 0) throw new ValidationError(errors);
+
+  const pageSize = Math.min(requestedSize, MAX_PAGE_SIZE);
   return { page, pageSize, skip: (page - 1) * pageSize, take: pageSize };
 }
 

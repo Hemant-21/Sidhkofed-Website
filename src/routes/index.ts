@@ -17,6 +17,23 @@ import { mediaRouter, mediaPublicRouter } from '@/modules/media/media.routes';
 import { galleryRouter } from '@/modules/galleries/gallery.routes';
 import { videoRouter } from '@/modules/videos/video.routes';
 import { mastersAdminRouter, mastersPublicRouter } from '@/modules/masters/masters.routes';
+import {
+  documentAdminRouter,
+  documentPublicRouter,
+  knowledgeCentreRouter,
+} from '@/modules/documents/documents.routes';
+import {
+  institutionAdminRouter,
+  institutionPublicRouter,
+  homePartnersRouter,
+} from '@/modules/institutions/institutions.routes';
+import { programmeAdminRouter, programmePublicRouter } from '@/modules/programmes/programmes.routes';
+import {
+  eventAdminRouter,
+  eventPublicRouter,
+  eventTypeFieldDefinitionsRouter,
+} from '@/modules/events/events.routes';
+import { newsAdminRouter, newsPublicRouter } from '@/modules/events/news/news.routes';
 
 export const apiRouter = Router();
 
@@ -45,7 +62,20 @@ apiRouter.use('/admin/media', mediaRouter);
 apiRouter.use('/admin/galleries', galleryRouter);
 apiRouter.use('/admin/videos', videoRouter);
 apiRouter.use('/admin/masters', mastersAdminRouter);
+apiRouter.use('/admin/documents', documentAdminRouter);
+apiRouter.use('/admin/institutions', institutionAdminRouter);
+apiRouter.use('/admin/programmes', programmeAdminRouter);
+apiRouter.use('/admin/events', eventAdminRouter);
+apiRouter.use('/admin/event-types', eventTypeFieldDefinitionsRouter);
+apiRouter.use('/admin/news', newsAdminRouter);
 
 // Public namespace (no auth; active + visible records only).
 apiRouter.use('/public/masters', mastersPublicRouter);
 apiRouter.use('/public/media', mediaPublicRouter);
+apiRouter.use('/public/documents', documentPublicRouter);
+apiRouter.use('/public/knowledge-centre', knowledgeCentreRouter);
+apiRouter.use('/public/institutions', institutionPublicRouter);
+apiRouter.use('/public/home/partners', homePartnersRouter);
+apiRouter.use('/public/programmes', programmePublicRouter);
+apiRouter.use('/public/events', eventPublicRouter);
+apiRouter.use('/public/news', newsPublicRouter);

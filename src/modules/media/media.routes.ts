@@ -9,6 +9,7 @@ import multer, { MulterError } from 'multer';
 import { authenticate } from '@/middleware/authenticate';
 import { authorize } from '@/middleware/authorize';
 import { uploadRateLimit } from '@/middleware/rate-limit';
+import { enforceRequestSizeHeader, enforceAggregateUploadSize } from '@/middleware/upload-limit';
 import { uuidParam } from '@/middleware/validate-params';
 import { ROLE_KEYS } from '@/modules/auth/auth.permissions';
 import { uploadConfig } from '@/config';
@@ -45,22 +46,27 @@ const many = withMulter(multerUpload.array('files', uploadConfig.bulkMaxFiles));
 export const mediaRouter = Router();
 
 mediaRouter.param('id', uuidParam); // 422 (not 500) for a malformed :id (Issue 9)
+// Media access stays ROLE-based (remediation Issue 5): the RBAC matrix gates media on a
+// "media grant" but no `media.*` permission is seeded, so there is no permission to switch to.
+// All three CMS roles may manage media; Super Admin bypasses.
 mediaRouter.use(
   authenticate,
   authorize([ROLE_KEYS.superAdmin, ROLE_KEYS.contentEditor, ROLE_KEYS.publisher]),
 );
 
 // Upload routes are rate limited (Issue 5) BEFORE multer parses bytes, so a flood is
-// rejected with 429 without buffering files.
-mediaRouter.post('/', uploadRateLimit, single, mediaController.upload);
-mediaRouter.post('/upload', uploadRateLimit, single, mediaController.upload); // alias (TASK 5 vocabulary)
-mediaRouter.post('/bulk-upload', uploadRateLimit, many, mediaController.bulkUpload);
+// rejected with 429 without buffering files. `enforceRequestSizeHeader` then rejects an
+// oversized request early (413) by Content-Length, and `enforceAggregateUploadSize` bounds
+// the total parsed size after multer (remediation Issue 2).
+mediaRouter.post('/', uploadRateLimit, enforceRequestSizeHeader, single, enforceAggregateUploadSize, mediaController.upload);
+mediaRouter.post('/upload', uploadRateLimit, enforceRequestSizeHeader, single, enforceAggregateUploadSize, mediaController.upload); // alias (TASK 5 vocabulary)
+mediaRouter.post('/bulk-upload', uploadRateLimit, enforceRequestSizeHeader, many, enforceAggregateUploadSize, mediaController.bulkUpload);
 mediaRouter.get('/', mediaController.list);
 mediaRouter.get('/:id', mediaController.detail);
 mediaRouter.patch('/:id', mediaController.patch);
 mediaRouter.post('/:id/archive', mediaController.archive);
 mediaRouter.post('/:id/restore', mediaController.restore);
-mediaRouter.post('/:id/replace-file', uploadRateLimit, single, mediaController.replaceFile);
+mediaRouter.post('/:id/replace-file', uploadRateLimit, enforceRequestSizeHeader, single, enforceAggregateUploadSize, mediaController.replaceFile);
 mediaRouter.get('/:id/usages', mediaController.usages);
 mediaRouter.get('/:id/url', mediaController.getUrl);
 

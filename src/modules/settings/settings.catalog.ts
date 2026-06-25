@@ -37,7 +37,30 @@ export interface SettingDef<T = unknown> {
 
 const def = <T>(d: SettingDef<T>): SettingDef<T> => d;
 
-const url = z.string().url();
+/**
+ * Safe-URL validation (remediation Issue 8). `z.string().url()` accepts dangerous schemes
+ * (`javascript:`, `data:`, `vbscript:`, …) because they are technically valid URLs. These
+ * helpers allow ONLY http(s) absolute URLs (and, for links, approved `/relative` paths) and
+ * reject every other scheme + protocol-relative `//host` forms.
+ */
+function isSafeAbsoluteUrl(value: string): boolean {
+  try {
+    const parsed = new URL(value);
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+function isSafeLinkUrl(value: string): boolean {
+  // Approved relative path (single leading slash, not protocol-relative `//host`).
+  if (value.startsWith('/') && !value.startsWith('//')) return true;
+  return isSafeAbsoluteUrl(value);
+}
+
+/** Absolute http(s) URL only (used by social/contact/map links). */
+const url = z.string().trim().refine(isSafeAbsoluteUrl, 'Enter a valid http:// or https:// URL.');
+/** Footer/menu link: an http(s) URL or an approved `/relative` path; unsafe schemes rejected. */
+const linkUrl = z.string().trim().min(1).max(2000).refine(isSafeLinkUrl, 'Enter an http(s):// URL or a /relative path.');
 const nonNeg = z.number().int().nonnegative();
 
 /**
@@ -75,7 +98,7 @@ export const SETTINGS_CATALOG = {
   'footer.important_links': def({
     group: 'footer',
     kind: 'json',
-    schema: z.array(z.object({ label_en: z.string().min(1), label_hi: z.string().optional(), url: z.string().min(1) })).max(20),
+    schema: z.array(z.object({ label_en: z.string().min(1), label_hi: z.string().optional(), url: linkUrl })).max(20),
     default: [] as Array<{ label_en: string; label_hi?: string; url: string }>,
     description: 'Footer important links.',
   }),

@@ -10,12 +10,13 @@
  */
 import type { Server } from 'node:http';
 import { createApp } from './app';
-import { appConfig } from '@/config';
+import { appConfig, isProduction, uploadConfig } from '@/config';
 import { logger } from '@/shared/logger';
 import { connectDatabase, disconnectDatabase } from '@/db/prisma';
 import { connectRedis, disconnectRedis } from '@/services/redis';
 import { initJobs, startWorkers, shutdownJobs } from '@/jobs';
 import { checkStorage } from '@/services/storage';
+import { verifyScannerStartup } from '@/modules/media/media.scanner';
 
 const bootLog = logger.child({ component: 'server' });
 
@@ -33,6 +34,10 @@ async function start(): Promise<void> {
   if (!storageOk) {
     throw new Error('Storage health check failed — refusing to start.');
   }
+
+  // 4b: malware-scanning safety (remediation Issue 3). In production, a configured-but-
+  // unavailable scanner is fatal; a disabled scanner is a loud warning.
+  await verifyScannerStartup({ enabled: uploadConfig.malwareScanEnabled, isProduction });
 
   // 5: background workers (none registered in the foundation phase).
   startWorkers();

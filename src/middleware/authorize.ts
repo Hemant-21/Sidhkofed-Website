@@ -56,3 +56,16 @@ export function authorizePermissions(permissions: string[]) {
       .catch(next);
   };
 }
+
+/** Require ANY of the given permission keys (super admin always allowed). */
+export function authorizeAnyPermission(permissions: string[]) {
+  const accepted = permissions.map(normalize);
+  return (req: Request, _res: Response, next: NextFunction): void => {
+    resolveAuthz(req)
+      .then((authz) => {
+        if (permissionService.hasAnyPermission(authz, accepted)) return next();
+        throw new PermissionError();
+      })
+      .catch(next);
+  };
+}

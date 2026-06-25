@@ -9,7 +9,7 @@ import { storage } from '@/services/storage';
 import { redis } from '@/services/redis';
 import { redisConfig, uploadConfig, appConfig } from '@/config';
 import { logger } from '@/shared/logger';
-import { NotFoundError, ProtectedRecordError, ValidationError, UnsupportedFileTypeError } from '@/shared/errors';
+import { NotFoundError, ProtectedRecordError, ValidationError, UnsupportedFileTypeError, PermissionError } from '@/shared/errors';
 import { auditService, type AuditContext } from '@/modules/audit/audit.service';
 import { settingsService } from '@/modules/settings/settings.service';
 import { mediaRepository } from './media.repository';
@@ -283,6 +283,13 @@ export type MediaDelivery =
 export async function openFile(id: string): Promise<MediaDelivery> {
   const asset = await mediaRepository.findById(id);
   if (!asset || asset.archivedAt) throw new NotFoundError('Media asset not found.');
+
+  // Public visibility policy (Issue 6): only assets referenced by published public content (or
+  // a public commodity icon) may be served on the unauthenticated endpoint. Everything else is
+  // 403 — a non-archived asset is no longer publicly readable merely by existing.
+  if (!(await mediaRepository.isPubliclyLinked(id))) {
+    throw new PermissionError('This media asset is not publicly available.');
+  }
 
   if (!storage.servesThroughApp) {
     return { kind: 'redirect', url: await storage.getUrl(asset.storageKey) };
