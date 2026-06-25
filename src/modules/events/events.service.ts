@@ -15,7 +15,7 @@ import { mediaUsageService } from '@/modules/media/media-usage.service';
 import { MEDIA_TYPE_REGISTRY } from '@/modules/media/media.validation';
 import type { EventStatus, Prisma } from '@prisma/client';
 import { eventRepository, type EventRow } from './events.repository';
-import { deriveEventStatus } from './events.status';
+import { deriveEventStatus, canCompleteEvent, canCancelEvent } from './events.status';
 import { validateDynamicValues } from './events.dynamic-fields';
 import {
   toEventDetailDto,
@@ -323,6 +323,10 @@ export async function complete(id: string, input: EventCompleteInput, ctx: Audit
   if (existing.completedDate) {
     throw new ConflictError('Event is already completed.');
   }
+  // Issue 5: a cancelled event cannot be completed (only in-flight events may be completed).
+  if (!canCompleteEvent(existing.eventStatus, Boolean(existing.completedDate))) {
+    throw new ConflictError(`Cannot complete a ${existing.eventStatus} event.`);
+  }
   if (input.gallery_ids?.length || input.document_ids?.length) {
     await assertReferencesValid({ galleryIds: input.gallery_ids, documentIds: input.document_ids });
   }
@@ -375,6 +379,10 @@ export async function cancel(id: string, input: EventCancelInput, ctx: AuditCont
   const userId = requireUser(ctx);
   const existing = loaded(await eventRepository.findById(id));
   if (existing.eventStatus === 'cancelled') throw new ConflictError('Event is already cancelled.');
+  // Issue 5: a completed event cannot be cancelled (only in-flight events may be cancelled).
+  if (!canCancelEvent(existing.eventStatus, Boolean(existing.completedDate))) {
+    throw new ConflictError('Cannot cancel a completed event.');
+  }
   const updated = await eventRepository.update(id, {
     eventStatus: 'cancelled',
     statusOverride: true,
@@ -414,12 +422,9 @@ export async function publicDetailBySlug(slug: string): Promise<PublicEventDetai
   if (cached) return cached;
   const row = await eventRepository.findBySlug(slug, { public: true });
   if (!row) throw new NotFoundError('Event not found.');
-  // Public detail must only expose PUBLISHED, visible news links.
-  const publicRow: EventRow = {
-    ...row,
-    news: row.news.filter((n) => n.publicationState === 'published' && n.publicVisibility && !n.archivedAt),
-  };
-  const dto = toPublicEventDetailDto(publicRow);
+  // Linked documents / galleries / news are already filtered to public-visible rows by the
+  // repository's publicEventInclude (single shared predicate, incl. the publish_start_at gate).
+  const dto = toPublicEventDetailDto(row);
   await cacheService.setJson(cacheKey, dto);
   return dto;
 }

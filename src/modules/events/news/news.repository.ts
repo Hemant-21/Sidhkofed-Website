@@ -68,6 +68,10 @@ export function buildWhere(f: NewsFilters, opts: { public?: boolean }): Prisma.E
 export async function slugExists(slug: string, db: Db = prisma): Promise<boolean> {
   return (await db.eventNews.count({ where: { slug } })) > 0;
 }
+/** Duplicate-news guard (Issue 3): an event may be published as news at most once. */
+export async function existsForEvent(eventId: string, db: Db = prisma): Promise<boolean> {
+  return (await db.eventNews.count({ where: { eventId } })) > 0;
+}
 export async function create(data: Prisma.EventNewsUncheckedCreateInput, db: Db = prisma): Promise<NewsRow> {
   return db.eventNews.create({ data, include: newsInclude });
 }
@@ -101,6 +105,7 @@ export function transaction<T>(fn: (tx: Prisma.TransactionClient) => Promise<T>)
 
 export const newsRepository = {
   slugExists,
+  existsForEvent,
   create,
   findById,
   findBySlug,

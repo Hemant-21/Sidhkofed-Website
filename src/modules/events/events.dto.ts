@@ -318,9 +318,10 @@ export function toPublicEventDetailDto(e: EventRow): PublicEventDetailDto {
       name_en: i.institution.nameEn,
       name_hi: i.institution.nameHi,
     })),
+    // documents / galleries / news are pre-filtered to public-visible rows by the repository's
+    // publicEventInclude (single shared predicate incl. the publish_start_at gate — Issue 1).
     documents: documentLinks(e),
     galleries: galleryLinks(e),
-    // public detail exposes only PUBLISHED news links (filtered in the mapper input by the service)
     news: newsLinks(e),
     published_at: iso(e.publishedAt),
   };

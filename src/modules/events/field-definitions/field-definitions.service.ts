@@ -1,13 +1,13 @@
 /**
  * Event field-definition service (API spec §6) — Super Admin manages the controlled per-event-type
- * dynamic-field schema. CRUD + activate/deactivate, duplicate-key protection, and audit. No Prisma
- * here (this module owns its small repository inline via the shared prisma client through the
- * events repository's namespace is avoided — it uses its own thin repository).
+ * dynamic-field schema. CRUD + activate/deactivate, duplicate-key protection, and audit. All
+ * persistence goes through {@link fieldDefinitionRepository} (Issue 7); this module holds business
+ * logic only and contains no direct Prisma access.
  */
 import { Prisma } from '@prisma/client';
-import { prisma } from '@/db/prisma';
 import { NotFoundError, ValidationError, ConflictError } from '@/shared/errors';
 import { auditService, type AuditContext } from '@/modules/audit/audit.service';
+import { fieldDefinitionRepository } from './field-definitions.repository';
 import type { FieldDefinitionCreateInput, FieldDefinitionUpdateInput } from './field-definitions.validators';
 
 const ENTITY = 'event_field_definition';
@@ -43,33 +43,30 @@ function toDto(row: {
 }
 
 async function assertEventTypeExists(eventTypeId: string): Promise<void> {
-  const row = await prisma.eventType.findUnique({ where: { id: eventTypeId }, select: { id: true } });
-  if (!row) throw new NotFoundError('Event type not found.');
+  if (!(await fieldDefinitionRepository.eventTypeExists(eventTypeId))) throw new NotFoundError('Event type not found.');
 }
 
 export async function list(eventTypeId: string): Promise<Record<string, unknown>[]> {
   await assertEventTypeExists(eventTypeId);
-  const rows = await prisma.eventFieldDefinition.findMany({ where: { eventTypeId }, orderBy: { displayOrder: 'asc' } });
+  const rows = await fieldDefinitionRepository.listByEventType(eventTypeId);
   return rows.map(toDto);
 }
 
 export async function create(eventTypeId: string, input: FieldDefinitionCreateInput, ctx: AuditContext): Promise<Record<string, unknown>> {
   await assertEventTypeExists(eventTypeId);
-  const duplicate = await prisma.eventFieldDefinition.count({ where: { eventTypeId, fieldKey: input.field_key } });
+  const duplicate = await fieldDefinitionRepository.countByKey(eventTypeId, input.field_key);
   if (duplicate > 0) throw new ConflictError(`A field with key "${input.field_key}" already exists for this event type.`);
 
-  const created = await prisma.eventFieldDefinition.create({
-    data: {
-      eventTypeId,
-      fieldKey: input.field_key,
-      labelEn: input.label_en,
-      labelHi: input.label_hi ?? null,
-      dataType: input.data_type,
-      isRequired: input.is_required ?? false,
-      options: input.options ? (input.options as Prisma.InputJsonValue) : Prisma.JsonNull,
-      displayOrder: input.display_order ?? 0,
-      isActive: input.is_active ?? true,
-    },
+  const created = await fieldDefinitionRepository.create({
+    eventTypeId,
+    fieldKey: input.field_key,
+    labelEn: input.label_en,
+    labelHi: input.label_hi ?? null,
+    dataType: input.data_type,
+    isRequired: input.is_required ?? false,
+    options: input.options ? (input.options as Prisma.InputJsonValue) : Prisma.JsonNull,
+    displayOrder: input.display_order ?? 0,
+    isActive: input.is_active ?? true,
   });
   await auditService.create(ctx, ENTITY, created.id, { event_type_id: eventTypeId, field_key: created.fieldKey });
   return toDto(created);
@@ -81,7 +78,7 @@ export async function update(
   input: FieldDefinitionUpdateInput,
   ctx: AuditContext,
 ): Promise<Record<string, unknown>> {
-  const existing = await prisma.eventFieldDefinition.findFirst({ where: { id, eventTypeId } });
+  const existing = await fieldDefinitionRepository.findByIdForType(id, eventTypeId);
   if (!existing) throw new NotFoundError('Field definition not found.');
 
   // Changing data_type away from select must clear options; to select must set them.
@@ -96,27 +93,24 @@ export async function update(
     }
   }
 
-  const updated = await prisma.eventFieldDefinition.update({
-    where: { id },
-    data: {
-      fieldKey: input.field_key,
-      labelEn: input.label_en,
-      labelHi: input.label_hi,
-      dataType: input.data_type,
-      isRequired: input.is_required,
-      ...(options !== undefined ? { options } : {}),
-      displayOrder: input.display_order,
-      isActive: input.is_active,
-    },
+  const updated = await fieldDefinitionRepository.update(id, {
+    fieldKey: input.field_key,
+    labelEn: input.label_en,
+    labelHi: input.label_hi,
+    dataType: input.data_type,
+    isRequired: input.is_required,
+    ...(options !== undefined ? { options } : {}),
+    displayOrder: input.display_order,
+    isActive: input.is_active,
   });
   await auditService.update(ctx, ENTITY, id, undefined, { field_key: updated.fieldKey });
   return toDto(updated);
 }
 
 export async function setActive(eventTypeId: string, id: string, isActive: boolean, ctx: AuditContext): Promise<Record<string, unknown>> {
-  const existing = await prisma.eventFieldDefinition.findFirst({ where: { id, eventTypeId } });
+  const existing = await fieldDefinitionRepository.findByIdForType(id, eventTypeId);
   if (!existing) throw new NotFoundError('Field definition not found.');
-  const updated = await prisma.eventFieldDefinition.update({ where: { id }, data: { isActive } });
+  const updated = await fieldDefinitionRepository.update(id, { isActive });
   await auditService.log('UPDATE', ctx, {
     module: ENTITY,
     recordId: id,

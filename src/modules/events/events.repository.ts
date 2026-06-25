@@ -32,6 +32,34 @@ const eventInclude = {
 
 export type EventRow = Prisma.EventGetPayload<{ include: typeof eventInclude }>;
 
+/**
+ * Public detail include (remediation — Issue 1, visibility propagation). Same shape as
+ * `eventInclude`, but every LINKED public-content collection is filtered by the SINGLE shared
+ * `publicVisibilityWhere()` predicate at the database level, so a linked Document, Gallery, or
+ * News item that is unpublished, hidden, archived, or future-scheduled is never exposed through
+ * the parent event — directly or via its media URLs. Documents carry the extra `is_public` flag.
+ * The payload type is identical to `EventRow` (nested `where` does not change the row shape).
+ */
+const publicEventInclude = {
+  eventType: true,
+  trainingType: true,
+  district: true,
+  block: true,
+  coverMedia: true,
+  commodities: { include: { commodity: true } },
+  programmes: { include: { programmeScheme: true } },
+  institutions: { include: { institution: true } },
+  documents: {
+    where: { document: publicVisibilityWhere({ requireIsPublic: true }) as Prisma.DocumentWhereInput },
+    include: { document: { include: { documentType: true, fileAsset: true } } },
+  },
+  galleries: {
+    where: { gallery: publicVisibilityWhere() as Prisma.GalleryWhereInput },
+    include: { gallery: { include: { coverMedia: true, _count: { select: { images: true } } } } },
+  },
+  news: { where: publicVisibilityWhere() as Prisma.EventNewsWhereInput },
+} satisfies Prisma.EventInclude;
+
 /** Lightweight list summary — masters + cover only (no relationship collections, no dynamic). */
 const eventSummaryInclude = {
   eventType: true,
@@ -121,7 +149,9 @@ export async function findById(id: string, db: Db = prisma): Promise<EventRow | 
 
 export async function findBySlug(slug: string, opts: { public?: boolean } = {}): Promise<EventRow | null> {
   if (!opts.public) return prisma.event.findUnique({ where: { slug }, include: eventInclude });
-  return prisma.event.findFirst({ where: { ...buildWhere({}, { public: true }), slug }, include: eventInclude });
+  // Public detail: the event itself must satisfy the predicate AND its linked documents /
+  // galleries / news are filtered by the same predicate (publicEventInclude).
+  return prisma.event.findFirst({ where: { ...buildWhere({}, { public: true }), slug }, include: publicEventInclude });
 }
 
 export async function update(id: string, data: Prisma.EventUncheckedUpdateInput, db: Db = prisma): Promise<EventRow> {

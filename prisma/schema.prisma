@@ -734,6 +734,8 @@ model Document {
   // Public-listing hot path (remediation Issue 7): equality on the visibility predicate
   // (published + public_visibility + is_public + not archived) then the default sort key.
   @@index([publicationState, publicVisibility, isPublic, archivedAt, publicationDate])
+  // Scheduled-publishing gate (Issue 6): same predicate ending in the publish_start_at window.
+  @@index([publicationState, publicVisibility, isPublic, archivedAt, publishStartAt], map: "documents_pubstate_vis_ispublic_archived_publishstart_idx")
   @@map("documents")
 }
 
@@ -883,6 +885,7 @@ model Event {
   news         EventNews[]
 
   @@index([publicationState, publicVisibility, archivedAt, publishedAt])
+  @@index([publicationState, publicVisibility, archivedAt, publishStartAt], map: "events_pubstate_vis_archived_publishstart_idx") // Issue 6: scheduled-publishing gate
   @@index([startDate])
   @@index([showOnHomepage, displayOrder])
   @@index([eventTypeId])
@@ -946,9 +949,10 @@ model EventNews {
   createdBy  User?       @relation("EventNewsCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
   updatedBy  User?       @relation("EventNewsUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
 
+  @@unique([eventId]) // Issue 3: an event may be published as news at most once (also indexes event_id)
   @@index([publicationState, publicVisibility, archivedAt, publishedAt])
+  @@index([publicationState, publicVisibility, archivedAt, publishStartAt], map: "event_news_pubstate_vis_archived_publishstart_idx") // Issue 6: scheduled-publishing gate
   @@index([newsPublishedAt])
-  @@index([eventId])
   @@map("event_news")
 }
 

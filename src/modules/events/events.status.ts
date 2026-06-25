@@ -47,3 +47,23 @@ export function deriveEventStatus(input: DeriveInput): EventStatus {
 /** Manual-override statuses are the only values an editor may set directly (API spec §6). */
 export const MANUAL_OVERRIDE_STATUSES = ['postponed', 'cancelled'] as const;
 export type ManualOverrideStatus = (typeof MANUAL_OVERRIDE_STATUSES)[number];
+
+/**
+ * Explicit complete / cancel workflow rules (Issue 5). The Complete and Cancel actions are
+ * deliberate, audited transitions guarded by the two terminal markers — NOT the date-derived
+ * status:
+ *   - `completedDate` (boolean `alreadyCompleted`) is the explicit-completion marker.
+ *   - `eventStatus = 'cancelled'` is the explicit-cancellation marker.
+ *
+ * Transition rules (an event is "in flight" when neither marker is set):
+ *   complete: allowed only when NOT already completed AND NOT cancelled
+ *             (a cancelled event cannot be completed; completing twice is rejected).
+ *   cancel:   allowed only when NOT already cancelled AND NOT completed
+ *             (a completed event cannot be cancelled; cancelling twice is rejected).
+ */
+export function canCompleteEvent(status: EventStatus, alreadyCompleted: boolean): boolean {
+  return !alreadyCompleted && status !== 'cancelled';
+}
+export function canCancelEvent(status: EventStatus, alreadyCompleted: boolean): boolean {
+  return status !== 'cancelled' && !alreadyCompleted;
+}

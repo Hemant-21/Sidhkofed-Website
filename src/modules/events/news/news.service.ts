@@ -44,6 +44,16 @@ function requireUser(ctx: AuditContext): string {
   return ctx.userId;
 }
 
+/** True when `err` is a Prisma P2002 unique violation on a constraint covering `field`. */
+function isUniqueViolation(err: unknown, field: string): boolean {
+  if (typeof err !== 'object' || err === null) return false;
+  const e = err as { code?: string; meta?: { target?: unknown } };
+  if (e.code !== 'P2002') return false;
+  const target = e.meta?.target;
+  const cols = Array.isArray(target) ? target.map(String) : typeof target === 'string' ? [target] : [];
+  return cols.length === 0 || cols.some((c) => c.includes(field));
+}
+
 async function assertLinkableCover(mediaId: string): Promise<void> {
   let media: Awaited<ReturnType<typeof mediaService.getById>>;
   try {
@@ -65,45 +75,61 @@ export async function publishFromEvent(eventId: string, input: PublishAsNewsInpu
     throw new ConflictError('Only a completed event can be published as news.');
   }
 
+  // Duplicate-news guard (Issue 3): an event may be published as news at most once. The service
+  // check catches the common case early; the unique constraint on event_news.event_id is the
+  // race-safe backstop — a P2002 from a concurrent request is mapped to the same 409 below.
+  if (await newsRepository.existsForEvent(eventId)) {
+    throw new ConflictError('This event has already been published as news.');
+  }
+
   const coverMediaId = input.cover_media_id !== undefined ? input.cover_media_id : event.cover_media?.id ?? null;
   if (coverMediaId) await assertLinkableCover(coverMediaId);
 
   const titleEn = input.title_en ?? event.title_en;
   const slug = await uniqueSlug(titleEn, newsRepository.slugExists);
 
-  const news = await newsRepository.transaction(async (tx) => {
-    const created = await newsRepository.create(
-      {
-        eventId,
-        titleEn,
-        titleHi: input.title_hi ?? event.title_hi,
-        summaryEn: input.summary_en ?? event.summary_en,
-        summaryHi: input.summary_hi ?? event.summary_hi,
-        bodyEn: input.body_en ?? event.description_en,
-        bodyHi: input.body_hi ?? event.description_hi,
-        coverMediaId,
-        newsPublishedAt: input.news_published_at ?? null,
-        slug,
-        publicVisibility: input.public_visibility ?? true,
-        publishStartAt: input.publish_start_at ?? null,
-        highlightType: input.highlight_type ?? null,
-        highlightStartAt: input.highlight_start_at ?? null,
-        highlightEndAt: input.highlight_end_at ?? null,
-        displayOrder: input.display_order ?? null,
-        showOnHomepage: input.show_on_homepage ?? false,
-        createdById: userId,
-        updatedById: userId,
-      },
-      tx,
-    );
-    if (coverMediaId) {
-      await mediaUsageService.registerUsage(
-        { mediaId: coverMediaId, entityType: NEWS_ENTITY, entityId: created.id, field: COVER_FIELD },
+  let news: NewsRow;
+  try {
+    news = await newsRepository.transaction(async (tx) => {
+      const created = await newsRepository.create(
+        {
+          eventId,
+          titleEn,
+          titleHi: input.title_hi ?? event.title_hi,
+          summaryEn: input.summary_en ?? event.summary_en,
+          summaryHi: input.summary_hi ?? event.summary_hi,
+          bodyEn: input.body_en ?? event.description_en,
+          bodyHi: input.body_hi ?? event.description_hi,
+          coverMediaId,
+          newsPublishedAt: input.news_published_at ?? null,
+          slug,
+          publicVisibility: input.public_visibility ?? true,
+          publishStartAt: input.publish_start_at ?? null,
+          highlightType: input.highlight_type ?? null,
+          highlightStartAt: input.highlight_start_at ?? null,
+          highlightEndAt: input.highlight_end_at ?? null,
+          displayOrder: input.display_order ?? null,
+          showOnHomepage: input.show_on_homepage ?? false,
+          createdById: userId,
+          updatedById: userId,
+        },
         tx,
       );
+      if (coverMediaId) {
+        await mediaUsageService.registerUsage(
+          { mediaId: coverMediaId, entityType: NEWS_ENTITY, entityId: created.id, field: COVER_FIELD },
+          tx,
+        );
+      }
+      return created;
+    });
+  } catch (err) {
+    // Race condition: a concurrent publish won the unique event_id constraint first.
+    if (isUniqueViolation(err, 'event_id')) {
+      throw new ConflictError('This event has already been published as news.');
     }
-    return created;
-  });
+    throw err;
+  }
 
   await auditService.create(ctx, NEWS_ENTITY, news.id, { event_id: eventId, slug: news.slug, summary: 'NEWS_PUBLISH' });
   await invalidatePublicCache();
