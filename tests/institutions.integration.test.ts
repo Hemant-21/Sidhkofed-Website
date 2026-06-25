@@ -165,6 +165,139 @@ describe.skipIf(!RUN)('institutions (integration)', () => {
     expect(res.status).toBe(401);
   });
 
+  // ── Issue 1 — published-institution logo is downloadable via the public media endpoint ──
+  it('serves the logo of a PUBLISHED institution and 403s for draft/archived/future ones', async () => {
+    // The institution created above is published at this point in the flow.
+    const fileUrl = `/api/v1/public/media/${created.logoId}/file`;
+    const published = await request(app).get(fileUrl);
+    expect(published.status).toBe(200);
+
+    // Draft: unpublish hides the logo again.
+    await request(app)
+      .post(`/api/v1/admin/institutions/${created.institutionId}/unpublish`)
+      .set('Authorization', `Bearer ${publisherToken}`)
+      .send({});
+    expect((await request(app).get(fileUrl)).status).toBe(403);
+
+    // Future-scheduled: published but publish_start_at in the future → still hidden.
+    await request(app)
+      .post(`/api/v1/admin/institutions/${created.institutionId}/publish`)
+      .set('Authorization', `Bearer ${publisherToken}`)
+      .send({});
+    await request(app)
+      .patch(`/api/v1/admin/institutions/${created.institutionId}`)
+      .set('Authorization', `Bearer ${publisherToken}`)
+      .send({ publish_start_at: new Date(Date.now() + 86_400_000).toISOString() });
+    expect((await request(app).get(fileUrl)).status).toBe(403);
+
+    // Clear the schedule → visible again; then archive → hidden.
+    await request(app)
+      .patch(`/api/v1/admin/institutions/${created.institutionId}`)
+      .set('Authorization', `Bearer ${publisherToken}`)
+      .send({ publish_start_at: null });
+    expect((await request(app).get(fileUrl)).status).toBe(200);
+
+    await request(app)
+      .post(`/api/v1/admin/institutions/${created.institutionId}/archive`)
+      .set('Authorization', `Bearer ${publisherToken}`)
+      .send({});
+    expect((await request(app).get(fileUrl)).status).toBe(403);
+
+    // Restore + republish so later assertions/cleanup see a published record.
+    await request(app)
+      .post(`/api/v1/admin/institutions/${created.institutionId}/restore`)
+      .set('Authorization', `Bearer ${publisherToken}`)
+      .send({});
+    await request(app)
+      .post(`/api/v1/admin/institutions/${created.institutionId}/publish`)
+      .set('Authorization', `Bearer ${publisherToken}`)
+      .send({});
+  });
+
+  // ── Issue 3 — Content Editor may edit drafts only; published requires a Publisher ──
+  it('lets a Content Editor PATCH a draft but rejects PATCH of a published institution (403)', async () => {
+    const draft = await request(app)
+      .post('/api/v1/admin/institutions')
+      .set('Authorization', `Bearer ${editorToken}`)
+      .send({ institution_type_id: created.institutionTypeId, name_en: `RBAC Draft ${STAMP}` });
+    expect(draft.status).toBe(201);
+    const draftId = draft.body.data.id as string;
+
+    const editDraft = await request(app)
+      .patch(`/api/v1/admin/institutions/${draftId}`)
+      .set('Authorization', `Bearer ${editorToken}`)
+      .send({ name_hi: 'मसौदा' });
+    expect(editDraft.status).toBe(200);
+
+    await request(app)
+      .post(`/api/v1/admin/institutions/${draftId}/publish`)
+      .set('Authorization', `Bearer ${publisherToken}`)
+      .send({});
+
+    const editorOnPublished = await request(app)
+      .patch(`/api/v1/admin/institutions/${draftId}`)
+      .set('Authorization', `Bearer ${editorToken}`)
+      .send({ name_hi: 'प्रकाशित' });
+    expect(editorOnPublished.status).toBe(403);
+
+    const publisherOnPublished = await request(app)
+      .patch(`/api/v1/admin/institutions/${draftId}`)
+      .set('Authorization', `Bearer ${publisherToken}`)
+      .send({ name_hi: 'प्रकाशित' });
+    expect(publisherOnPublished.status).toBe(200);
+
+    await prisma.institution.delete({ where: { id: draftId } }).catch(() => undefined);
+  });
+
+  // ── Issue 4 — duplicate institution names are rejected (case-insensitive, trimmed) ──
+  it('rejects duplicate institution names on create and update with 409', async () => {
+    const name = `Dup Inst ${STAMP}`;
+    const first = await request(app)
+      .post('/api/v1/admin/institutions')
+      .set('Authorization', `Bearer ${editorToken}`)
+      .send({ institution_type_id: created.institutionTypeId, name_en: name });
+    expect(first.status).toBe(201);
+    const firstId = first.body.data.id as string;
+
+    // Exact + different case + surrounding whitespace all collide → 409.
+    for (const candidate of [name, name.toUpperCase(), `   ${name}   `]) {
+      const dup = await request(app)
+        .post('/api/v1/admin/institutions')
+        .set('Authorization', `Bearer ${editorToken}`)
+        .send({ institution_type_id: created.institutionTypeId, name_en: candidate });
+      expect(dup.status).toBe(409);
+    }
+
+    // A second institution cannot be renamed onto the existing name.
+    const second = await request(app)
+      .post('/api/v1/admin/institutions')
+      .set('Authorization', `Bearer ${editorToken}`)
+      .send({ institution_type_id: created.institutionTypeId, name_en: `Other Inst ${STAMP}` });
+    const secondId = second.body.data.id as string;
+    const rename = await request(app)
+      .patch(`/api/v1/admin/institutions/${secondId}`)
+      .set('Authorization', `Bearer ${editorToken}`)
+      .send({ name_en: name.toLowerCase() });
+    expect(rename.status).toBe(409);
+
+    await prisma.institution.delete({ where: { id: firstId } }).catch(() => undefined);
+    await prisma.institution.delete({ where: { id: secondId } }).catch(() => undefined);
+  });
+
+  // ── Issue 5 — unknown query filters are rejected with 422 ──
+  it('rejects unknown list filters with 422 on both admin and public surfaces', async () => {
+    const admin = await request(app)
+      .get('/api/v1/admin/institutions?bogus=1')
+      .set('Authorization', `Bearer ${publisherToken}`);
+    expect(admin.status).toBe(422);
+
+    const pub = await request(app).get('/api/v1/public/institutions?bogus=1');
+    expect(pub.status).toBe(422);
+
+    const valid = await request(app).get('/api/v1/public/institutions?show_on_homepage=true');
+    expect(valid.status).toBe(200);
+  });
+
   it('archives and removes it from public listings', async () => {
     const arch = await request(app)
       .post(`/api/v1/admin/institutions/${created.institutionId}/archive`)

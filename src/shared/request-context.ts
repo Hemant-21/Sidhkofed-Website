@@ -14,5 +14,7 @@ export function auditContext(req: Request): AuditContext {
     userId: req.user?.id ?? null,
     ipHash: createHash('sha256').update(`${ip}:${abuseConfig.ipHashSalt}`).digest('hex'),
     userAgent: req.headers['user-agent'] ?? null,
+    // Memoized by the authorize middleware on protected routes; drives service-layer state guards.
+    authz: req.authz,
   };
 }

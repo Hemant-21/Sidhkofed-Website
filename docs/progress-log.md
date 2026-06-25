@@ -234,3 +234,55 @@ active migration chain forward-reference-free. Live `migrate deploy` not run her
 Postgres/Docker); apply with `prisma migrate deploy` then `npm run db:seed`.
 
 Commit/push status: not committed (left for review).
+
+---
+
+## Session — Phase 7: Architecture Compliance Remediation (audit Issues 1–12)
+
+Compared each Phase-7 audit finding against the frozen docs and fixed only genuine violations.
+
+Fixed:
+- **#1 Prisma client out of sync** — regenerated (`prisma generate`); the toolkits models now
+  exist in the client, typecheck clean. No business logic changed.
+- **#5 RBAC** — API spec §1.2/§8 mandates module-named permissions. Seeded + enforced
+  `programmes.*`, `toolkits.*`, `toolkit_items.*`, `toolkit_distributions.*`; routes for those 4
+  modules now check the named keys; generic `content.*` kept for the still-unconverted modules.
+  Super Admin bypass preserved. **Requires `npm run db:seed` (idempotent) so existing editor/
+  publisher users gain the new grants.**
+- **#6 Content-editor edit restriction** — new `shared/content-guard.ts`; non-publishers may edit
+  drafts only (Programme/Toolkit by own state; Item by parent toolkit; Distribution by parent
+  event). Actor authz threaded via `AuditContext.authz`.
+- **#7 Public toolkit visibility** — added `isPubliclyVisible` companion to `shared/visibility.ts`;
+  public toolkit DTO no longer surfaces a draft/archived/future-scheduled linked programme.
+- **#8 Unknown query filters** — `assertKnownQueryKeys` → 422 on unknown params (programmes/toolkits).
+- **#9 Duplicate programme names** — case-insensitive `programmeRepository.nameExists` (codex §4.2),
+  independent of slug uniqueness.
+- **#11 Public distribution summary** — replaced full-history in-memory reduce with DB `groupBy`
+  aggregates + one metadata lookup; API shape unchanged.
+- **#12 Tests** — +25 unit (content-guard, isPubliclyVisible, query allow-list, RBAC catalog,
+  public-programme-leak DTO, DB-aggregation assembly) + a guarded toolkits integration suite;
+  extended programmes integration (duplicate-name 409, editor-edit-published 403, unknown-param 422).
+
+False positives (implementation already matches the frozen architecture — no change):
+- **#3 Toolkit→Programme/Commodity mandatory:** frozen `database-schema-design.md` defines both FKs
+  as `NULL`/optional (line 381/1464, "AC#8"); making them required would violate the schema.
+- **#10 Distribution eligibility (event type/category):** the Event model has no `category` and no
+  documented event-type gate for distributions; existing checks (event exists, toolkit non-archived,
+  active item membership, unique (event,toolkit)) are the real eligibility the architecture defines.
+
+ARCHITECTURE CONFLICTS — reported, NOT changed (need architect sign-off):
+- **#2 ProgrammeScheme classification:** codex-context §4.2 (precedence #2) frames it as a
+  "master-operation" (`is_active`, "Deactivation only") — Master Data; `database-schema-design.md`
+  (#3) + `api-specification.md` (#4) model it as **Publishable Content** (full publishing-workflow
+  mixin), which is what the implementation follows. Same tension applies to `Institution`. Converting
+  to master lifecycle would destructively redesign two built modules — escalated rather than guessed.
+- **#4 Audit FK policy:** `database-schema-design.md` lines 156–157 mandate audit columns
+  `NOT NULL … ON DELETE RESTRICT`; the approved Pre-Phase-5 migration `20260625110000_audit_fk_relations`
+  intentionally made them nullable + `ON DELETE SET NULL` (documented rationale: preserve history on
+  user deletion). Per the brief, reported instead of silently reverting; the new toolkit/distribution
+  models follow the same applied SET NULL convention for consistency.
+
+Verified: `prisma validate` ✓, `tsc --noEmit` ✓ (src), `eslint` ✓, `vitest` 319 passed / 53 skipped
+(+25 new). Live `migrate deploy` not run (no local Postgres). Schema unchanged → no new migration.
+
+Commit/push status: not committed (left for review).

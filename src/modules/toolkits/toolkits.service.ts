@@ -8,6 +8,7 @@
 import { NotFoundError, ValidationError } from '@/shared/errors';
 import { uniqueSlug } from '@/utils/slug';
 import { applyLifecycle, lifecycleEvent, type LifecycleAction } from '@/shared/publishing';
+import { assertEditableByActor } from '@/shared/content-guard';
 import { cacheService } from '@/services/cache';
 import { auditService, type AuditContext } from '@/modules/audit/audit.service';
 import { mediaService } from '@/modules/media/media.service';
@@ -23,6 +24,7 @@ import {
   type PublicToolkitDetailDto,
 } from './toolkits.dto';
 import { TOOLKIT_ENTITY, type ToolkitFilters, type ToolkitOrderingField } from './toolkits.types';
+import { TOOLKIT_PERMISSIONS } from './toolkits.permissions';
 import type { ToolkitCreateInput, ToolkitUpdateInput } from './toolkits.validators';
 
 const COVER_FIELD = 'cover_media_id';
@@ -108,6 +110,8 @@ export async function create(input: ToolkitCreateInput, ctx: AuditContext): Prom
 export async function update(id: string, input: ToolkitUpdateInput, ctx: AuditContext): Promise<ToolkitDetailDto> {
   const userId = requireUser(ctx);
   const existing = loaded(await toolkitRepository.findById(id));
+  // Content Editors may edit drafts only; a published/archived toolkit requires a Publisher.
+  assertEditableByActor(ctx.authz, existing.publicationState, TOOLKIT_PERMISSIONS.publish);
 
   const coverChanging = input.cover_media_id !== undefined && input.cover_media_id !== existing.coverMediaId;
   if (coverChanging && input.cover_media_id) await assertLinkableCover(input.cover_media_id);

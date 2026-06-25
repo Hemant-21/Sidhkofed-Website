@@ -76,12 +76,64 @@ export function transaction<T>(fn: (tx: Prisma.TransactionClient) => Promise<T>)
   return prisma.$transaction(fn);
 }
 
-/** Public aggregation source: every summary for the toolkit whose event is publicly visible. */
-export async function publishedSummariesForToolkit(toolkitId: string): Promise<DistributionSummaryRow[]> {
-  return prisma.toolkitDistributionSummary.findMany({
-    where: { toolkitId, event: publicVisibilityWhere() as Prisma.EventWhereInput },
-    include: summaryInclude,
-    orderBy: { createdAt: 'asc' },
+// ── Public aggregation, computed in the database (no full-history load) ──────────
+const visibleSummaryWhere = (toolkitId: string): Prisma.ToolkitDistributionSummaryWhereInput => ({
+  toolkitId,
+  event: publicVisibilityWhere() as Prisma.EventWhereInput,
+});
+
+export interface SummaryModelGroup {
+  distributionModel: string;
+  summaryCount: number;
+  participantsCovered: number;
+}
+
+/** Per-distribution-model counts + participant sums for the toolkit's publicly-visible summaries. */
+export async function aggregateSummaryModels(toolkitId: string): Promise<SummaryModelGroup[]> {
+  const groups = await prisma.toolkitDistributionSummary.groupBy({
+    by: ['distributionModel'],
+    where: visibleSummaryWhere(toolkitId),
+    _count: { _all: true },
+    _sum: { participantsCovered: true },
+  });
+  return groups.map((g) => ({
+    distributionModel: g.distributionModel,
+    summaryCount: g._count._all,
+    participantsCovered: g._sum.participantsCovered ?? 0,
+  }));
+}
+
+export interface ItemTotalGroup {
+  toolkitItemId: string;
+  totalQuantity: Prisma.Decimal | null;
+}
+
+/** Per-item summed `total_quantity` across the toolkit's publicly-visible distribution summaries. */
+export async function aggregateItemTotals(toolkitId: string): Promise<ItemTotalGroup[]> {
+  const groups = await prisma.toolkitDistributionItem.groupBy({
+    by: ['toolkitItemId'],
+    where: { summary: visibleSummaryWhere(toolkitId) },
+    _sum: { totalQuantity: true },
+  });
+  return groups.map((g) => ({ toolkitItemId: g.toolkitItemId, totalQuantity: g._sum.totalQuantity }));
+}
+
+export interface ItemMetadata {
+  id: string;
+  nameEn: string;
+  nameHi: string | null;
+  unit: string | null;
+  distributionBasis: string;
+  displayOrder: number;
+}
+
+/** Canonical metadata for the given toolkit items, ordered for stable public output. */
+export async function itemMetadata(itemIds: string[]): Promise<ItemMetadata[]> {
+  if (itemIds.length === 0) return [];
+  return prisma.toolkitItem.findMany({
+    where: { id: { in: itemIds } },
+    select: { id: true, nameEn: true, nameHi: true, unit: true, distributionBasis: true, displayOrder: true },
+    orderBy: [{ displayOrder: 'asc' }, { nameEn: 'asc' }],
   });
 }
 
@@ -95,5 +147,7 @@ export const distributionRepository = {
   removeSummary,
   replaceItems,
   transaction,
-  publishedSummariesForToolkit,
+  aggregateSummaryModels,
+  aggregateItemTotals,
+  itemMetadata,
 };

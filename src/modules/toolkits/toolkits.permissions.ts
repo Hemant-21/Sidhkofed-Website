@@ -1,23 +1,22 @@
 /**
- * Named permission keys for the toolkits module (API spec §8). Toolkits are a publishable **P**
- * content resource; authorization reuses the shared content RBAC (maps onto the seeded `content.*`
- * set), exactly like programmes/institutions/documents. No RBAC schema change. The route layer
- * enforces these via the shared `content.*` grants (see toolkits.routes.ts).
+ * Named permission keys for the toolkits module (API spec §1.2/§8). Toolkits are a publishable
+ * **P** content resource and enforce their own module-specific permissions; the nested catalogue
+ * items carry `toolkit_items.*` CRUD keys (no publish lifecycle of their own — they follow the
+ * parent toolkit). Seeded by the RBAC catalog. Super Admin bypasses.
  */
 export const TOOLKIT_PERMISSIONS = {
   view: 'toolkits.view',
   create: 'toolkits.create',
   update: 'toolkits.update',
   publish: 'toolkits.publish',
+  unpublish: 'toolkits.unpublish',
   archive: 'toolkits.archive',
   restore: 'toolkits.restore',
 } as const;
 
-export const TOOLKIT_PERMISSION_TO_CONTENT: Record<string, string> = {
-  'toolkits.view': 'masters.view',
-  'toolkits.create': 'content.create',
-  'toolkits.update': 'content.update',
-  'toolkits.publish': 'content.publish',
-  'toolkits.archive': 'content.archive',
-  'toolkits.restore': 'content.restore',
-};
+export const TOOLKIT_ITEM_PERMISSIONS = {
+  view: 'toolkit_items.view',
+  create: 'toolkit_items.create',
+  update: 'toolkit_items.update',
+  delete: 'toolkit_items.delete',
+} as const;

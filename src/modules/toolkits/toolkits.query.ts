@@ -4,13 +4,19 @@
  */
 import type { Request } from 'express';
 import { resolveOrdering } from '@/shared/listing';
-import { parsePublicationState, parseBooleanFlag, parseSearch } from '@/shared/list-query';
+import { parsePublicationState, parseBooleanFlag, parseSearch, assertKnownQueryKeys } from '@/shared/list-query';
 import { TOOLKIT_ORDERING_FIELDS, type ToolkitFilters, type ToolkitOrderingField } from './toolkits.types';
 
 const str = (v: unknown): string | undefined => (typeof v === 'string' && v.trim() !== '' ? v.trim() : undefined);
 
+// Allow-listed filter keys (API spec §6: toolkit filters commodity, programme). `publication_state`
+// is admin-only. Plus the common page/page_size/ordering/search keys.
+const PUBLIC_FILTER_KEYS = ['commodity', 'programme', 'show_on_homepage'] as const;
+const ADMIN_FILTER_KEYS = [...PUBLIC_FILTER_KEYS, 'publication_state'] as const;
+
 export function parseToolkitFilters(req: Request, opts: { admin: boolean }): ToolkitFilters {
   const q = req.query;
+  assertKnownQueryKeys(q, opts.admin ? ADMIN_FILTER_KEYS : PUBLIC_FILTER_KEYS);
   const filters: ToolkitFilters = {
     commodity: str(q.commodity),
     programme: str(q.programme),

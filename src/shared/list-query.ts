@@ -62,3 +62,22 @@ export function parseSearch(value: unknown): string | undefined {
   const raw = firstString(value);
   return raw ? raw.trim() : undefined;
 }
+
+/** Pagination keys every list endpoint accepts (validated by resolvePageParams). */
+export const COMMON_LIST_QUERY_KEYS = ['page', 'page_size', 'ordering', 'search'] as const;
+
+/**
+ * Reject unknown query parameters with a `422` (API spec §1.4: "Reject unknown filters and
+ * ordering values with 422; do not pass arbitrary client fields to Prisma"). Pass the endpoint's
+ * filter keys; the four common pagination/search keys are always allowed. Unknown keys are
+ * reported together so the client sees every offending parameter at once.
+ */
+export function assertKnownQueryKeys(query: Record<string, unknown>, allowedFilterKeys: readonly string[]): void {
+  const allowed = new Set<string>([...COMMON_LIST_QUERY_KEYS, ...allowedFilterKeys]);
+  const unknown = Object.keys(query).filter((k) => !allowed.has(k));
+  if (unknown.length > 0) {
+    const fields: FieldErrors = {};
+    for (const key of unknown) fields[key] = ['Unknown query parameter.'];
+    throw new ValidationError(fields, `Unknown query parameter(s): ${unknown.join(', ')}.`);
+  }
+}

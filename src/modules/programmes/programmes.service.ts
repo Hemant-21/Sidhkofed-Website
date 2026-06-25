@@ -4,9 +4,10 @@
  * (transactional), cover media-usage tracking, audit, and public-cache invalidation. Cross-module
  * work goes through services only (mediaService / mediaUsageService / auditService).
  */
-import { NotFoundError, ValidationError } from '@/shared/errors';
+import { NotFoundError, ValidationError, ConflictError } from '@/shared/errors';
 import { uniqueSlug } from '@/utils/slug';
 import { applyLifecycle, lifecycleEvent, type LifecycleAction } from '@/shared/publishing';
+import { assertEditableByActor } from '@/shared/content-guard';
 import { cacheService } from '@/services/cache';
 import { auditService, type AuditContext } from '@/modules/audit/audit.service';
 import { mediaService } from '@/modules/media/media.service';
@@ -22,6 +23,7 @@ import {
   type PublicProgrammeDetailDto,
 } from './programmes.dto';
 import { PROGRAMME_ENTITY, type ProgrammeFilters, type ProgrammeOrderingField } from './programmes.types';
+import { PROGRAMME_PERMISSIONS } from './programmes.permissions';
 import type { ProgrammeCreateInput, ProgrammeUpdateInput } from './programmes.validators';
 
 const COVER_FIELD = 'cover_media_id';
@@ -59,6 +61,10 @@ async function assertReferencesValid(refs: Parameters<typeof programmeRepository
 // ── Create ────────────────────────────────────────────────────────────────────
 export async function create(input: ProgrammeCreateInput, ctx: AuditContext): Promise<ProgrammeDetailDto> {
   const userId = requireUser(ctx);
+  // Duplicate-name validation (codex §4.2) — case-insensitive, independent of slug uniqueness.
+  if (await programmeRepository.nameExists(input.title_en, undefined)) {
+    throw new ConflictError(`A programme named "${input.title_en.trim()}" already exists.`);
+  }
   if (input.cover_media_id) await assertLinkableCover(input.cover_media_id);
   await assertReferencesValid({
     commodityIds: input.commodity_ids,
@@ -124,6 +130,13 @@ export async function create(input: ProgrammeCreateInput, ctx: AuditContext): Pr
 export async function update(id: string, input: ProgrammeUpdateInput, ctx: AuditContext): Promise<ProgrammeDetailDto> {
   const userId = requireUser(ctx);
   const existing = loaded(await programmeRepository.findById(id));
+  // Content Editors may edit drafts only; a published/archived programme requires a Publisher.
+  assertEditableByActor(ctx.authz, existing.publicationState, PROGRAMME_PERMISSIONS.publish);
+
+  // Duplicate-name validation on rename (codex §4.2), excluding this record.
+  if (input.title_en !== undefined && (await programmeRepository.nameExists(input.title_en, id))) {
+    throw new ConflictError(`A programme named "${input.title_en.trim()}" already exists.`);
+  }
 
   const coverChanging = input.cover_media_id !== undefined && input.cover_media_id !== existing.coverMediaId;
   if (coverChanging && input.cover_media_id) await assertLinkableCover(input.cover_media_id);

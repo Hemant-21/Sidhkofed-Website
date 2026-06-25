@@ -80,6 +80,23 @@ export async function slugExists(slug: string, db: Db = prisma): Promise<boolean
   return (await db.programmeScheme.count({ where: { slug } })) > 0;
 }
 
+/**
+ * Case-insensitive duplicate `title_en` check (codex §4.2 "Duplicate-name validation required").
+ * Slug uniqueness is insufficient — the slugger de-duplicates by appending a suffix, so two
+ * programmes named "Health Scheme" would both be created. `excludeId` skips the record being
+ * updated. Compares trimmed titles via Postgres case-insensitive equality.
+ */
+export async function nameExists(titleEn: string, excludeId: string | undefined, db: Db = prisma): Promise<boolean> {
+  return (
+    (await db.programmeScheme.count({
+      where: {
+        titleEn: { equals: titleEn.trim(), mode: 'insensitive' },
+        ...(excludeId ? { id: { not: excludeId } } : {}),
+      },
+    })) > 0
+  );
+}
+
 export async function create(data: Prisma.ProgrammeSchemeUncheckedCreateInput, db: Db = prisma): Promise<ProgrammeRow> {
   return db.programmeScheme.create({ data, include: programmeInclude });
 }
@@ -165,6 +182,7 @@ async function assertActiveSet(
 
 export const programmeRepository = {
   slugExists,
+  nameExists,
   create,
   findById,
   findBySlug,

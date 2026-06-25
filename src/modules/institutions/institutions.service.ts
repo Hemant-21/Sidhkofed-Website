@@ -7,9 +7,10 @@
  * Cross-module dependencies go through SERVICES only (mediaService / mediaUsageService /
  * auditService) — never another module's repository (dependency-graph cross-module rule).
  */
-import { NotFoundError, ValidationError } from '@/shared/errors';
+import { NotFoundError, ValidationError, ConflictError } from '@/shared/errors';
 import { uniqueSlug } from '@/utils/slug';
 import { applyLifecycle, lifecycleEvent, type LifecycleAction } from '@/shared/publishing';
+import { assertEditableByActor } from '@/shared/content-guard';
 import { cacheService } from '@/services/cache';
 import { auditService, type AuditContext } from '@/modules/audit/audit.service';
 import { mediaService } from '@/modules/media/media.service';
@@ -25,10 +26,15 @@ import {
   type PublicInstitutionDetailDto,
 } from './institutions.dto';
 import { INSTITUTION_ENTITY, type InstitutionFilters, type InstitutionOrderingField } from './institutions.types';
+import { INSTITUTION_PERMISSIONS, INSTITUTION_PERMISSION_TO_CONTENT } from './institutions.permissions';
 import type { InstitutionCreateInput, InstitutionUpdateInput } from './institutions.validators';
 
 const LOGO_FIELD = 'logo_media_id';
 const PUBLIC_CACHE_PREFIX = 'institutions:public';
+// The publish permission an actor actually holds. Institution routes gate on the SEEDED generic
+// `content.*` set (institutions.permissions.ts), so the content-guard must compare against the
+// mapped `content.publish` key — the logical `institutions.publish` is never on `authz.permissions`.
+const PUBLISH_PERMISSION = INSTITUTION_PERMISSION_TO_CONTENT[INSTITUTION_PERMISSIONS.publish] ?? 'content.publish';
 
 function loaded(row: InstitutionRow | null): InstitutionRow {
   if (!row) throw new NotFoundError('Institution not found.');
@@ -67,6 +73,10 @@ async function assertReferencesValid(refs: Parameters<typeof institutionReposito
 // ── Create ────────────────────────────────────────────────────────────────────
 export async function create(input: InstitutionCreateInput, ctx: AuditContext): Promise<InstitutionDetailDto> {
   const userId = requireUser(ctx);
+  // Duplicate-name prevention (Issue 4) — case-insensitive + trimmed, independent of slug uniqueness.
+  if (await institutionRepository.nameExists(input.name_en, undefined)) {
+    throw new ConflictError(`An institution named "${input.name_en.trim()}" already exists.`);
+  }
   if (input.logo_media_id) await assertLinkableLogo(input.logo_media_id);
   await assertReferencesValid({ institutionTypeId: input.institution_type_id, districtId: input.district_id ?? null });
 
@@ -118,6 +128,13 @@ export async function create(input: InstitutionCreateInput, ctx: AuditContext): 
 export async function update(id: string, input: InstitutionUpdateInput, ctx: AuditContext): Promise<InstitutionDetailDto> {
   const userId = requireUser(ctx);
   const existing = loaded(await institutionRepository.findById(id));
+  // Content Editors may edit drafts only; a published/archived institution requires a Publisher (Issue 3).
+  assertEditableByActor(ctx.authz, existing.publicationState, PUBLISH_PERMISSION);
+
+  // Duplicate-name prevention on rename (Issue 4), excluding this record.
+  if (input.name_en !== undefined && (await institutionRepository.nameExists(input.name_en, id))) {
+    throw new ConflictError(`An institution named "${input.name_en.trim()}" already exists.`);
+  }
 
   const logoChanging = input.logo_media_id !== undefined && input.logo_media_id !== existing.logoMediaId;
   if (logoChanging && input.logo_media_id) await assertLinkableLogo(input.logo_media_id);

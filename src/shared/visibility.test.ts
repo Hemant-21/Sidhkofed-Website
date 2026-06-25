@@ -1,6 +1,6 @@
 /** Unit tests — shared public-visibility predicate (scheduled-publishing gate). */
 import { describe, it, expect } from 'vitest';
-import { publicVisibilityWhere } from './visibility';
+import { publicVisibilityWhere, isPubliclyVisible, type VisibilityFields } from './visibility';
 
 describe('publicVisibilityWhere', () => {
   it('requires published + public + not archived + publish window', () => {
@@ -26,5 +26,32 @@ describe('publicVisibilityWhere', () => {
     const where = publicVisibilityWhere();
     const lte = (where.OR as Array<{ publishStartAt?: { lte?: Date } }>)[1].publishStartAt?.lte as Date;
     expect(lte.getTime()).toBeGreaterThanOrEqual(before);
+  });
+});
+
+describe('isPubliclyVisible', () => {
+  const now = new Date('2026-06-25T00:00:00Z');
+  const base: VisibilityFields = {
+    publicationState: 'published',
+    publicVisibility: true,
+    archivedAt: null,
+    publishStartAt: null,
+  };
+
+  it('passes a published, visible, non-archived, due record', () => {
+    expect(isPubliclyVisible(base, now)).toBe(true);
+    expect(isPubliclyVisible({ ...base, publishStartAt: new Date('2026-06-01T00:00:00Z') }, now)).toBe(true);
+  });
+
+  it('rejects draft / unpublished / archived state', () => {
+    expect(isPubliclyVisible({ ...base, publicationState: 'draft' }, now)).toBe(false);
+    expect(isPubliclyVisible({ ...base, publicationState: 'unpublished' }, now)).toBe(false);
+    expect(isPubliclyVisible({ ...base, publicationState: 'archived' }, now)).toBe(false);
+  });
+
+  it('rejects public_visibility=false, archived, or a future publish window', () => {
+    expect(isPubliclyVisible({ ...base, publicVisibility: false }, now)).toBe(false);
+    expect(isPubliclyVisible({ ...base, archivedAt: new Date('2026-06-20T00:00:00Z') }, now)).toBe(false);
+    expect(isPubliclyVisible({ ...base, publishStartAt: new Date('2026-12-01T00:00:00Z') }, now)).toBe(false);
   });
 });

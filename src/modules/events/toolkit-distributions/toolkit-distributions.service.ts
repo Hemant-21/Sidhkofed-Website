@@ -8,6 +8,7 @@
 import { Prisma } from '@prisma/client';
 import { NotFoundError, ConflictError, ValidationError } from '@/shared/errors';
 import { cacheService } from '@/services/cache';
+import { assertEditableByActor } from '@/shared/content-guard';
 import { auditService, type AuditContext } from '@/modules/audit/audit.service';
 import { eventService } from '../events.service';
 import { toolkitService } from '@/modules/toolkits/toolkits.service';
@@ -24,6 +25,15 @@ import type { DistributionCreateInput, DistributionUpdateInput, DistributionItem
 
 const ENTITY = 'toolkit_distribution_summary';
 
+/**
+ * Canonical Training event-type identifier. Toolkit distribution is a training-level summary
+ * (CMS requirements §4.1/§4.3) and may only attach to Training events. Events are classified by
+ * their event-type *slug* throughout the codebase (e.g. events list `?event_type=training`); the
+ * slug is the stable, seed-derived key ('Training' → `training`). We match on it rather than a
+ * hardcoded UUID so the rule survives reseeding and stays consistent with the rest of the module.
+ */
+const TRAINING_EVENT_TYPE_SLUG = 'training';
+
 async function invalidateToolkitCache(): Promise<void> {
   await cacheService.delByPrefix('toolkits:public:');
 }
@@ -35,6 +45,24 @@ function requireUser(ctx: AuditContext): string {
 
 async function assertEventExists(eventId: string): Promise<void> {
   await eventService.getById(eventId); // throws NotFoundError when missing
+}
+
+/**
+ * Load the parent event once (404 when missing) and enforce, in order:
+ *   1. The event is a Training event — toolkit distribution is a training-level summary and must
+ *      not attach to Meeting / Conference / MoU / Procurement / any other event type. Rejected with
+ *      409 Conflict, matching this service's existing business-rule convention (duplicate summary).
+ *   2. A Content Editor may only mutate distributions while the event is a draft; a published/
+ *      archived event requires a Publisher (shared `content.publish` lifecycle grant). API spec §1.2.
+ *
+ * A single `eventService.getById` lookup backs both checks (no duplicate event reads).
+ */
+async function assertEventEditable(eventId: string, ctx: AuditContext): Promise<void> {
+  const event = await eventService.getById(eventId); // throws NotFoundError when missing
+  if (event.event_type.slug !== TRAINING_EVENT_TYPE_SLUG) {
+    throw new ConflictError('Toolkit distribution can only be recorded on a Training event.');
+  }
+  assertEditableByActor(ctx.authz, event.publication_state, 'content.publish');
 }
 
 function loaded(row: DistributionSummaryRow | null): DistributionSummaryRow {
@@ -88,7 +116,7 @@ export async function getById(eventId: string, id: string): Promise<Distribution
 
 export async function create(eventId: string, input: DistributionCreateInput, ctx: AuditContext): Promise<DistributionSummaryDto> {
   const userId = requireUser(ctx);
-  await assertEventExists(eventId);
+  await assertEventEditable(eventId, ctx);
   await toolkitService.assertLinkable(input.toolkit_id);
   if (await distributionRepository.existsForEventToolkit(eventId, input.toolkit_id)) {
     throw new ConflictError('A distribution summary for this toolkit already exists on this event.');
@@ -127,7 +155,7 @@ export async function update(
   ctx: AuditContext,
 ): Promise<DistributionSummaryDto> {
   const userId = requireUser(ctx);
-  await assertEventExists(eventId);
+  await assertEventEditable(eventId, ctx);
   const existing = loaded(await distributionRepository.findByIdForEvent(id, eventId));
 
   const itemRows = input.items !== undefined ? await buildItemRows(existing.toolkitId, input.items) : undefined;
@@ -155,7 +183,7 @@ export async function update(
 }
 
 export async function remove(eventId: string, id: string, ctx: AuditContext): Promise<void> {
-  await assertEventExists(eventId);
+  await assertEventEditable(eventId, ctx);
   const existing = loaded(await distributionRepository.findByIdForEvent(id, eventId));
   await distributionRepository.removeSummary(id);
   await auditService.delete(ctx, ENTITY, id, { event_id: eventId, toolkit_id: existing.toolkitId });
@@ -163,9 +191,11 @@ export async function remove(eventId: string, id: string, ctx: AuditContext): Pr
 }
 
 /**
- * Public cross-event aggregation for a toolkit (summary figures only). Sums item totals and
- * participant counts across every summary whose event is publicly visible; the caller supplies the
- * already-resolved public toolkit reference.
+ * Public cross-event aggregation for a toolkit (summary figures only). Computed entirely in the
+ * database — two grouped aggregates (per-model summary counts/participants, and per-item summed
+ * totals) plus one metadata lookup — so the full distribution history is never loaded into memory
+ * (Issue 11). The caller supplies the already-resolved public toolkit reference; the API shape is
+ * unchanged.
  */
 export async function aggregateForToolkit(toolkit: {
   id: string;
@@ -173,45 +203,43 @@ export async function aggregateForToolkit(toolkit: {
   titleEn: string;
   titleHi: string | null;
 }): Promise<PublicDistributionSummaryDto> {
-  const rows = await distributionRepository.publishedSummariesForToolkit(toolkit.id);
+  const [modelGroups, itemTotals] = await Promise.all([
+    distributionRepository.aggregateSummaryModels(toolkit.id),
+    distributionRepository.aggregateItemTotals(toolkit.id),
+  ]);
 
   const breakdown: Record<string, number> = {};
+  let eventsCount = 0;
   let participants = 0;
-  let grandTotal = new Prisma.Decimal(0);
-  const itemMap = new Map<string, { item: PublicDistributionItemSummary; total: Prisma.Decimal }>();
-
-  for (const summary of rows) {
-    breakdown[summary.distributionModel] = (breakdown[summary.distributionModel] ?? 0) + 1;
-    participants += summary.participantsCovered ?? 0;
-    for (const line of summary.items) {
-      const lineTotal = line.totalQuantity ?? new Prisma.Decimal(0);
-      grandTotal = grandTotal.plus(lineTotal);
-      const existing = itemMap.get(line.toolkitItemId);
-      if (existing) {
-        existing.total = existing.total.plus(lineTotal);
-      } else {
-        itemMap.set(line.toolkitItemId, {
-          item: {
-            id: line.toolkitItemId,
-            name_en: line.toolkitItem.nameEn,
-            name_hi: line.toolkitItem.nameHi,
-            unit: line.toolkitItem.unit,
-            distribution_basis: line.distributionBasis,
-            total_quantity: 0,
-          },
-          total: new Prisma.Decimal(lineTotal),
-        });
-      }
-    }
+  for (const g of modelGroups) {
+    breakdown[g.distributionModel] = g.summaryCount;
+    eventsCount += g.summaryCount;
+    participants += g.participantsCovered;
   }
 
-  const items = [...itemMap.values()].map(({ item, total }) => ({ ...item, total_quantity: Number(total) }));
+  // Resolve canonical item metadata for the aggregated items (bounded by distinct item count).
+  const totalByItem = new Map(itemTotals.map((t) => [t.toolkitItemId, t.totalQuantity]));
+  const metadata = await distributionRepository.itemMetadata([...totalByItem.keys()]);
+
+  let grandTotal = new Prisma.Decimal(0);
+  const items: PublicDistributionItemSummary[] = metadata.map((m) => {
+    const total = totalByItem.get(m.id) ?? new Prisma.Decimal(0);
+    grandTotal = grandTotal.plus(total);
+    return {
+      id: m.id,
+      name_en: m.nameEn,
+      name_hi: m.nameHi,
+      unit: m.unit,
+      distribution_basis: m.distributionBasis,
+      total_quantity: Number(total),
+    };
+  });
 
   return {
     toolkit: { id: toolkit.id, slug: toolkit.slug, title_en: toolkit.titleEn, title_hi: toolkit.titleHi },
     distribution_model_breakdown: breakdown,
     total_participants_covered: participants,
-    events_count: rows.length,
+    events_count: eventsCount,
     items,
     total_quantity: Number(grandTotal),
   };

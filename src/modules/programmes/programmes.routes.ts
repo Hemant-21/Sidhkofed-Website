@@ -11,6 +11,7 @@ import { uuidParam } from '@/middleware/validate-params';
 import { ROLE_KEYS } from '@/modules/auth/auth.permissions';
 import { programmeController } from './programmes.controller';
 import { programmePublicController } from './programmes.public.controller';
+import { PROGRAMME_PERMISSIONS as P } from './programmes.permissions';
 
 const readers = [ROLE_KEYS.superAdmin, ROLE_KEYS.contentEditor, ROLE_KEYS.publisher];
 
@@ -19,14 +20,14 @@ programmeAdminRouter.param('id', uuidParam);
 programmeAdminRouter.use(authenticate);
 
 programmeAdminRouter.get('/', authorize(readers), programmeController.list);
-programmeAdminRouter.post('/', authorizeAnyPermission(['content.create', 'content.update']), programmeController.create);
+programmeAdminRouter.post('/', authorizeAnyPermission([P.create, P.update]), programmeController.create);
 programmeAdminRouter.get('/:id', authorize(readers), programmeController.detail);
-programmeAdminRouter.patch('/:id', authorizePermissions(['content.update']), programmeController.patch);
+programmeAdminRouter.patch('/:id', authorizePermissions([P.update]), programmeController.patch);
 
-programmeAdminRouter.post('/:id/publish', authorizePermissions(['content.publish']), programmeController.publish);
-programmeAdminRouter.post('/:id/unpublish', authorizePermissions(['content.unpublish']), programmeController.unpublish);
-programmeAdminRouter.post('/:id/archive', authorizePermissions(['content.archive']), programmeController.archive);
-programmeAdminRouter.post('/:id/restore', authorizePermissions(['content.restore']), programmeController.restore);
+programmeAdminRouter.post('/:id/publish', authorizePermissions([P.publish]), programmeController.publish);
+programmeAdminRouter.post('/:id/unpublish', authorizePermissions([P.unpublish]), programmeController.unpublish);
+programmeAdminRouter.post('/:id/archive', authorizePermissions([P.archive]), programmeController.archive);
+programmeAdminRouter.post('/:id/restore', authorizePermissions([P.restore]), programmeController.restore);
 
 export const programmePublicRouter = Router();
 programmePublicRouter.get('/', programmePublicController.list);

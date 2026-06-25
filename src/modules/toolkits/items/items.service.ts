@@ -7,8 +7,10 @@
 import { Prisma } from '@prisma/client';
 import { NotFoundError, ConflictError, ValidationError, ProtectedRecordError } from '@/shared/errors';
 import { cacheService } from '@/services/cache';
+import { assertEditableByActor } from '@/shared/content-guard';
 import { auditService, type AuditContext } from '@/modules/audit/audit.service';
 import { toolkitService } from '../toolkits.service';
+import { TOOLKIT_PERMISSIONS } from '../toolkits.permissions';
 import { toolkitItemRepository } from './items.repository';
 import { toToolkitItemDto, type ToolkitItemDto } from './items.dto';
 import type { ToolkitItemCreateInput, ToolkitItemUpdateInput } from './items.validators';
@@ -21,6 +23,15 @@ async function invalidateToolkitCache(): Promise<void> {
 
 async function assertToolkitExists(toolkitId: string): Promise<void> {
   await toolkitService.getRowById(toolkitId); // throws 404 when missing
+}
+
+/**
+ * Load the parent toolkit (404 when missing) and enforce that a Content Editor may only mutate
+ * items while the parent is a draft (API spec §8: "a publisher manages published parent items").
+ */
+async function assertParentEditable(toolkitId: string, ctx: AuditContext): Promise<void> {
+  const toolkit = await toolkitService.getRowById(toolkitId); // throws 404 when missing
+  assertEditableByActor(ctx.authz, toolkit.publicationState, TOOLKIT_PERMISSIONS.publish);
 }
 
 function dec(v: number | null | undefined): Prisma.Decimal | null | undefined {
@@ -43,7 +54,7 @@ export async function getById(toolkitId: string, itemId: string): Promise<Toolki
 }
 
 export async function create(toolkitId: string, input: ToolkitItemCreateInput, ctx: AuditContext): Promise<ToolkitItemDto> {
-  await assertToolkitExists(toolkitId);
+  await assertParentEditable(toolkitId, ctx);
   if (await toolkitItemRepository.nameExists(toolkitId, input.name_en, undefined)) {
     throw new ConflictError(`A toolkit item named "${input.name_en}" already exists in this toolkit.`);
   }
@@ -72,7 +83,7 @@ export async function update(
   input: ToolkitItemUpdateInput,
   ctx: AuditContext,
 ): Promise<ToolkitItemDto> {
-  await assertToolkitExists(toolkitId);
+  await assertParentEditable(toolkitId, ctx);
   const existing = await toolkitItemRepository.findByIdForToolkit(itemId, toolkitId);
   if (!existing) throw new NotFoundError('Toolkit item not found.');
 
@@ -106,7 +117,7 @@ export async function update(
 }
 
 export async function remove(toolkitId: string, itemId: string, ctx: AuditContext): Promise<void> {
-  await assertToolkitExists(toolkitId);
+  await assertParentEditable(toolkitId, ctx);
   const existing = await toolkitItemRepository.findByIdForToolkit(itemId, toolkitId);
   if (!existing) throw new NotFoundError('Toolkit item not found.');
   // Delete-protection is the DB FK contract: toolkit_distribution_items.toolkit_item_id is

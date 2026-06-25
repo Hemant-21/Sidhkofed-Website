@@ -74,6 +74,22 @@ export async function slugExists(slug: string, db: Db = prisma): Promise<boolean
   return (await db.institution.count({ where: { slug } })) > 0;
 }
 
+/**
+ * Case-insensitive, trimmed duplicate-name detection (Issue 4). Returns true when another
+ * institution already carries `nameEn` (ignoring surrounding whitespace and letter case). Pass
+ * `excludeId` on update so a record never collides with itself. Independent of slug uniqueness.
+ */
+export async function nameExists(nameEn: string, excludeId: string | undefined, db: Db = prisma): Promise<boolean> {
+  return (
+    (await db.institution.count({
+      where: {
+        nameEn: { equals: nameEn.trim(), mode: 'insensitive' },
+        ...(excludeId ? { id: { not: excludeId } } : {}),
+      },
+    })) > 0
+  );
+}
+
 export async function create(data: Prisma.InstitutionUncheckedCreateInput, db: Db = prisma): Promise<InstitutionRow> {
   return db.institution.create({ data, include: institutionInclude });
 }
@@ -138,6 +154,7 @@ export async function validateReferences(refs: InstitutionRefs): Promise<Record<
 
 export const institutionRepository = {
   slugExists,
+  nameExists,
   create,
   findById,
   findBySlug,

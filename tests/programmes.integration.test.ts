@@ -153,4 +153,37 @@ describe.skipIf(!RUN)('programmes (integration)', () => {
     const ids = (res.body.data as Array<{ id: string }>).map((p) => p.id);
     expect(ids).toContain(created.programmeId);
   });
+
+  // ── Issue 9: case-insensitive duplicate-name prevention (codex §4.2) ──────────
+  it('rejects a duplicate programme name (case-insensitive) with 409', async () => {
+    const res = await request(app)
+      .post('/api/v1/admin/programmes')
+      .set('Authorization', `Bearer ${editorToken}`)
+      .send({ title_en: `mfp value chain ${STAMP}`.toUpperCase() });
+    expect(res.status).toBe(409);
+  });
+
+  // ── Issue 6: Content Editors may not modify published content; Publishers may ──
+  it('forbids a Content Editor from editing the now-published programme (403)', async () => {
+    const res = await request(app)
+      .patch(`/api/v1/admin/programmes/${created.programmeId}`)
+      .set('Authorization', `Bearer ${editorToken}`)
+      .send({ summary_en: 'editor edit attempt' });
+    expect(res.status).toBe(403);
+  });
+
+  it('lets a Publisher edit the published programme (200)', async () => {
+    const res = await request(app)
+      .patch(`/api/v1/admin/programmes/${created.programmeId}`)
+      .set('Authorization', `Bearer ${publisherToken}`)
+      .send({ summary_en: 'publisher edit' });
+    expect(res.status).toBe(200);
+    expect(res.body.data.summary_en).toBe('publisher edit');
+  });
+
+  // ── Issue 8: unknown query parameters are rejected with 422 ──────────────────
+  it('rejects an unknown query parameter with 422', async () => {
+    const res = await request(app).get('/api/v1/public/programmes?bogus=1');
+    expect(res.status).toBe(422);
+  });
 });

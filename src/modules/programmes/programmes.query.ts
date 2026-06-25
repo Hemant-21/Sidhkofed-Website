@@ -5,10 +5,15 @@
 import type { Request } from 'express';
 import { resolveOrdering } from '@/shared/listing';
 import { ValidationError } from '@/shared/errors';
-import { parsePublicationState, parseBooleanFlag } from '@/shared/list-query';
+import { parsePublicationState, parseBooleanFlag, assertKnownQueryKeys } from '@/shared/list-query';
 import { PROGRAMME_ORDERING_FIELDS, type ProgrammeFilters, type ProgrammeOrderingField } from './programmes.types';
 
 const str = (v: unknown): string | undefined => (typeof v === 'string' && v.trim() !== '' ? v.trim() : undefined);
+
+// Allow-listed filter keys (besides the common page/page_size/ordering/search). `publication_state`
+// is admin-only. API spec §6 (programmes public filters: commodity, programme, year).
+const PUBLIC_FILTER_KEYS = ['commodity', 'show_on_homepage', 'year'] as const;
+const ADMIN_FILTER_KEYS = [...PUBLIC_FILTER_KEYS, 'publication_state'] as const;
 
 function yearOf(v: unknown): number | undefined {
   const s = str(v);
@@ -20,6 +25,7 @@ function yearOf(v: unknown): number | undefined {
 
 export function parseProgrammeFilters(req: Request, opts: { admin: boolean }): ProgrammeFilters {
   const q = req.query;
+  assertKnownQueryKeys(q, opts.admin ? ADMIN_FILTER_KEYS : PUBLIC_FILTER_KEYS);
   const filters: ProgrammeFilters = {
     commodity: str(q.commodity),
     showOnHomepage: parseBooleanFlag(q.show_on_homepage, 'show_on_homepage'),

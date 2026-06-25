@@ -38,10 +38,36 @@ export interface PermissionSeed {
   description: string;
 }
 
+/** Build the seven publishing-lifecycle permissions for a publishable content module. */
+function moduleContentPermissions(module: string, label: string): PermissionSeed[] {
+  const actions: Array<[string, string]> = [
+    ['view', `Read ${label} records.`],
+    ['create', `Create draft ${label} records.`],
+    ['update', `Edit ${label} records.`],
+    ['publish', `Publish ${label} records.`],
+    ['unpublish', `Unpublish ${label} records.`],
+    ['archive', `Archive ${label} records.`],
+    ['restore', `Restore archived ${label} records.`],
+  ];
+  return actions.map(([action, description]) => ({ key: `${module}.${action}`, module, action, description }));
+}
+
+/** Build view/create/update/delete permissions for a nested (non-publishable) resource. */
+function moduleCrudPermissions(module: string, label: string): PermissionSeed[] {
+  const actions: Array<[string, string]> = [
+    ['view', `Read ${label} records.`],
+    ['create', `Create ${label} records.`],
+    ['update', `Edit ${label} records.`],
+    ['delete', `Delete ${label} records.`],
+  ];
+  return actions.map(([action, description]) => ({ key: `${module}.${action}`, module, action, description }));
+}
+
 /**
- * Permission catalog. `content.*` are the publishing-lifecycle actions every content
- * module shares; `users.manage`/`settings.manage` are the administration grants
- * (requirements §7 "manage users" / "manage settings").
+ * Permission catalog. `content.*` are the publishing-lifecycle actions the remaining content
+ * modules share; the Phase-7 modules (programmes/toolkits/toolkit_items/toolkit_distributions)
+ * carry their own module-specific keys (see below). `users.manage`/`settings.manage` are the
+ * administration grants (requirements §7 "manage users" / "manage settings").
  */
 export const PERMISSIONS: PermissionSeed[] = [
   { key: 'content.create', module: 'content', action: 'create', description: 'Create draft content.' },
@@ -60,6 +86,15 @@ export const PERMISSIONS: PermissionSeed[] = [
   { key: 'masters.activate', module: 'masters', action: 'activate', description: 'Activate master records.' },
   { key: 'masters.deactivate', module: 'masters', action: 'deactivate', description: 'Deactivate master records.' },
   { key: 'masters.restore', module: 'masters', action: 'restore', description: 'Restore (re-activate) master records.' },
+  // ── Phase 7 module-specific content permissions (API spec §1.2/§8 — "every protected
+  // endpoint checks the named permission (events.create, …)"; the seeder creates a
+  // module/action permission for each row). These four modules enforce their own named
+  // keys instead of the generic `content.*` set. Super Admin still bypasses all checks.
+  ...moduleContentPermissions('programmes', 'Programme'),
+  ...moduleContentPermissions('toolkits', 'Toolkit'),
+  // Nested resources have no publish lifecycle of their own (they follow the parent toolkit).
+  ...moduleCrudPermissions('toolkit_items', 'Toolkit item'),
+  ...moduleCrudPermissions('toolkit_distributions', 'Toolkit distribution summary'),
 ];
 
 /**
@@ -67,7 +102,26 @@ export const PERMISSIONS: PermissionSeed[] = [
  * seeded with EVERY permission and is also treated as an allow-all wildcard in code, so
  * new modules are covered without re-seeding.
  */
+// Editors create/edit drafts (and manage nested draft-parent items/distributions);
+// publishers run the publish lifecycle plus edits. Listed per Phase-7 module so the
+// module-specific guards resolve exactly as the generic `content.*` baseline did.
+const EDITOR_MODULE_GRANTS = [
+  'programmes.view', 'programmes.create', 'programmes.update',
+  'toolkits.view', 'toolkits.create', 'toolkits.update',
+  'toolkit_items.view', 'toolkit_items.create', 'toolkit_items.update', 'toolkit_items.delete',
+  'toolkit_distributions.view', 'toolkit_distributions.create', 'toolkit_distributions.update', 'toolkit_distributions.delete',
+];
+const PUBLISHER_MODULE_GRANTS = [
+  'programmes.view', 'programmes.update', 'programmes.publish', 'programmes.unpublish', 'programmes.archive', 'programmes.restore',
+  'toolkits.view', 'toolkits.update', 'toolkits.publish', 'toolkits.unpublish', 'toolkits.archive', 'toolkits.restore',
+  'toolkit_items.view', 'toolkit_items.create', 'toolkit_items.update', 'toolkit_items.delete',
+  'toolkit_distributions.view', 'toolkit_distributions.create', 'toolkit_distributions.update', 'toolkit_distributions.delete',
+];
+
 export const ROLE_PERMISSIONS: Record<Exclude<RoleKey, 'super_admin'>, string[]> = {
-  content_editor: ['content.create', 'content.update', 'masters.view'],
-  publisher: ['content.publish', 'content.unpublish', 'content.archive', 'content.restore', 'content.update', 'masters.view'],
+  content_editor: ['content.create', 'content.update', 'masters.view', ...EDITOR_MODULE_GRANTS],
+  publisher: [
+    'content.publish', 'content.unpublish', 'content.archive', 'content.restore', 'content.update', 'masters.view',
+    ...PUBLISHER_MODULE_GRANTS,
+  ],
 };

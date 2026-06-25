@@ -30,7 +30,12 @@ const created: {
   eventId?: string; // completed flow
   cancelEventId?: string;
   newsId?: string;
-} = { users: [] };
+  // Issue 2 — linked-visibility regression fixtures.
+  visInstitutionTypeId?: string;
+  visEventId?: string;
+  visInstitutionIds: string[];
+  visProgrammeIds: string[];
+} = { users: [], visInstitutionIds: [], visProgrammeIds: [] };
 
 async function login(email: string): Promise<string> {
   const res = await request(app).post('/api/v1/auth/login').send({ email, password: PASSWORD });
@@ -117,6 +122,11 @@ describe.skipIf(!RUN)('events + news (integration)', () => {
   afterAll(async () => {
     if (!prisma) return;
     if (created.newsId) await prisma.eventNews.delete({ where: { id: created.newsId } }).catch(() => undefined);
+    if (created.visEventId) await prisma.event.delete({ where: { id: created.visEventId } }).catch(() => undefined); // cascades junctions
+    for (const id of created.visInstitutionIds) await prisma.institution.delete({ where: { id } }).catch(() => undefined);
+    for (const id of created.visProgrammeIds) await prisma.programmeScheme.delete({ where: { id } }).catch(() => undefined);
+    if (created.visInstitutionTypeId)
+      await prisma.institutionType.delete({ where: { id: created.visInstitutionTypeId } }).catch(() => undefined);
     for (const id of [created.eventId, created.cancelEventId]) {
       if (id) {
         await prisma.eventNews.deleteMany({ where: { eventId: id } }).catch(() => undefined);
@@ -263,5 +273,82 @@ describe.skipIf(!RUN)('events + news (integration)', () => {
     expect(res.body.data.event_status).toBe('cancelled');
     expect(res.body.data.status_override).toBe(true);
     expect(res.body.data.cancellation_reason).toBe('Postponed indefinitely.');
+  });
+
+  // ── Issue 2 — linked Institutions/Programmes obey their own public-visibility rules ──
+  it('hides draft/archived/future linked Institutions and Programmes from public Event detail', async () => {
+    const future = new Date(Date.now() + 86_400_000);
+    const past = new Date(Date.now() - 86_400_000);
+
+    const instType = await prisma.institutionType.upsert({
+      where: { slug: `it-vis-type-${STAMP}` },
+      update: {},
+      create: { nameEn: `Vis Type ${STAMP}`, slug: `it-vis-type-${STAMP}`, isActive: true },
+    });
+    created.visInstitutionTypeId = instType.id;
+
+    const mkInstitution = async (key: string, data: Record<string, unknown>): Promise<string> => {
+      const row = await prisma.institution.create({
+        data: { institutionTypeId: instType.id, nameEn: `Vis Inst ${key} ${STAMP}`, slug: `vis-inst-${key}-${STAMP}`, ...data },
+      });
+      created.visInstitutionIds.push(row.id);
+      return row.id;
+    };
+    const mkProgramme = async (key: string, data: Record<string, unknown>): Promise<string> => {
+      const row = await prisma.programmeScheme.create({
+        data: { titleEn: `Vis Prog ${key} ${STAMP}`, slug: `vis-prog-${key}-${STAMP}`, ...data },
+      });
+      created.visProgrammeIds.push(row.id);
+      return row.id;
+    };
+
+    const published = { publicationState: 'published', publicVisibility: true, publishedAt: past };
+    const visibleInstId = await mkInstitution('pub', published);
+    const draftInstId = await mkInstitution('draft', { publicationState: 'draft' });
+    const archivedInstId = await mkInstitution('arch', { ...published, archivedAt: new Date() });
+    const futureInstId = await mkInstitution('future', { ...published, publishStartAt: future });
+
+    const visibleProgId = await mkProgramme('pub', published);
+    const draftProgId = await mkProgramme('draft', { publicationState: 'draft' });
+    const archivedProgId = await mkProgramme('arch', { ...published, archivedAt: new Date() });
+    const futureProgId = await mkProgramme('future', { ...published, publishStartAt: future });
+
+    const create = await request(app)
+      .post('/api/v1/admin/events')
+      .set('Authorization', `Bearer ${publisherToken}`)
+      .send({
+        event_type_id: created.eventTypeId,
+        title_en: `Vis links ${STAMP}`,
+        date_mode: 'single',
+        start_date: '2020-02-02',
+        dynamic_values: { participant_count: 5 },
+        institution_ids: [visibleInstId, draftInstId, archivedInstId, futureInstId],
+        programme_ids: [visibleProgId, draftProgId, archivedProgId, futureProgId],
+      });
+    expect(create.status).toBe(201);
+    created.visEventId = create.body.data.id;
+
+    const pub = await request(app)
+      .post(`/api/v1/admin/events/${created.visEventId}/publish`)
+      .set('Authorization', `Bearer ${publisherToken}`)
+      .send({});
+    const slug = pub.body.data.slug as string;
+
+    const res = await request(app).get(`/api/v1/public/events/${slug}`);
+    expect(res.status).toBe(200);
+    const instIds = (res.body.data.institutions as Array<{ id: string }>).map((i) => i.id);
+    const progIds = (res.body.data.programmes as Array<{ id: string }>).map((p) => p.id);
+
+    expect(instIds).toEqual([visibleInstId]);
+    expect(progIds).toEqual([visibleProgId]);
+    for (const hidden of [draftInstId, archivedInstId, futureInstId]) expect(instIds).not.toContain(hidden);
+    for (const hidden of [draftProgId, archivedProgId, futureProgId]) expect(progIds).not.toContain(hidden);
+
+    // Admin detail still sees ALL linked records (visibility filtering is public-only).
+    const adminView = await request(app)
+      .get(`/api/v1/admin/events/${created.visEventId}`)
+      .set('Authorization', `Bearer ${publisherToken}`);
+    expect((adminView.body.data.institutions as unknown[]).length).toBe(4);
+    expect((adminView.body.data.programmes as unknown[]).length).toBe(4);
   });
 });

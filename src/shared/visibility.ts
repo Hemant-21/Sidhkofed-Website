@@ -39,3 +39,28 @@ export function publicVisibilityWhere(opts: PublicVisibilityOptions = {}): Recor
   if (opts.requireIsPublic) where.isPublic = true;
   return where;
 }
+
+/** The publishing-workflow fields needed to evaluate public visibility in application code. */
+export interface VisibilityFields {
+  publicationState: string;
+  publicVisibility: boolean;
+  archivedAt: Date | null;
+  publishStartAt: Date | null;
+}
+
+/**
+ * Application-side companion to {@link publicVisibilityWhere}: returns true when a record (already
+ * loaded with its publishing-workflow fields) satisfies the SAME public-visibility predicate. Use
+ * this to gate an *embedded* relation a query cannot filter directly (Prisma cannot apply a `where`
+ * to an included to-one relation) — e.g. the Programme reference embedded in a public Toolkit — so
+ * a draft/archived/future-scheduled parent is never surfaced. Defined alongside the `where` builder
+ * so the predicate has a single source of truth.
+ */
+export function isPubliclyVisible(record: VisibilityFields, now: Date = new Date()): boolean {
+  return (
+    record.publicationState === 'published' &&
+    record.publicVisibility === true &&
+    record.archivedAt === null &&
+    (record.publishStartAt === null || record.publishStartAt.getTime() <= now.getTime())
+  );
+}

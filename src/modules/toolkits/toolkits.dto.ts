@@ -6,14 +6,24 @@
 import type { Toolkit } from '@prisma/client';
 import { mediaRef, type MediaRef, type MasterRef } from '@/modules/institutions/institutions.dto';
 import { type ProgrammeRef } from '@/modules/programmes/programmes.dto';
+import { isPubliclyVisible, type VisibilityFields } from '@/shared/visibility';
 import { toToolkitItemDto, toPublicToolkitItemDto, type ToolkitItemDto, type PublicToolkitItemDto } from './items/items.dto';
 import type { ToolkitRow, ToolkitSummaryRow } from './toolkits.repository';
 
 function masterRef(m: { id: string; slug: string; nameEn: string; nameHi: string | null }): MasterRef {
   return { id: m.id, slug: m.slug, name_en: m.nameEn, name_hi: m.nameHi };
 }
+type ProgrammeRefRow =
+  | ({ id: string; slug: string; titleEn: string; titleHi: string | null; shortCode: string | null } & VisibilityFields)
+  | null;
+
 function programmeRef(p: { id: string; slug: string; titleEn: string; titleHi: string | null; shortCode: string | null }): ProgrammeRef {
   return { id: p.id, slug: p.slug, title_en: p.titleEn, title_hi: p.titleHi, short_code: p.shortCode };
+}
+
+/** Public programme reference — emitted only when the linked programme is itself publicly visible. */
+function publicProgrammeRef(p: ProgrammeRefRow): ProgrammeRef | null {
+  return p && isPubliclyVisible(p) ? programmeRef(p) : null;
 }
 
 const publicUrl = (slug: string): string => `/toolkits/${slug}`;
@@ -126,7 +136,7 @@ export function toPublicToolkitSummaryDto(t: ToolkitSummaryRow): PublicToolkitSu
     title_hi: t.titleHi,
     summary_en: t.summaryEn,
     summary_hi: t.summaryHi,
-    programme: t.programmeScheme ? programmeRef(t.programmeScheme) : null,
+    programme: publicProgrammeRef(t.programmeScheme),
     commodity: t.commodity ? masterRef(t.commodity) : null,
     cover_media: mediaRef(t.coverMedia),
     highlight_type: t.highlightType,

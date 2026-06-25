@@ -35,10 +35,12 @@ export type EventRow = Prisma.EventGetPayload<{ include: typeof eventInclude }>;
 /**
  * Public detail include (remediation — Issue 1, visibility propagation). Same shape as
  * `eventInclude`, but every LINKED public-content collection is filtered by the SINGLE shared
- * `publicVisibilityWhere()` predicate at the database level, so a linked Document, Gallery, or
- * News item that is unpublished, hidden, archived, or future-scheduled is never exposed through
- * the parent event — directly or via its media URLs. Documents carry the extra `is_public` flag.
- * The payload type is identical to `EventRow` (nested `where` does not change the row shape).
+ * `publicVisibilityWhere()` predicate at the database level, so a linked Programme, Institution,
+ * Document, Gallery, or News item that is unpublished, hidden, archived, or future-scheduled is
+ * never exposed through the parent event — directly or via its media URLs. Programmes and
+ * Institutions are gated here (Phase 8 remediation Issue 2) with the same predicate their own
+ * public APIs use. Documents carry the extra `is_public` flag. The payload type is identical to
+ * `EventRow` (nested `where` does not change the row shape).
  */
 const publicEventInclude = {
   eventType: true,
@@ -47,8 +49,14 @@ const publicEventInclude = {
   block: true,
   coverMedia: true,
   commodities: { include: { commodity: true } },
-  programmes: { include: { programmeScheme: true } },
-  institutions: { include: { institution: true } },
+  programmes: {
+    where: { programmeScheme: publicVisibilityWhere() as Prisma.ProgrammeSchemeWhereInput },
+    include: { programmeScheme: true },
+  },
+  institutions: {
+    where: { institution: publicVisibilityWhere() as Prisma.InstitutionWhereInput },
+    include: { institution: true },
+  },
   documents: {
     where: { document: publicVisibilityWhere({ requireIsPublic: true }) as Prisma.DocumentWhereInput },
     include: { document: { include: { documentType: true, fileAsset: true } } },

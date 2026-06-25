@@ -18,6 +18,7 @@ import { Prisma, type AuditAction as PrismaAuditAction } from '@prisma/client';
 import { logger } from '@/shared/logger';
 import { auditRepository } from './audit.repository';
 import { AUDIT_EVENTS, type AuditEventName } from './audit.events';
+import type { ResolvedAuthorization } from '@/modules/auth/auth.types';
 
 const auditLogger = logger.child({ component: 'audit' });
 
@@ -40,6 +41,12 @@ export interface AuditContext {
   /** Privacy-safe hashed client IP (never the raw IP). */
   ipHash?: string | null;
   userAgent?: string | null;
+  /**
+   * Resolved authorization of the actor (roles/permissions). Populated for HTTP admin requests;
+   * used by service-layer state guards (e.g. content-editor cannot edit published content).
+   * Absent for non-HTTP callers (seeds/tests), where route-level gating does not apply.
+   */
+  authz?: ResolvedAuthorization;
 }
 
 /** What was affected and how. */

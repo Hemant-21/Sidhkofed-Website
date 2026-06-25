@@ -13,8 +13,21 @@ type Db = PrismaClient | Prisma.TransactionClient;
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const isUuid = (v: string): boolean => UUID_RE.test(v);
 
+// Public reads must not surface a draft/archived/future-scheduled programme through a published
+// toolkit. Prisma cannot filter an included to-one relation, so we also select the programme's
+// publishing-workflow fields and let the public DTO mapper apply `isPubliclyVisible` (Issue 7).
 const programmeRefSelect = {
-  select: { id: true, slug: true, titleEn: true, titleHi: true, shortCode: true },
+  select: {
+    id: true,
+    slug: true,
+    titleEn: true,
+    titleHi: true,
+    shortCode: true,
+    publicationState: true,
+    publicVisibility: true,
+    archivedAt: true,
+    publishStartAt: true,
+  },
 } as const;
 
 const toolkitInclude = {
