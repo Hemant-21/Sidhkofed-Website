@@ -5,7 +5,7 @@
  * document is exposed via the shared compact `DocumentRef` (reused from the documents module — upload
  * once, link by reference). Public responses never expose `created_by`/`updated_by` or storage keys.
  */
-import { toDocumentRef, type DocumentRef } from '@/modules/documents/documents.dto';
+import { toDocumentRef, toPublicDocumentRef, type DocumentRef } from '@/modules/documents/documents.dto';
 import type { OfficialCommunicationRow } from './official-communications.repository';
 
 export interface MasterRef {
@@ -24,6 +24,11 @@ const dateOnly = (d: Date | null): string | null => (d ? d.toISOString().slice(0
 
 function documentRef(row: OfficialCommunicationRow): DocumentRef | null {
   return row.document ? toDocumentRef(row.document) : null;
+}
+
+/** Public document ref — gated by the linked document's own public visibility (see toPublicDocumentRef). */
+function publicDocumentRef(row: OfficialCommunicationRow): DocumentRef | null {
+  return row.document ? toPublicDocumentRef(row.document) : null;
 }
 
 // ── Admin summary (list) ──────────────────────────────────────────────────────
@@ -158,6 +163,6 @@ export function toPublicOfficialCommunicationDetailDto(
     ...toPublicOfficialCommunicationSummaryDto(c),
     body_en: c.bodyEn,
     body_hi: c.bodyHi,
-    document: documentRef(c),
+    document: publicDocumentRef(c),
   };
 }

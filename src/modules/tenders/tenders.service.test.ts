@@ -9,6 +9,7 @@ import type { ResolvedAuthorization } from '@/modules/auth/auth.types';
 const { repo, cache, audit } = vi.hoisted(() => ({
   repo: {
     slugExists: vi.fn(),
+    tenderNumberExists: vi.fn(),
     findById: vi.fn(),
     update: vi.fn(),
     create: vi.fn(),
@@ -23,7 +24,7 @@ vi.mock('@/services/cache', () => ({ cacheService: cache }));
 vi.mock('@/modules/audit/audit.service', () => ({ auditService: audit }));
 
 import { tenderService } from './tenders.service';
-import { PermissionError, ValidationError } from '@/shared/errors';
+import { PermissionError, ValidationError, ConflictError } from '@/shared/errors';
 
 const NOW = new Date('2026-06-25T00:00:00.000Z');
 const TYPE = '44444444-4444-4444-8444-444444444444';
@@ -71,8 +72,79 @@ beforeEach(() => {
   vi.clearAllMocks();
   repo.validateReferences.mockResolvedValue({});
   repo.slugExists.mockResolvedValue(false);
+  repo.tenderNumberExists.mockResolvedValue(false);
   repo.update.mockImplementation(async () => makeRow());
   repo.create.mockImplementation(async () => makeRow());
+});
+
+const TYPE_ARG = { title_en: 'X', tender_type_id: TYPE } as never;
+const uniqueViolation = () =>
+  Object.assign(new Error('Unique constraint failed'), { code: 'P2002', meta: { target: ['tender_number'] } });
+
+describe('tenderService — tender number uniqueness (Issue 2)', () => {
+  it('rejects a create with a duplicate tender number (409)', async () => {
+    repo.tenderNumberExists.mockResolvedValue(true);
+    await expect(
+      tenderService.create({ ...TYPE_ARG, tender_number: 'TND/2026/001' } as never, ctx(editor)),
+    ).rejects.toBeInstanceOf(ConflictError);
+    expect(repo.create).not.toHaveBeenCalled();
+  });
+
+  it('rejects an update that sets an existing tender number (409)', async () => {
+    repo.findById.mockResolvedValue(makeRow({ tenderNumber: 'TND/2026/000' }));
+    repo.tenderNumberExists.mockResolvedValue(true);
+    await expect(
+      tenderService.update('t-1', { tender_number: 'TND/2026/001' }, ctx(publisher)),
+    ).rejects.toBeInstanceOf(ConflictError);
+    expect(repo.update).not.toHaveBeenCalled();
+  });
+
+  it('excludes the record itself — re-submitting the same number is not a conflict', async () => {
+    repo.findById.mockResolvedValue(makeRow({ tenderNumber: 'TND/2026/001' }));
+    await tenderService.update('t-1', { tender_number: 'TND/2026/001' }, ctx(publisher));
+    expect(repo.tenderNumberExists).not.toHaveBeenCalled();
+    expect(repo.update).toHaveBeenCalled();
+  });
+
+  it('treats tender numbers as case-insensitive — a case-variant of an existing number conflicts (409)', async () => {
+    // The repository's existence check is case-insensitive (citext); here it reports a match.
+    repo.tenderNumberExists.mockResolvedValue(true);
+    await expect(
+      tenderService.create({ ...TYPE_ARG, tender_number: 'tnd/2026/001' } as never, ctx(editor)),
+    ).rejects.toBeInstanceOf(ConflictError);
+    expect(repo.create).not.toHaveBeenCalled();
+  });
+
+  it('lets a record re-save its own number in a different case (self excluded)', async () => {
+    repo.findById.mockResolvedValue(makeRow({ tenderNumber: 'TND/2026/001' }));
+    repo.tenderNumberExists.mockResolvedValue(false);
+    await tenderService.update('t-1', { tender_number: 'tnd/2026/001' }, ctx(publisher));
+    expect(repo.tenderNumberExists).toHaveBeenCalledWith('tnd/2026/001', 't-1');
+    expect(repo.update).toHaveBeenCalled();
+  });
+
+  it('allows a create with a NULL tender number (no uniqueness check)', async () => {
+    await tenderService.create({ ...TYPE_ARG, tender_number: null } as never, ctx(editor));
+    expect(repo.tenderNumberExists).not.toHaveBeenCalled();
+    expect(repo.create).toHaveBeenCalled();
+  });
+
+  it('maps a concurrent unique violation on create (P2002) to 409', async () => {
+    repo.tenderNumberExists.mockResolvedValue(false); // pre-check passes, race loses at the DB
+    repo.create.mockRejectedValue(uniqueViolation());
+    await expect(
+      tenderService.create({ ...TYPE_ARG, tender_number: 'TND/2026/001' } as never, ctx(editor)),
+    ).rejects.toBeInstanceOf(ConflictError);
+  });
+
+  it('maps a concurrent unique violation on update (P2002) to 409', async () => {
+    repo.findById.mockResolvedValue(makeRow({ tenderNumber: null }));
+    repo.tenderNumberExists.mockResolvedValue(false);
+    repo.update.mockRejectedValue(uniqueViolation());
+    await expect(
+      tenderService.update('t-1', { tender_number: 'TND/2026/001' }, ctx(publisher)),
+    ).rejects.toBeInstanceOf(ConflictError);
+  });
 });
 
 describe('tenderService.update — Content Editor restriction', () => {

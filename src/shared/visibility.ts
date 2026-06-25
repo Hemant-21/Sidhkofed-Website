@@ -46,21 +46,41 @@ export interface VisibilityFields {
   publicVisibility: boolean;
   archivedAt: Date | null;
   publishStartAt: Date | null;
+  /** Documents carry an extra public flag; only evaluated when `requireIsPublic` is set. */
+  isPublic?: boolean | null;
+}
+
+/** Options for {@link isPubliclyVisible} — mirrors {@link PublicVisibilityOptions}. */
+export interface IsPubliclyVisibleOptions {
+  /** Also require `is_public = true` (Documents only). */
+  requireIsPublic?: boolean;
+  /** Override "now" (tests). Defaults to the current time. */
+  now?: Date;
 }
 
 /**
  * Application-side companion to {@link publicVisibilityWhere}: returns true when a record (already
  * loaded with its publishing-workflow fields) satisfies the SAME public-visibility predicate. Use
  * this to gate an *embedded* relation a query cannot filter directly (Prisma cannot apply a `where`
- * to an included to-one relation) — e.g. the Programme reference embedded in a public Toolkit — so
- * a draft/archived/future-scheduled parent is never surfaced. Defined alongside the `where` builder
- * so the predicate has a single source of truth.
+ * to an included to-one relation) — e.g. the Programme reference embedded in a public Toolkit, or the
+ * Document/Programme linked from a public Communication/Procurement Update — so a draft/archived/
+ * future-scheduled/hidden linked record is never surfaced (nor its media URL). Defined alongside the
+ * `where` builder so the predicate has a single source of truth.
+ *
+ * The second argument accepts either a `now` Date (back-compat) or an options object; pass
+ * `{ requireIsPublic: true }` to also enforce the Documents-only `is_public` flag.
  */
-export function isPubliclyVisible(record: VisibilityFields, now: Date = new Date()): boolean {
-  return (
+export function isPubliclyVisible(
+  record: VisibilityFields,
+  opts: Date | IsPubliclyVisibleOptions = {},
+): boolean {
+  const o: IsPubliclyVisibleOptions = opts instanceof Date ? { now: opts } : opts;
+  const now = o.now ?? new Date();
+  const base =
     record.publicationState === 'published' &&
     record.publicVisibility === true &&
     record.archivedAt === null &&
-    (record.publishStartAt === null || record.publishStartAt.getTime() <= now.getTime())
-  );
+    (record.publishStartAt === null || record.publishStartAt.getTime() <= now.getTime());
+  if (!base) return false;
+  return o.requireIsPublic ? record.isPublic === true : true;
 }

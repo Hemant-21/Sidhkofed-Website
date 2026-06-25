@@ -105,6 +105,28 @@ describe.skipIf(!RUN)('tenders (integration)', () => {
     created.tenderId = res.body.data.id;
   });
 
+  it('rejects a case-variant duplicate tender number with 409 (citext, case-insensitive)', async () => {
+    // The first test created a tender with tender_number `T/${STAMP}`; a lowercase variant must collide.
+    const res = await request(app)
+      .post('/api/v1/admin/tenders')
+      .set('Authorization', `Bearer ${editorToken}`)
+      .send({ tender_type_id: created.tenderTypeId, title_en: `Dup ${STAMP}`, tender_number: `t/${STAMP}` });
+    expect(res.status).toBe(409);
+  });
+
+  it('allows multiple tenders with no tender number (NULLs stay distinct)', async () => {
+    const a = await request(app)
+      .post('/api/v1/admin/tenders')
+      .set('Authorization', `Bearer ${editorToken}`)
+      .send({ tender_type_id: created.tenderTypeId, title_en: `No number A ${STAMP}` });
+    const b = await request(app)
+      .post('/api/v1/admin/tenders')
+      .set('Authorization', `Bearer ${editorToken}`)
+      .send({ tender_type_id: created.tenderTypeId, title_en: `No number B ${STAMP}` });
+    expect(a.status).toBe(201);
+    expect(b.status).toBe(201);
+  });
+
   it('rejects a non-HTTPS gem_url with 422', async () => {
     const res = await request(app)
       .post('/api/v1/admin/tenders')

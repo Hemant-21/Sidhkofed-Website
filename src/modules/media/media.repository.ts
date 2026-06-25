@@ -97,13 +97,14 @@ export async function setReplacedBy(oldId: string, newId: string) {
  * exposes its media early). Event and News cover media are included here (Issue 2) so the public
  * event/news endpoints never emit a cover URL that the media endpoint would later 403. Published
  * Institution logos are included (Phase 8 remediation Issue 1) so homepage/partner logos surfaced
- * by the public Institution DTOs are actually downloadable. Read-only cross-table check kept here
- * (the media repository is the Prisma caller for media delivery).
+ * by the public Institution DTOs are actually downloadable. Published Digital Service icons are
+ * included (Phase 10 remediation Issue 1) so the public `/digital-services` icons are downloadable.
+ * Read-only cross-table check kept here (the media repository is the Prisma caller for media delivery).
  */
 export async function isPubliclyLinked(mediaId: string): Promise<boolean> {
   const parent = publicVisibilityWhere(); // published + public + not archived + publish window due
   const documentParent = publicVisibilityWhere({ requireIsPublic: true });
-  const [doc, galleryCover, galleryImage, video, eventCover, newsCover, institutionLogo, commodityIcon] =
+  const [doc, galleryCover, galleryImage, video, eventCover, newsCover, institutionLogo, commodityIcon, serviceIcon] =
     await Promise.all([
       prisma.document.count({ where: { fileAssetId: mediaId, ...documentParent } as Prisma.DocumentWhereInput }),
       prisma.gallery.count({ where: { coverMediaId: mediaId, ...parent } as Prisma.GalleryWhereInput }),
@@ -113,8 +114,12 @@ export async function isPubliclyLinked(mediaId: string): Promise<boolean> {
       prisma.eventNews.count({ where: { coverMediaId: mediaId, ...parent } as Prisma.EventNewsWhereInput }),
       prisma.institution.count({ where: { logoMediaId: mediaId, ...parent } as Prisma.InstitutionWhereInput }),
       prisma.commodity.count({ where: { iconMediaId: mediaId, isActive: true } }),
+      prisma.digitalService.count({ where: { iconMediaId: mediaId, ...parent } as Prisma.DigitalServiceWhereInput }),
     ]);
-  return doc + galleryCover + galleryImage + video + eventCover + newsCover + institutionLogo + commodityIcon > 0;
+  return (
+    doc + galleryCover + galleryImage + video + eventCover + newsCover + institutionLogo + commodityIcon + serviceIcon >
+    0
+  );
 }
 
 export type MediaRow = Prisma.PromiseReturnType<typeof findById>;

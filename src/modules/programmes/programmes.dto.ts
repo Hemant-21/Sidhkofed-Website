@@ -4,6 +4,7 @@
  */
 import type { ProgrammeScheme } from '@prisma/client';
 import { mediaRef, type MediaRef, type MasterRef } from '@/modules/institutions/institutions.dto';
+import { isPubliclyVisible } from '@/shared/visibility';
 import type { ProgrammeRow, ProgrammeSummaryRow } from './programmes.repository';
 
 function masterRef(m: { id: string; slug: string; nameEn: string; nameHi: string | null }): MasterRef {
@@ -24,6 +25,15 @@ export interface ProgrammeRef {
 }
 export function toProgrammeRef(p: ProgrammeScheme): ProgrammeRef {
   return { id: p.id, slug: p.slug, title_en: p.titleEn, title_hi: p.titleHi, short_code: p.shortCode };
+}
+
+/**
+ * Public-safe compact reference: emits the programme ref ONLY when the linked programme itself
+ * satisfies the public-visibility predicate (published, public, not archived, publish window open).
+ * Returns null otherwise, so a public parent never leaks a draft/archived/scheduled programme.
+ */
+export function toPublicProgrammeRef(p: ProgrammeScheme, now: Date = new Date()): ProgrammeRef | null {
+  return isPubliclyVisible(p, now) ? toProgrammeRef(p) : null;
 }
 
 // ── Admin summary (list) ──────────────────────────────────────────────────────

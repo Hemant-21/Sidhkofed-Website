@@ -74,6 +74,23 @@ export async function slugExists(slug: string, db: Db = prisma): Promise<boolean
   return (await db.tender.count({ where: { slug } })) > 0;
 }
 
+/**
+ * True when another tender already uses `tenderNumber` (exact, case-sensitive — official reference
+ * codes). `excludeId` skips the record being updated so a no-op PATCH never collides with itself.
+ * The DB unique index is the race-safe backstop; this is the friendly pre-check (Issue 2).
+ */
+export async function tenderNumberExists(
+  tenderNumber: string,
+  excludeId?: string,
+  db: Db = prisma,
+): Promise<boolean> {
+  return (
+    (await db.tender.count({
+      where: { tenderNumber, ...(excludeId ? { id: { not: excludeId } } : {}) },
+    })) > 0
+  );
+}
+
 export async function create(data: Prisma.TenderUncheckedCreateInput, db: Db = prisma): Promise<TenderRow> {
   return db.tender.create({ data, include: tenderInclude });
 }
@@ -129,6 +146,7 @@ export async function validateReferences(refs: TenderRefs): Promise<Record<strin
 
 export const tenderRepository = {
   slugExists,
+  tenderNumberExists,
   create,
   findById,
   findBySlug,

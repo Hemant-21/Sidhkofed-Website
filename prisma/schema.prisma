@@ -135,6 +135,25 @@ enum DistributionModel {
   mixed
 }
 
+// Phase 11 — Institutional Membership classification (database-schema-design.md Part 13).
+// Two ORTHOGONAL axes (level × type) feed the four membership dashboard reports #10–#13
+// (SIDHKOFED Primary/Nominal, DU Primary/Nominal). Lower-case snake_case per §C7; the
+// requirements doc's UPPER-case `SIDHKOFED`/`DISTRICT_UNION` are display notation only (§C7).
+enum MembershipLevel {
+  sidhkofed
+  district_union
+}
+
+enum MembershipType {
+  primary
+  nominal
+}
+
+enum MembershipStatus {
+  active
+  inactive
+}
+
 // ─────────────── Users & RBAC ───────────────
 model User {
   id                String    @id @default(uuid()) @db.Uuid
@@ -181,6 +200,18 @@ model User {
   updatedTenders                Tender[]                     @relation("TenderUpdatedBy")
   createdProcurementUpdates     ProcurementUpdate[]          @relation("ProcurementUpdateCreatedBy")
   updatedProcurementUpdates     ProcurementUpdate[]          @relation("ProcurementUpdateUpdatedBy")
+  // Phase 10 content authors (same SET NULL convention as above).
+  createdPages                  Page[]                       @relation("PageCreatedBy")
+  updatedPages                  Page[]                       @relation("PageUpdatedBy")
+  createdMenuItems              MenuItem[]                   @relation("MenuItemCreatedBy")
+  updatedMenuItems              MenuItem[]                   @relation("MenuItemUpdatedBy")
+  createdFaqs                   Faq[]                        @relation("FaqCreatedBy")
+  updatedFaqs                   Faq[]                        @relation("FaqUpdatedBy")
+  createdDigitalServices        DigitalService[]             @relation("DigitalServiceCreatedBy")
+  updatedDigitalServices        DigitalService[]             @relation("DigitalServiceUpdatedBy")
+  // Phase 11 content authors (same SET NULL convention as above).
+  createdMemberships            InstitutionalMembership[]    @relation("MembershipCreatedBy")
+  updatedMemberships            InstitutionalMembership[]    @relation("MembershipUpdatedBy")
 
   @@map("users")
 }
@@ -323,6 +354,9 @@ model MediaAsset {
   programmeCovers  ProgrammeScheme[] @relation("ProgrammeCover")
   institutionLogos Institution[]     @relation("InstitutionLogo")
   toolkitCovers    Toolkit[]         @relation("ToolkitCover")
+  // Phase 10 — Digital Service icons (optional; default Restrict so a linked icon cannot be
+  // hard-deleted while in use — consistent with media-usage tracking).
+  serviceIcons     DigitalService[]  @relation("DigitalServiceIcon")
 
   @@index([mimeType])
   @@index([archivedAt])
@@ -510,6 +544,7 @@ model District {
   events             Event[]
   institutions       Institution[]
   procurementUpdates ProcurementUpdate[]
+  memberships        InstitutionalMembership[]
 
   @@map("districts")
 }
@@ -634,6 +669,8 @@ model FaqCategory {
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
+  faqs Faq[]
+
   @@map("faq_categories")
 }
 
@@ -679,7 +716,8 @@ model ReportingPeriod {
   createdAt       DateTime            @default(now()) @map("created_at")
   updatedAt       DateTime            @updatedAt @map("updated_at")
 
-  financialYear FinancialYear? @relation(fields: [financialYearId], references: [id])
+  financialYear FinancialYear?            @relation(fields: [financialYearId], references: [id])
+  memberships   InstitutionalMembership[]
 
   @@index([financialYearId])
   @@map("reporting_periods")
@@ -1299,13 +1337,18 @@ model Institution {
   createdAt         DateTime         @default(now()) @map("created_at")
   updatedAt         DateTime         @updatedAt @map("updated_at")
 
-  institutionType InstitutionType       @relation(fields: [institutionTypeId], references: [id], onDelete: Restrict)
-  logoMedia       MediaAsset?           @relation("InstitutionLogo", fields: [logoMediaId], references: [id])
-  district        District?             @relation(fields: [districtId], references: [id], onDelete: Restrict)
-  createdBy       User?                 @relation("InstitutionCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
-  updatedBy       User?                 @relation("InstitutionUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+  institutionType InstitutionType           @relation(fields: [institutionTypeId], references: [id], onDelete: Restrict)
+  logoMedia       MediaAsset?               @relation("InstitutionLogo", fields: [logoMediaId], references: [id])
+  district        District?                 @relation(fields: [districtId], references: [id], onDelete: Restrict)
+  createdBy       User?                     @relation("InstitutionCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedBy       User?                     @relation("InstitutionUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
   events          EventInstitution[]
   documents       DocumentInstitution[]
+  // Phase 11 — Institutional Membership references the org as the member institution AND,
+  // separately, as the District Union org (when membership_level = district_union). The two
+  // axes are NEVER collapsed (architecture-validation §C open decision).
+  memberships     InstitutionalMembership[] @relation("MembershipInstitution")
+  duMemberships   InstitutionalMembership[] @relation("MembershipDistrictUnion")
 
   @@index([publicationState, publicVisibility, archivedAt, publishedAt])
   @@index([institutionTypeId])
@@ -1374,7 +1417,12 @@ model Tender {
   summaryEn          String?          @map("summary_en")
   summaryHi          String?          @map("summary_hi")
   tenderTypeId       String           @map("tender_type_id") @db.Uuid
-  tenderNumber       String?          @map("tender_number")
+  // Tender numbers are official reference codes and must be unique, CASE-INSENSITIVELY (business
+  // rule): "TND/001" and "tnd/001" are the same number. Stored as citext so the unique index +
+  // equality lookups are case-insensitive while the original casing is preserved. Nullable: a unique
+  // index over a nullable column treats NULLs as distinct in Postgres, so multiple tenders may omit
+  // the number while every supplied number stays globally unique (Phase 9 remediation — Issue 2).
+  tenderNumber       String?          @unique @map("tender_number") @db.Citext
   publishDate        DateTime?        @map("publish_date") @db.Date
   submissionDeadline DateTime?        @map("submission_deadline")
   openingDate        DateTime?        @map("opening_date")
@@ -1465,4 +1513,200 @@ model ProcurementUpdate {
   @@index([effectiveDate])
   @@index([showOnHomepage, displayOrder])
   @@map("procurement_updates")
+}
+
+// ─────────────── Phase 10 — Pages & Menus ───────────────
+// One reusable operation for static/institutional pages (About Us, Vision, policies, …) — CMS
+// requirements §4.10 / API spec §6. Layout stays code-controlled; the CMS only owns page CONTENT and
+// the page-only SEO meta fields. The slug is the public route key, generated once on create and
+// stable thereafter (only Super Admin may change it, audited). No page builder / drag-and-drop.
+model Page {
+  id                String           @id @default(uuid()) @db.Uuid
+  titleEn           String           @map("title_en")
+  titleHi           String?          @map("title_hi")
+  bodyEn            String?          @map("body_en")
+  bodyHi            String?          @map("body_hi")
+  metaTitleEn       String?          @map("meta_title_en")
+  metaTitleHi       String?          @map("meta_title_hi")
+  metaDescriptionEn String?          @map("meta_description_en")
+  metaDescriptionHi String?          @map("meta_description_hi")
+  slug              String           @unique
+  publicationState  PublicationState @default(draft) @map("publication_state")
+  publicVisibility  Boolean          @default(true) @map("public_visibility")
+  publishStartAt    DateTime?        @map("publish_start_at")
+  publishedAt       DateTime?        @map("published_at")
+  archivedAt        DateTime?        @map("archived_at")
+  highlightType     HighlightType?   @map("highlight_type")
+  highlightStartAt  DateTime?        @map("highlight_start_at")
+  highlightEndAt    DateTime?        @map("highlight_end_at")
+  displayOrder      Int?             @map("display_order")
+  showOnHomepage    Boolean          @default(false) @map("show_on_homepage")
+  createdById       String?          @map("created_by") @db.Uuid
+  updatedById       String?          @map("updated_by") @db.Uuid
+  createdAt         DateTime         @default(now()) @map("created_at")
+  updatedAt         DateTime         @updatedAt @map("updated_at")
+
+  menuItems MenuItem[]
+  createdBy User?      @relation("PageCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedBy User?      @relation("PageUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  @@index([publicationState, publicVisibility, archivedAt, publishedAt])
+  @@index([showOnHomepage, displayOrder])
+  @@map("pages")
+}
+
+// Simple menu configuration for header / footer / utility navigation (CMS requirements §4.11 /
+// API spec §6). Self-referencing tree (parent_id) — children cascade on parent delete. A menu item
+// links EITHER to an internal page (page_id) OR to an explicit url (internal path or external URL).
+// Hierarchy must stay acyclic (self-parent + cycles rejected in the service). is_active toggles
+// public visibility. Only Super Admin may delete (cascade) per API spec §6.
+model MenuItem {
+  id           String   @id @default(uuid()) @db.Uuid
+  labelEn      String   @map("label_en")
+  labelHi      String?  @map("label_hi")
+  location     String // header | footer | utility
+  url          String?
+  pageId       String?  @map("page_id") @db.Uuid
+  parentId     String?  @map("parent_id") @db.Uuid
+  opensNewTab  Boolean  @default(false) @map("opens_new_tab")
+  displayOrder Int      @default(0) @map("display_order")
+  isActive     Boolean  @default(true) @map("is_active")
+  createdById  String?  @map("created_by") @db.Uuid
+  updatedById  String?  @map("updated_by") @db.Uuid
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  page      Page?      @relation(fields: [pageId], references: [id], onDelete: SetNull)
+  parent    MenuItem?  @relation("MenuTree", fields: [parentId], references: [id], onDelete: Cascade)
+  children  MenuItem[] @relation("MenuTree")
+  createdBy User?      @relation("MenuItemCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedBy User?      @relation("MenuItemUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  @@index([location, displayOrder])
+  @@index([parentId])
+  @@map("menu_items")
+}
+
+// ─────────────── Phase 10 — FAQ & Digital Services ───────────────
+// FAQs reuse the FAQ Category master (CMS requirements §4.13 / API spec §6). No nested FAQs; public
+// search covers question + answer; ordering follows category + display order. Publishable **P**.
+model Faq {
+  id               String           @id @default(uuid()) @db.Uuid
+  faqCategoryId    String?          @map("faq_category_id") @db.Uuid
+  questionEn       String           @map("question_en")
+  questionHi       String?          @map("question_hi")
+  answerEn         String           @map("answer_en")
+  answerHi         String?          @map("answer_hi")
+  slug             String           @unique
+  publicationState PublicationState @default(draft) @map("publication_state")
+  publicVisibility Boolean          @default(true) @map("public_visibility")
+  publishStartAt   DateTime?        @map("publish_start_at")
+  publishedAt      DateTime?        @map("published_at")
+  archivedAt       DateTime?        @map("archived_at")
+  highlightType    HighlightType?   @map("highlight_type")
+  highlightStartAt DateTime?        @map("highlight_start_at")
+  highlightEndAt   DateTime?        @map("highlight_end_at")
+  displayOrder     Int?             @map("display_order")
+  showOnHomepage   Boolean          @default(false) @map("show_on_homepage")
+  createdById      String?          @map("created_by") @db.Uuid
+  updatedById      String?          @map("updated_by") @db.Uuid
+  createdAt        DateTime         @default(now()) @map("created_at")
+  updatedAt        DateTime         @updatedAt @map("updated_at")
+
+  faqCategory FaqCategory? @relation(fields: [faqCategoryId], references: [id], onDelete: Restrict)
+  createdBy   User?        @relation("FaqCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedBy   User?        @relation("FaqUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  @@index([publicationState, publicVisibility, archivedAt, publishedAt])
+  @@index([faqCategoryId])
+  @@index([showOnHomepage, displayOrder])
+  @@map("faqs")
+}
+
+// Digital Services are controlled links to APPROVED external systems only (ERP, MIS, membership,
+// beneficiary portal, government portals) — CMS requirements §4.14 / API spec §6. The CMS never
+// simulates, proxies, or embeds those systems; clients open `external_url` in a new tab with
+// rel="noopener noreferrer". Optional icon comes from the Media Library. Publishable **P**.
+model DigitalService {
+  id               String           @id @default(uuid()) @db.Uuid
+  titleEn          String           @map("title_en")
+  titleHi          String?          @map("title_hi")
+  descriptionEn    String?          @map("description_en")
+  descriptionHi    String?          @map("description_hi")
+  externalUrl      String           @map("external_url")
+  iconMediaId      String?          @map("icon_media_id") @db.Uuid
+  slug             String           @unique
+  publicationState PublicationState @default(draft) @map("publication_state")
+  publicVisibility Boolean          @default(true) @map("public_visibility")
+  publishStartAt   DateTime?        @map("publish_start_at")
+  publishedAt      DateTime?        @map("published_at")
+  archivedAt       DateTime?        @map("archived_at")
+  highlightType    HighlightType?   @map("highlight_type")
+  highlightStartAt DateTime?        @map("highlight_start_at")
+  highlightEndAt   DateTime?        @map("highlight_end_at")
+  displayOrder     Int?             @map("display_order")
+  showOnHomepage   Boolean          @default(false) @map("show_on_homepage")
+  createdById      String?          @map("created_by") @db.Uuid
+  updatedById      String?          @map("updated_by") @db.Uuid
+  createdAt        DateTime         @default(now()) @map("created_at")
+  updatedAt        DateTime         @updatedAt @map("updated_at")
+
+  iconMedia MediaAsset? @relation("DigitalServiceIcon", fields: [iconMediaId], references: [id])
+  createdBy User?       @relation("DigitalServiceCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedBy User?       @relation("DigitalServiceUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  @@index([publicationState, publicVisibility, archivedAt, publishedAt])
+  @@index([showOnHomepage, displayOrder])
+  @@map("digital_services")
+}
+
+// ─────────────── Phase 11 — Institutional Membership ───────────────
+// Institution-wise membership ONLY — no personal/voting/dividend data (CMS requirements §4.15 /
+// build-context §8.3). Two orthogonal classification axes (membership_level × membership_type)
+// feed dashboard reports #10–#13; this module is a DATA SOURCE only and performs no aggregation.
+// The member is an existing Institution; the District Union is ALSO an existing Institution
+// (district_union_id), never a duplicated entity. createdBy/updatedBy follow the project SET NULL
+// convention (nullable) so removing a user preserves the historical record. Publishable **P**.
+model InstitutionalMembership {
+  id                String           @id @default(uuid()) @db.Uuid
+  institutionId     String           @map("institution_id") @db.Uuid
+  membershipLevel   MembershipLevel  @map("membership_level") // sidhkofed | district_union
+  membershipType    MembershipType   @map("membership_type") // primary | nominal
+  membershipNumber  String?          @map("membership_number")
+  districtId        String?          @map("district_id") @db.Uuid
+  districtUnionId   String?          @map("district_union_id") @db.Uuid
+  reportingPeriodId String?          @map("reporting_period_id") @db.Uuid
+  status            MembershipStatus @default(active)
+  joinDate          DateTime?        @map("join_date") @db.Date
+  notesEn           String?          @map("notes_en")
+  notesHi           String?          @map("notes_hi")
+  slug              String           @unique
+  publicationState  PublicationState @default(draft) @map("publication_state")
+  publicVisibility  Boolean          @default(true) @map("public_visibility")
+  publishStartAt    DateTime?        @map("publish_start_at")
+  publishedAt       DateTime?        @map("published_at")
+  archivedAt        DateTime?        @map("archived_at")
+  highlightType     HighlightType?   @map("highlight_type")
+  highlightStartAt  DateTime?        @map("highlight_start_at")
+  highlightEndAt    DateTime?        @map("highlight_end_at")
+  displayOrder      Int?             @map("display_order")
+  showOnHomepage    Boolean          @default(false) @map("show_on_homepage")
+  createdById       String?          @map("created_by") @db.Uuid
+  updatedById       String?          @map("updated_by") @db.Uuid
+  createdAt         DateTime         @default(now()) @map("created_at")
+  updatedAt         DateTime         @updatedAt @map("updated_at")
+
+  institution     Institution      @relation("MembershipInstitution", fields: [institutionId], references: [id], onDelete: Restrict)
+  districtUnion   Institution?     @relation("MembershipDistrictUnion", fields: [districtUnionId], references: [id], onDelete: Restrict)
+  district        District?        @relation(fields: [districtId], references: [id], onDelete: Restrict)
+  reportingPeriod ReportingPeriod? @relation(fields: [reportingPeriodId], references: [id])
+  createdBy       User?            @relation("MembershipCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedBy       User?            @relation("MembershipUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  @@index([publicationState, publicVisibility, archivedAt, publishedAt])
+  @@index([membershipLevel, membershipType, reportingPeriodId])
+  @@index([institutionId])
+  @@index([districtId])
+  @@index([showOnHomepage, displayOrder])
+  @@map("institutional_memberships")
 }

@@ -45,6 +45,14 @@ import {
   procurementUpdateAdminRouter,
   procurementUpdatePublicRouter,
 } from '@/modules/procurement-updates/procurement-updates.routes';
+import { pageAdminRouter, pagePublicRouter } from '@/modules/pages/pages.routes';
+import { menuAdminRouter, menuPublicRouter } from '@/modules/menus/menus.routes';
+import { faqAdminRouter, faqPublicRouter } from '@/modules/faqs/faqs.routes';
+import {
+  digitalServiceAdminRouter,
+  digitalServicePublicRouter,
+} from '@/modules/digital-services/digital-services.routes';
+import { membershipAdminRouter, membershipPublicRouter } from '@/modules/memberships/memberships.routes';
 
 export const apiRouter = Router();
 
@@ -85,6 +93,11 @@ apiRouter.use('/admin/news', newsAdminRouter);
 apiRouter.use('/admin/official-communications', officialCommunicationAdminRouter);
 apiRouter.use('/admin/tenders', tenderAdminRouter);
 apiRouter.use('/admin/procurement-updates', procurementUpdateAdminRouter);
+apiRouter.use('/admin/pages', pageAdminRouter);
+apiRouter.use('/admin/menu-items', menuAdminRouter);
+apiRouter.use('/admin/faqs', faqAdminRouter);
+apiRouter.use('/admin/digital-services', digitalServiceAdminRouter);
+apiRouter.use('/admin/memberships', membershipAdminRouter);
 
 // Public namespace (no auth; active + visible records only).
 apiRouter.use('/public/masters', mastersPublicRouter);
@@ -100,3 +113,8 @@ apiRouter.use('/public/news', newsPublicRouter);
 apiRouter.use('/public/official-communications', officialCommunicationPublicRouter);
 apiRouter.use('/public/tenders', tenderPublicRouter);
 apiRouter.use('/public/procurement-updates', procurementUpdatePublicRouter);
+apiRouter.use('/public/pages', pagePublicRouter);
+apiRouter.use('/public/menus', menuPublicRouter);
+apiRouter.use('/public/faqs', faqPublicRouter);
+apiRouter.use('/public/digital-services', digitalServicePublicRouter);
+apiRouter.use('/public/memberships', membershipPublicRouter);

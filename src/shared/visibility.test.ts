@@ -54,4 +54,17 @@ describe('isPubliclyVisible', () => {
     expect(isPubliclyVisible({ ...base, archivedAt: new Date('2026-06-20T00:00:00Z') }, now)).toBe(false);
     expect(isPubliclyVisible({ ...base, publishStartAt: new Date('2026-12-01T00:00:00Z') }, now)).toBe(false);
   });
+
+  it('accepts an options object equivalently to a bare Date', () => {
+    expect(isPubliclyVisible(base, { now })).toBe(true);
+  });
+
+  it('enforces is_public only when requireIsPublic is set (documents)', () => {
+    // Without the flag, is_public is ignored.
+    expect(isPubliclyVisible({ ...base, isPublic: false }, { now })).toBe(true);
+    // With the flag, is_public=false (or missing) fails; true passes.
+    expect(isPubliclyVisible({ ...base, isPublic: false }, { now, requireIsPublic: true })).toBe(false);
+    expect(isPubliclyVisible(base, { now, requireIsPublic: true })).toBe(false);
+    expect(isPubliclyVisible({ ...base, isPublic: true }, { now, requireIsPublic: true })).toBe(true);
+  });
 });

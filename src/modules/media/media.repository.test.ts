@@ -15,6 +15,7 @@ const { db } = vi.hoisted(() => ({
     eventNews: { count: vi.fn() },
     institution: { count: vi.fn() },
     commodity: { count: vi.fn() },
+    digitalService: { count: vi.fn() },
   },
 }));
 
@@ -46,6 +47,31 @@ describe('isPubliclyLinked — Institution logo (Issue 1)', () => {
   });
 
   it('returns false when no public owner (including no institution) references the asset', async () => {
+    expect(await isPubliclyLinked('m1')).toBe(false);
+  });
+});
+
+describe('isPubliclyLinked — Digital Service icon (Phase 10 Issue 1)', () => {
+  it('returns true when only a published Digital Service references the asset as its icon', async () => {
+    db.digitalService.count.mockResolvedValue(1);
+    expect(await isPubliclyLinked('m1')).toBe(true);
+  });
+
+  it('gates the Digital Service query on iconMediaId + the published public-visibility predicate', async () => {
+    await isPubliclyLinked('m1');
+    expect(db.digitalService.count).toHaveBeenCalledOnce();
+    const where = db.digitalService.count.mock.calls[0][0].where;
+    expect(where.iconMediaId).toBe('m1');
+    expect(where.publicationState).toBe('published');
+    expect(where.publicVisibility).toBe(true);
+    expect(where.archivedAt).toBeNull();
+    // The scheduled-publishing gate is present (publishStartAt null OR <= now).
+    expect(where.OR).toBeTruthy();
+  });
+
+  it('returns false when no Digital Service publicly references the asset (draft/archived/hidden/future)', async () => {
+    // A draft/archived/hidden/future-scheduled service fails the predicate → count 0 → not linked.
+    db.digitalService.count.mockResolvedValue(0);
     expect(await isPubliclyLinked('m1')).toBe(false);
   });
 });

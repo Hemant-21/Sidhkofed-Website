@@ -12,6 +12,7 @@
  * Public responses NEVER expose `created_by`/`updated_by`, internal flags, or storage keys.
  */
 import type { Document, DocumentType, FinancialYear, MediaAsset } from '@prisma/client';
+import { isPubliclyVisible } from '@/shared/visibility';
 import type { DocumentRow, DocumentSummaryRow } from './documents.repository';
 
 export interface MasterRef {
@@ -67,7 +68,9 @@ export interface DocumentRef {
   language: string;
   publication_date: string | null;
 }
-export function toDocumentRef(d: Document & { documentType: DocumentType; fileAsset: MediaAsset }): DocumentRef {
+export type DocumentRefRow = Document & { documentType: DocumentType; fileAsset: MediaAsset };
+
+export function toDocumentRef(d: DocumentRefRow): DocumentRef {
   return {
     id: d.id,
     slug: d.slug,
@@ -78,6 +81,17 @@ export function toDocumentRef(d: Document & { documentType: DocumentType; fileAs
     language: d.language,
     publication_date: dateOnly(d.publicationDate),
   };
+}
+
+/**
+ * Public-safe compact reference: emits the document ref ONLY when the linked document itself
+ * satisfies the public-visibility predicate (published, public, is_public, not archived, publish
+ * window open). Returns null otherwise, so a public parent never leaks a hidden document's metadata
+ * or its `file_url` (which the public media endpoint would later 403). Reuses the shared predicate
+ * (the single source of truth) with the Documents-only `is_public` requirement.
+ */
+export function toPublicDocumentRef(d: DocumentRefRow, now: Date = new Date()): DocumentRef | null {
+  return isPubliclyVisible(d, { now, requireIsPublic: true }) ? toDocumentRef(d) : null;
 }
 
 // ── Admin summary (list) ──────────────────────────────────────────────────────

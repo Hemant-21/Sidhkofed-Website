@@ -6,7 +6,8 @@
  * master ref; the programme uses a title-based content ref; the linked document uses the shared
  * `DocumentRef`. Informational only — no transactions/inventory/payment fields exist.
  */
-import { toDocumentRef, type DocumentRef } from '@/modules/documents/documents.dto';
+import { toDocumentRef, toPublicDocumentRef, type DocumentRef } from '@/modules/documents/documents.dto';
+import { isPubliclyVisible } from '@/shared/visibility';
 import type { ProcurementUpdateRow } from './procurement-updates.repository';
 
 export interface MasterRef {
@@ -30,6 +31,11 @@ function programmeRef(p: { id: string; slug: string; titleEn: string; titleHi: s
   return p ? { id: p.id, slug: p.slug, title_en: p.titleEn, title_hi: p.titleHi } : null;
 }
 
+/** Public programme ref — emitted only when the linked programme is itself publicly visible. */
+function publicProgrammeRef(p: ProcurementUpdateRow['programmeScheme']): ProgrammeRef | null {
+  return p && isPubliclyVisible(p) ? programmeRef(p) : null;
+}
+
 const publicUrl = (slug: string): string => `/procurement-updates/${slug}`;
 const iso = (d: Date | null): string | null => (d ? d.toISOString() : null);
 const dateOnly = (d: Date | null): string | null => (d ? d.toISOString().slice(0, 10) : null);
@@ -37,6 +43,11 @@ const dec = (d: { toString(): string } | null): number | null => (d === null ? n
 
 function documentRef(row: ProcurementUpdateRow): DocumentRef | null {
   return row.document ? toDocumentRef(row.document) : null;
+}
+
+/** Public document ref — gated by the linked document's own public visibility (see toPublicDocumentRef). */
+function publicDocumentRef(row: ProcurementUpdateRow): DocumentRef | null {
+  return row.document ? toPublicDocumentRef(row.document) : null;
 }
 
 // ── Admin summary (list) ──────────────────────────────────────────────────────
@@ -190,7 +201,7 @@ export function toPublicProcurementUpdateDetailDto(p: ProcurementUpdateRow): Pub
     ...toPublicProcurementUpdateSummaryDto(p),
     description_en: p.descriptionEn,
     description_hi: p.descriptionHi,
-    programme: programmeRef(p.programmeScheme),
-    document: documentRef(p),
+    programme: publicProgrammeRef(p.programmeScheme),
+    document: publicDocumentRef(p),
   };
 }
