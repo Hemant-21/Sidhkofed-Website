@@ -31,8 +31,8 @@ generator client {
 }
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 // ─────────────── Enums (identity/governance subset of Part 13) ───────────────
@@ -122,6 +122,19 @@ enum TranslationSource {
   missing
 }
 
+// Phase 7 — Toolkit distribution classification (database-schema-design.md Part 6 / Part 13).
+// Item-level basis (per toolkit item / distribution item) and the per-event distribution model.
+enum DistributionBasis {
+  individual
+  group
+}
+
+enum DistributionModel {
+  individual
+  group
+  mixed
+}
+
 // ─────────────── Users & RBAC ───────────────
 model User {
   id                String    @id @default(uuid()) @db.Uuid
@@ -139,23 +152,28 @@ model User {
 
   // Audit-author back-relations (Issue 8). All use ON DELETE SET NULL so removing a user
   // preserves the historical content rather than cascading or blocking the delete.
-  uploadedMedia       MediaAsset[]      @relation("MediaUploadedBy")
-  createdGalleries    Gallery[]         @relation("GalleryCreatedBy")
-  updatedGalleries    Gallery[]         @relation("GalleryUpdatedBy")
-  createdVideos       Video[]           @relation("VideoCreatedBy")
-  updatedVideos       Video[]           @relation("VideoUpdatedBy")
-  updatedSettings     Setting[]         @relation("SettingUpdatedBy")
-  createdDocuments    Document[]        @relation("DocumentCreatedBy")
-  updatedDocuments    Document[]        @relation("DocumentUpdatedBy")
+  uploadedMedia               MediaAsset[]                 @relation("MediaUploadedBy")
+  createdGalleries            Gallery[]                    @relation("GalleryCreatedBy")
+  updatedGalleries            Gallery[]                    @relation("GalleryUpdatedBy")
+  createdVideos               Video[]                      @relation("VideoCreatedBy")
+  updatedVideos               Video[]                      @relation("VideoUpdatedBy")
+  updatedSettings             Setting[]                    @relation("SettingUpdatedBy")
+  createdDocuments            Document[]                   @relation("DocumentCreatedBy")
+  updatedDocuments            Document[]                   @relation("DocumentUpdatedBy")
   // Phase 6 content authors (same SET NULL convention as above).
-  createdEvents       Event[]           @relation("EventCreatedBy")
-  updatedEvents       Event[]           @relation("EventUpdatedBy")
-  createdEventNews    EventNews[]       @relation("EventNewsCreatedBy")
-  updatedEventNews    EventNews[]       @relation("EventNewsUpdatedBy")
-  createdProgrammes   ProgrammeScheme[] @relation("ProgrammeCreatedBy")
-  updatedProgrammes   ProgrammeScheme[] @relation("ProgrammeUpdatedBy")
-  createdInstitutions Institution[]     @relation("InstitutionCreatedBy")
-  updatedInstitutions Institution[]     @relation("InstitutionUpdatedBy")
+  createdEvents               Event[]                      @relation("EventCreatedBy")
+  updatedEvents               Event[]                      @relation("EventUpdatedBy")
+  createdEventNews            EventNews[]                  @relation("EventNewsCreatedBy")
+  updatedEventNews            EventNews[]                  @relation("EventNewsUpdatedBy")
+  createdProgrammes           ProgrammeScheme[]            @relation("ProgrammeCreatedBy")
+  updatedProgrammes           ProgrammeScheme[]            @relation("ProgrammeUpdatedBy")
+  createdInstitutions         Institution[]                @relation("InstitutionCreatedBy")
+  updatedInstitutions         Institution[]                @relation("InstitutionUpdatedBy")
+  // Phase 7 content authors (same SET NULL convention as above).
+  createdToolkits             Toolkit[]                    @relation("ToolkitCreatedBy")
+  updatedToolkits             Toolkit[]                    @relation("ToolkitUpdatedBy")
+  createdToolkitDistributions ToolkitDistributionSummary[] @relation("ToolkitDistributionCreatedBy")
+  updatedToolkitDistributions ToolkitDistributionSummary[] @relation("ToolkitDistributionUpdatedBy")
 
   @@map("users")
 }
@@ -297,6 +315,7 @@ model MediaAsset {
   newsCovers       EventNews[]       @relation("NewsCover")
   programmeCovers  ProgrammeScheme[] @relation("ProgrammeCover")
   institutionLogos Institution[]     @relation("InstitutionLogo")
+  toolkitCovers    Toolkit[]         @relation("ToolkitCover")
 
   @@index([mimeType])
   @@index([archivedAt])
@@ -462,6 +481,7 @@ model Commodity {
   documentLinks  DocumentCommodity[]
   eventLinks     EventCommodity[]
   programmeLinks ProgrammeCommodity[]
+  toolkits       Toolkit[]
 
   @@map("commodities")
 }
@@ -870,19 +890,20 @@ model Event {
   createdAt              DateTime          @default(now()) @map("created_at")
   updatedAt              DateTime          @updatedAt @map("updated_at")
 
-  eventType    EventType          @relation(fields: [eventTypeId], references: [id], onDelete: Restrict)
-  trainingType TrainingType?      @relation(fields: [trainingTypeId], references: [id], onDelete: Restrict)
-  district     District?          @relation(fields: [districtId], references: [id], onDelete: Restrict)
-  block        Block?             @relation(fields: [blockId], references: [id], onDelete: Restrict)
-  coverMedia   MediaAsset?        @relation("EventCover", fields: [coverMediaId], references: [id])
-  createdBy    User?              @relation("EventCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
-  updatedBy    User?              @relation("EventUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
-  commodities  EventCommodity[]
-  programmes   EventProgramme[]
-  institutions EventInstitution[]
-  documents    EventDocument[]
-  galleries    EventGallery[]
-  news         EventNews[]
+  eventType            EventType                    @relation(fields: [eventTypeId], references: [id], onDelete: Restrict)
+  trainingType         TrainingType?                @relation(fields: [trainingTypeId], references: [id], onDelete: Restrict)
+  district             District?                    @relation(fields: [districtId], references: [id], onDelete: Restrict)
+  block                Block?                       @relation(fields: [blockId], references: [id], onDelete: Restrict)
+  coverMedia           MediaAsset?                  @relation("EventCover", fields: [coverMediaId], references: [id])
+  createdBy            User?                        @relation("EventCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedBy            User?                        @relation("EventUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+  commodities          EventCommodity[]
+  programmes           EventProgramme[]
+  institutions         EventInstitution[]
+  documents            EventDocument[]
+  galleries            EventGallery[]
+  news                 EventNews[]
+  toolkitDistributions ToolkitDistributionSummary[] // Phase 7 (re-added additively per the trim note above)
 
   @@index([publicationState, publicVisibility, archivedAt, publishedAt])
   @@index([publicationState, publicVisibility, archivedAt, publishStartAt], map: "events_pubstate_vis_archived_publishstart_idx") // Issue 6: scheduled-publishing gate
@@ -1070,6 +1091,7 @@ model ProgrammeScheme {
   documents              DocumentProgramme[]
   commodities            ProgrammeCommodity[]
   permittedTrainingTypes ProgrammePermittedTrainingType[]
+  toolkits               Toolkit[] // Phase 7 (re-added additively per the trim note above)
 
   @@index([publicationState, publicVisibility, archivedAt, publishedAt])
   @@index([showOnHomepage, displayOrder])
@@ -1100,6 +1122,127 @@ model ProgrammePermittedTrainingType {
   @@unique([programmeSchemeId, trainingTypeId])
   @@index([trainingTypeId, programmeSchemeId])
   @@map("programme_permitted_training_types")
+}
+
+// ─────────────── Phase 7: Toolkit (database-schema-design.md Part 6 / Part 13) ───────────────
+// Reusable public toolkit definition: a Programme/Scheme + Commodity + ordered ToolkitItems
+// (AC#8). Per-event distribution is summary-only via toolkit_distribution_summaries/_items —
+// no beneficiary records, stock ledger, inventory, or acknowledgements (AC#10).
+// createdBy/updatedBy follow the applied-codebase convention (nullable + ON DELETE SET NULL).
+// programme_scheme_id / commodity_id / cover_media_id are optional refs with the default
+// RESTRICT (a referenced programme/commodity/media asset cannot be hard-deleted while linked).
+model Toolkit {
+  id                String           @id @default(uuid()) @db.Uuid
+  titleEn           String           @map("title_en")
+  titleHi           String?          @map("title_hi")
+  summaryEn         String?          @map("summary_en")
+  summaryHi         String?          @map("summary_hi")
+  descriptionEn     String?          @map("description_en")
+  descriptionHi     String?          @map("description_hi")
+  programmeSchemeId String?          @map("programme_scheme_id") @db.Uuid
+  commodityId       String?          @map("commodity_id") @db.Uuid
+  coverMediaId      String?          @map("cover_media_id") @db.Uuid
+  slug              String           @unique
+  publicationState  PublicationState @default(draft) @map("publication_state")
+  publicVisibility  Boolean          @default(true) @map("public_visibility")
+  publishStartAt    DateTime?        @map("publish_start_at")
+  publishedAt       DateTime?        @map("published_at")
+  archivedAt        DateTime?        @map("archived_at")
+  highlightType     HighlightType?   @map("highlight_type")
+  highlightStartAt  DateTime?        @map("highlight_start_at")
+  highlightEndAt    DateTime?        @map("highlight_end_at")
+  displayOrder      Int?             @map("display_order")
+  showOnHomepage    Boolean          @default(false) @map("show_on_homepage")
+  createdById       String?          @map("created_by") @db.Uuid
+  updatedById       String?          @map("updated_by") @db.Uuid
+  createdAt         DateTime         @default(now()) @map("created_at")
+  updatedAt         DateTime         @updatedAt @map("updated_at")
+
+  programmeScheme ProgrammeScheme?             @relation(fields: [programmeSchemeId], references: [id], onDelete: Restrict)
+  commodity       Commodity?                   @relation(fields: [commodityId], references: [id], onDelete: Restrict)
+  coverMedia      MediaAsset?                  @relation("ToolkitCover", fields: [coverMediaId], references: [id])
+  createdBy       User?                        @relation("ToolkitCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedBy       User?                        @relation("ToolkitUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+  items           ToolkitItem[]
+  distributions   ToolkitDistributionSummary[]
+
+  // Explicit map names pin the index identifiers to the hand-written migration (avoids
+  // long-name-truncation drift between `prisma migrate dev` and the applied SQL).
+  @@index([publicationState, publicVisibility, archivedAt, publishedAt], map: "toolkits_pubstate_vis_archived_published_idx")
+  @@index([showOnHomepage, displayOrder])
+  @@map("toolkits")
+}
+
+// Ordered toolkit definition lines (catalogue-level). No individual/beneficiary records.
+model ToolkitItem {
+  id                     String            @id @default(uuid()) @db.Uuid
+  toolkitId              String            @map("toolkit_id") @db.Uuid
+  nameEn                 String            @map("name_en")
+  nameHi                 String?           @map("name_hi")
+  descriptionEn          String?           @map("description_en")
+  descriptionHi          String?           @map("description_hi")
+  unit                   String?
+  distributionBasis      DistributionBasis @default(individual) @map("distribution_basis")
+  defaultQuantityPerUnit Decimal?          @map("default_quantity_per_unit") @db.Decimal(14, 2)
+  defaultGroupSize       Int?              @map("default_group_size")
+  quantitySummary        Decimal?          @map("quantity_summary") @db.Decimal(14, 2)
+  isActive               Boolean           @default(true) @map("is_active")
+  displayOrder           Int               @default(0) @map("display_order")
+  createdAt              DateTime          @default(now()) @map("created_at")
+  updatedAt              DateTime          @updatedAt @map("updated_at")
+
+  toolkit           Toolkit                   @relation(fields: [toolkitId], references: [id], onDelete: Cascade)
+  distributionItems ToolkitDistributionItem[]
+
+  @@index([toolkitId, displayOrder])
+  @@map("toolkit_items")
+}
+
+// Training-level (per-event) distribution summary — public summary figures only.
+model ToolkitDistributionSummary {
+  id                  String            @id @default(uuid()) @db.Uuid
+  eventId             String            @map("event_id") @db.Uuid
+  toolkitId           String            @map("toolkit_id") @db.Uuid
+  distributionDone    Boolean           @default(false) @map("distribution_done")
+  distributionModel   DistributionModel @map("distribution_model")
+  participantsCovered Int?              @map("participants_covered")
+  distributionDate    DateTime?         @map("distribution_date") @db.Date
+  remarksEn           String?           @map("remarks_en")
+  remarksHi           String?           @map("remarks_hi")
+  createdById         String?           @map("created_by") @db.Uuid
+  updatedById         String?           @map("updated_by") @db.Uuid
+  createdAt           DateTime          @default(now()) @map("created_at")
+  updatedAt           DateTime          @updatedAt @map("updated_at")
+
+  event     Event                     @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  toolkit   Toolkit                   @relation(fields: [toolkitId], references: [id], onDelete: Restrict)
+  createdBy User?                     @relation("ToolkitDistributionCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedBy User?                     @relation("ToolkitDistributionUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+  items     ToolkitDistributionItem[]
+
+  @@unique([eventId, toolkitId])
+  @@index([toolkitId])
+  @@map("toolkit_distribution_summaries")
+}
+
+// Item-level lines under a distribution summary. total_quantity auto = quantity_per_unit *
+// number_of_units_or_groups unless manual_override (computed in the service).
+model ToolkitDistributionItem {
+  id                           String            @id @default(uuid()) @db.Uuid
+  toolkitDistributionSummaryId String            @map("toolkit_distribution_summary_id") @db.Uuid
+  toolkitItemId                String            @map("toolkit_item_id") @db.Uuid
+  distributionBasis            DistributionBasis @map("distribution_basis")
+  quantityPerUnit              Decimal?          @map("quantity_per_unit") @db.Decimal(14, 2)
+  numberOfUnitsOrGroups        Int?              @map("number_of_units_or_groups")
+  totalQuantity                Decimal?          @map("total_quantity") @db.Decimal(14, 2)
+  manualOverride               Boolean           @default(false) @map("manual_override")
+
+  summary     ToolkitDistributionSummary @relation(fields: [toolkitDistributionSummaryId], references: [id], onDelete: Cascade)
+  toolkitItem ToolkitItem                @relation(fields: [toolkitItemId], references: [id], onDelete: Restrict)
+
+  @@unique([toolkitDistributionSummaryId, toolkitItemId], map: "toolkit_distribution_items_summary_id_item_id_key")
+  @@index([toolkitItemId])
+  @@map("toolkit_distribution_items")
 }
 
 // ─────────────── Institution (Part 6 / Part 13) ───────────────

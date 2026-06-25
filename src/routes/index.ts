@@ -28,11 +28,13 @@ import {
   homePartnersRouter,
 } from '@/modules/institutions/institutions.routes';
 import { programmeAdminRouter, programmePublicRouter } from '@/modules/programmes/programmes.routes';
+import { toolkitAdminRouter, toolkitPublicRouter } from '@/modules/toolkits/toolkits.routes';
 import {
   eventAdminRouter,
   eventPublicRouter,
   eventTypeFieldDefinitionsRouter,
 } from '@/modules/events/events.routes';
+import { eventToolkitDistributionRouter } from '@/modules/events/toolkit-distributions/toolkit-distributions.routes';
 import { newsAdminRouter, newsPublicRouter } from '@/modules/events/news/news.routes';
 
 export const apiRouter = Router();
@@ -65,7 +67,10 @@ apiRouter.use('/admin/masters', mastersAdminRouter);
 apiRouter.use('/admin/documents', documentAdminRouter);
 apiRouter.use('/admin/institutions', institutionAdminRouter);
 apiRouter.use('/admin/programmes', programmeAdminRouter);
+apiRouter.use('/admin/toolkits', toolkitAdminRouter);
 apiRouter.use('/admin/events', eventAdminRouter);
+// Per-event toolkit-distribution sub-resource (distinct path depth from the events router above).
+apiRouter.use('/admin/events', eventToolkitDistributionRouter);
 apiRouter.use('/admin/event-types', eventTypeFieldDefinitionsRouter);
 apiRouter.use('/admin/news', newsAdminRouter);
 
@@ -77,5 +82,6 @@ apiRouter.use('/public/knowledge-centre', knowledgeCentreRouter);
 apiRouter.use('/public/institutions', institutionPublicRouter);
 apiRouter.use('/public/home/partners', homePartnersRouter);
 apiRouter.use('/public/programmes', programmePublicRouter);
+apiRouter.use('/public/toolkits', toolkitPublicRouter);
 apiRouter.use('/public/events', eventPublicRouter);
 apiRouter.use('/public/news', newsPublicRouter);
