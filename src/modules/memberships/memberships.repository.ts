@@ -12,7 +12,12 @@
 import type { Prisma, PrismaClient } from '@prisma/client';
 import { prisma } from '@/db/prisma';
 import { publicVisibilityWhere } from '@/shared/visibility';
-import type { MembershipFilters, MembershipOrderingField } from './memberships.types';
+import type {
+  MembershipFilters,
+  MembershipOrderingField,
+  MembershipLevel,
+  MembershipType,
+} from './memberships.types';
 
 type Db = PrismaClient | Prisma.TransactionClient;
 
@@ -94,6 +99,49 @@ export function buildWhere(
 
 export async function slugExists(slug: string, db: Db = prisma): Promise<boolean> {
   return (await db.institutionalMembership.count({ where: { slug } })) > 0;
+}
+
+// ── Duplicate-prevention lookups (Issue 1) ──────────────────────────────────────
+/**
+ * Approved business uniqueness key (audit-critical-fixes Fix 2; feeds dashboard reports #10–#13):
+ * institution × level × type × district-union × reporting-period. `districtUnionId`/`reportingPeriodId`
+ * are nullable; passing `null` here yields `IS NULL`, so two NULLs are treated as equal — matching the
+ * `NULLS NOT DISTINCT` database index.
+ */
+export interface MembershipBusinessKey {
+  institutionId: string;
+  membershipLevel: MembershipLevel;
+  membershipType: MembershipType;
+  districtUnionId: string | null;
+  reportingPeriodId: string | null;
+}
+
+/** True when a membership with the same business key already exists (excluding `excludeId`). */
+export async function businessKeyExists(
+  key: MembershipBusinessKey,
+  excludeId?: string,
+  db: Db = prisma,
+): Promise<boolean> {
+  const where: Prisma.InstitutionalMembershipWhereInput = {
+    institutionId: key.institutionId,
+    membershipLevel: key.membershipLevel,
+    membershipType: key.membershipType,
+    districtUnionId: key.districtUnionId,
+    reportingPeriodId: key.reportingPeriodId,
+  };
+  if (excludeId) where.id = { not: excludeId };
+  return (await db.institutionalMembership.count({ where })) > 0;
+}
+
+/** True when another membership already carries this (non-null) membership number. */
+export async function membershipNumberExists(
+  membershipNumber: string,
+  excludeId?: string,
+  db: Db = prisma,
+): Promise<boolean> {
+  const where: Prisma.InstitutionalMembershipWhereInput = { membershipNumber };
+  if (excludeId) where.id = { not: excludeId };
+  return (await db.institutionalMembership.count({ where })) > 0;
 }
 
 export async function create(
@@ -219,6 +267,8 @@ export async function institutionName(id: string, db: Db = prisma): Promise<stri
 
 export const membershipRepository = {
   slugExists,
+  businessKeyExists,
+  membershipNumberExists,
   create,
   findById,
   findBySlug,

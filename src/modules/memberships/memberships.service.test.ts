@@ -10,6 +10,8 @@ import type { ResolvedAuthorization } from '@/modules/auth/auth.types';
 const { repo, cache, audit } = vi.hoisted(() => ({
   repo: {
     slugExists: vi.fn(),
+    businessKeyExists: vi.fn(),
+    membershipNumberExists: vi.fn(),
     findById: vi.fn(),
     update: vi.fn(),
     create: vi.fn(),
@@ -79,10 +81,16 @@ beforeEach(() => {
   vi.clearAllMocks();
   repo.validateReferences.mockResolvedValue({});
   repo.slugExists.mockResolvedValue(false);
+  repo.businessKeyExists.mockResolvedValue(false);
+  repo.membershipNumberExists.mockResolvedValue(false);
   repo.institutionName.mockResolvedValue('JSLPS');
   repo.update.mockImplementation(async () => makeRow());
   repo.create.mockImplementation(async () => makeRow());
 });
+
+/** A Prisma P2002 unique-violation error, optionally targeting a specific constraint/columns. */
+const p2002 = (target: string[]): Error =>
+  Object.assign(new Error('Unique constraint failed'), { code: 'P2002', meta: { target } });
 
 const baseCreate = {
   institution_id: INST,
@@ -193,5 +201,127 @@ describe('membershipService.bulkUpload', () => {
     expect(result.created_count).toBe(0);
     expect(result.skipped_count).toBe(1);
     expect(repo.transaction).not.toHaveBeenCalled();
+  });
+});
+
+// ── Issue 1: duplicate prevention ───────────────────────────────────────────────
+describe('membershipService — duplicate prevention (create/update)', () => {
+  it('rejects a duplicate create on the business key (409) and does not insert', async () => {
+    repo.businessKeyExists.mockResolvedValue(true);
+    await expect(membershipService.create(baseCreate as never, ctx(editor))).rejects.toBeInstanceOf(
+      ConflictError,
+    );
+    expect(repo.create).not.toHaveBeenCalled();
+  });
+
+  it('rejects a create whose membership number is already taken (409)', async () => {
+    repo.membershipNumberExists.mockResolvedValue(true);
+    await expect(
+      membershipService.create({ ...baseCreate, membership_number: 'MEM-001' } as never, ctx(editor)),
+    ).rejects.toBeInstanceOf(ConflictError);
+    expect(repo.create).not.toHaveBeenCalled();
+  });
+
+  it('rejects a duplicate update on the business key, excluding the record itself (409)', async () => {
+    repo.findById.mockResolvedValue(makeRow({ publicationState: 'draft' }));
+    repo.businessKeyExists.mockResolvedValue(true);
+    await expect(
+      membershipService.update('m-1', { membership_type: 'nominal' }, ctx(editor)),
+    ).rejects.toBeInstanceOf(ConflictError);
+    // The duplicate check excludes the row being edited.
+    expect(repo.businessKeyExists).toHaveBeenCalledWith(expect.anything(), 'm-1');
+    expect(repo.update).not.toHaveBeenCalled();
+  });
+
+  it('does not re-check the business key when no key field is touched', async () => {
+    repo.findById.mockResolvedValue(makeRow({ publicationState: 'draft' }));
+    await membershipService.update('m-1', { display_order: 5 }, ctx(editor));
+    expect(repo.businessKeyExists).not.toHaveBeenCalled();
+  });
+
+  // Dashboard count integrity: a duplicate must never be persisted, so reports #10–#13 cannot
+  // double-count an institution.
+  it('guarantees count integrity — a duplicate business key never reaches the database', async () => {
+    repo.businessKeyExists.mockResolvedValue(true);
+    await expect(membershipService.create(baseCreate as never, ctx(editor))).rejects.toBeInstanceOf(
+      ConflictError,
+    );
+    expect(repo.create).not.toHaveBeenCalled();
+    expect(repo.update).not.toHaveBeenCalled();
+  });
+});
+
+describe('membershipService — race-condition mapping (P2002 → 409)', () => {
+  it('maps a concurrent business-key violation on create to 409', async () => {
+    repo.create.mockRejectedValueOnce(p2002(['institutional_memberships_business_key']));
+    await expect(
+      membershipService.create(baseCreate as never, ctx(editor)),
+    ).rejects.toBeInstanceOf(ConflictError);
+  });
+
+  it('maps a concurrent membership-number violation on create to 409', async () => {
+    repo.create.mockRejectedValueOnce(p2002(['membership_number']));
+    await expect(
+      membershipService.create({ ...baseCreate, membership_number: 'MEM-001' } as never, ctx(editor)),
+    ).rejects.toBeInstanceOf(ConflictError);
+  });
+
+  it('maps a concurrent violation on update to 409', async () => {
+    repo.findById.mockResolvedValue(makeRow({ publicationState: 'draft' }));
+    repo.update.mockRejectedValueOnce(p2002(['institutional_memberships_business_key']));
+    await expect(
+      membershipService.update('m-1', { membership_type: 'nominal' }, ctx(editor)),
+    ).rejects.toBeInstanceOf(ConflictError);
+  });
+
+  it('re-throws non-P2002 errors untouched', async () => {
+    repo.create.mockRejectedValueOnce(new Error('some other failure'));
+    await expect(membershipService.create(baseCreate as never, ctx(editor))).rejects.toThrow(
+      'some other failure',
+    );
+  });
+});
+
+describe('membershipService.bulkUpload — duplicate detection', () => {
+  beforeEach(() => {
+    repo.transaction.mockImplementation(async (fn: (tx: unknown) => Promise<unknown>) => fn({}));
+  });
+
+  it('reports a row that duplicates an existing database record', async () => {
+    repo.businessKeyExists.mockResolvedValue(true);
+    const rows = [{ institution_id: INST, membership_level: 'sidhkofed', membership_type: 'primary' }];
+    const result = await membershipService.bulkUpload(rows, ctx(editor));
+    expect(result.created_count).toBe(0);
+    expect(result.skipped_count).toBe(1);
+    expect(result.errors[0].fields._).toBeDefined();
+    expect(repo.create).not.toHaveBeenCalled();
+  });
+
+  it('rejects a duplicate appearing twice within the same batch (second row only)', async () => {
+    const row = { institution_id: INST, membership_level: 'sidhkofed', membership_type: 'primary' };
+    const result = await membershipService.bulkUpload([row, { ...row }], ctx(editor));
+    expect(result.created_count).toBe(1); // first occurrence imported
+    expect(result.skipped_count).toBe(1); // second occurrence rejected
+    expect(result.errors.map((e) => e.row)).toEqual([1]);
+    expect(repo.create).toHaveBeenCalledTimes(1);
+  });
+
+  it('rejects a duplicate membership number within the same batch', async () => {
+    const rows = [
+      { institution_id: INST, membership_level: 'sidhkofed', membership_type: 'primary', membership_number: 'MEM-1' },
+      { institution_id: INST, membership_level: 'sidhkofed', membership_type: 'nominal', membership_number: 'MEM-1' },
+    ];
+    const result = await membershipService.bulkUpload(rows, ctx(editor));
+    expect(result.created_count).toBe(1);
+    expect(result.skipped_count).toBe(1);
+    expect(result.errors[0].fields.membership_number).toBeDefined();
+  });
+
+  it('maps a concurrent unique violation inside the transaction to 409', async () => {
+    repo.transaction.mockRejectedValueOnce(p2002(['institutional_memberships_business_key']));
+    const rows = [{ institution_id: INST, membership_level: 'sidhkofed', membership_type: 'primary' }];
+    await expect(membershipService.bulkUpload(rows, ctx(editor))).rejects.toBeInstanceOf(
+      ConflictError,
+    );
   });
 });

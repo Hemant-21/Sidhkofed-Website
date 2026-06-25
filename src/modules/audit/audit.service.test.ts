@@ -38,8 +38,31 @@ describe('audit.service', () => {
     expect(create.mock.calls[0][0].data.changeSummary).toBe('LOGIN_SUCCESS');
   });
 
-  it('never throws when the insert fails (auditing must not break the operation)', async () => {
-    create.mockRejectedValueOnce(new Error('db down'));
+  it('never throws when every insert attempt fails (auditing must not break the operation)', async () => {
+    // AUDIT_MAX_ATTEMPTS rejections — the write ultimately fails but is reported, not thrown.
+    create
+      .mockRejectedValueOnce(new Error('db down'))
+      .mockRejectedValueOnce(new Error('db down'))
+      .mockRejectedValueOnce(new Error('db down'));
     await expect(auditService.log('CREATE', { userId: 'u1' }, { module: 'media', recordId: 'm1' })).resolves.toBeUndefined();
+  });
+
+  // Durability (Issue 2): bounded retry rides out a transient failure.
+  it('retries a transient insert failure and succeeds without losing the audit row', async () => {
+    create.mockRejectedValueOnce(new Error('connection reset')).mockResolvedValueOnce({});
+    await auditService.log('CREATE', { userId: 'u1' }, { module: 'media', recordId: 'm1' });
+    expect(create).toHaveBeenCalledTimes(2);
+    expect(create.mock.calls[1][0].data.module).toBe('media');
+  });
+
+  it('gives up after the bounded number of attempts but stays fail-open', async () => {
+    create
+      .mockRejectedValueOnce(new Error('db down'))
+      .mockRejectedValueOnce(new Error('db down'))
+      .mockRejectedValueOnce(new Error('db down'));
+    await expect(
+      auditService.log('CREATE', { userId: 'u1' }, { module: 'media', recordId: 'm1' }),
+    ).resolves.toBeUndefined();
+    expect(create).toHaveBeenCalledTimes(3); // AUDIT_MAX_ATTEMPTS
   });
 });

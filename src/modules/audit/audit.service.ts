@@ -35,6 +35,19 @@ function reportAuditFailure(err: unknown, intended: Record<string, unknown>): vo
   );
 }
 
+/**
+ * Durability (Phase 11 remediation — Issue 2). The audit architecture is intentionally fail-open
+ * (audit.md: a failed insert is logged, never thrown — auditing must not break the business
+ * operation), so we do NOT make the insert transactional with the mutation. Instead we improve
+ * reliability within that contract: a bounded retry rides out a transient DB blip (connection reset,
+ * brief unavailability) before the write is reported as failed. Each retry is logged so a flaky audit
+ * path is visible, and exhaustion still surfaces via {@link reportAuditFailure} (alertable).
+ */
+const AUDIT_MAX_ATTEMPTS = 3;
+const AUDIT_RETRY_BASE_MS = 25;
+
+const sleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
+
 /** Who/where context for an audited action. */
 export interface AuditContext {
   userId: string | null;
@@ -103,7 +116,7 @@ async function insert(params: {
   metadata: Record<string, unknown>;
   ipHash: string | null;
 }): Promise<void> {
-  await auditRepository.create({
+  const data = {
     userId: params.userId,
     action: params.dbAction,
     module: params.module,
@@ -113,6 +126,30 @@ async function insert(params: {
     changeSummary: params.changeSummary,
     metadata: params.metadata as Prisma.InputJsonValue,
     ipHash: params.ipHash,
+  };
+
+  let lastErr: unknown;
+  for (let attempt = 1; attempt <= AUDIT_MAX_ATTEMPTS; attempt += 1) {
+    try {
+      await auditRepository.create(data);
+      return;
+    } catch (err) {
+      lastErr = err;
+      if (attempt < AUDIT_MAX_ATTEMPTS) {
+        auditLogger.warn(
+          { err, attempt, event: 'audit_write_retry', module: params.module, recordId: params.recordId },
+          'Audit write failed; retrying',
+        );
+        await sleep(AUDIT_RETRY_BASE_MS * attempt);
+      }
+    }
+  }
+  // Exhausted all attempts — fail-open: report (alertable) but never break the business operation.
+  reportAuditFailure(lastErr, {
+    action: params.dbAction,
+    module: params.module,
+    recordId: params.recordId,
+    summary: params.changeSummary,
   });
 }
 

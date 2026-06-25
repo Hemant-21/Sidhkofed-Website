@@ -1672,7 +1672,7 @@ model InstitutionalMembership {
   institutionId     String           @map("institution_id") @db.Uuid
   membershipLevel   MembershipLevel  @map("membership_level") // sidhkofed | district_union
   membershipType    MembershipType   @map("membership_type") // primary | nominal
-  membershipNumber  String?          @map("membership_number")
+  membershipNumber  String?          @unique @map("membership_number")
   districtId        String?          @map("district_id") @db.Uuid
   districtUnionId   String?          @map("district_union_id") @db.Uuid
   reportingPeriodId String?          @map("reporting_period_id") @db.Uuid
@@ -1703,6 +1703,11 @@ model InstitutionalMembership {
   createdBy       User?            @relation("MembershipCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
   updatedBy       User?            @relation("MembershipUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
 
+  // Business uniqueness key (audit-critical-fixes Fix 2; feeds dashboard reports #10–#13): one
+  // membership per institution × level × type × district-union × reporting-period. district_union_id
+  // and reporting_period_id are nullable — the migration creates this index with NULLS NOT DISTINCT
+  // (PostgreSQL 15+) so duplicates with an omitted DU/period still collide at the database layer.
+  @@unique([institutionId, membershipLevel, membershipType, districtUnionId, reportingPeriodId], map: "institutional_memberships_business_key")
   @@index([publicationState, publicVisibility, archivedAt, publishedAt])
   @@index([membershipLevel, membershipType, reportingPeriodId])
   @@index([institutionId])
