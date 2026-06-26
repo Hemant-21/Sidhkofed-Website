@@ -6,6 +6,60 @@ Use this file to track work when the same repository is edited from multiple
 devices. Update it before switching devices, before committing, and after
 pulling changes from another machine.
 
+## Session — Phase 15.2: Admin Dashboard & Global Search (admin frontend)
+
+Scope: ONLY the Admin Dashboard and Global Search UI. No other modules, CRUD pages,
+forms, editors, or media library. Composes the existing Phase-15.0 shell/providers/
+design-system and Phase-15.1 query/CRUD/http layers, and consumes existing backend
+contracts (dashboard, search, audit). No backend change; no 15.0/15.1 infrastructure
+rewritten. Each feature is a self-contained vertical slice under `admin/src/features/`.
+
+Backend APIs consumed (read-only): `GET /public/dashboard/kpis` (resolved headline
+KPIs), `GET /admin/dashboard/reports` (fixed report catalog + publication state),
+`GET /admin/audit-logs` (Recent Activity; Super Admin only), `GET /admin/{resource}?page_size=1`
+(per-module/state totals read from `pagination.total_items` — the server's count, not a
+client tally), and `GET /admin/search` (server-side global search over all publication states).
+
+Added (all under `admin/src/`):
+- **Shared infra extensions:** `constants/routes.ts` (+`search`), `constants/api-endpoints.ts`
+  (`SEARCH_ENDPOINTS`/`DASHBOARD_ENDPOINTS`/`AUDIT_ENDPOINTS`), `constants/query-keys.ts`
+  (`dashboard`/`audit`/`search` namespaces), `constants/permissions.ts`
+  (`CONTENT_PERMISSIONS`/`DASHBOARD_PERMISSIONS` key mirrors), and DTO types
+  `types/dashboard.ts` + `types/search.ts` (mirror backend dashboard/search/audit shapes 1:1).
+- **Dashboard feature** `features/dashboard/`: `api.ts` (fetchers), `hooks.ts`
+  (`useDashboardKpis`/`useDashboardReports`/`useRecentActivity`/`useContentCount[s]`),
+  `components/` (reusable widgets: `StatCard`, `DashboardCard`, `StatusRow`, `InfoCard`,
+  `WarningCard`; sections: `ContentKpiGrid`, `HeadlineKpiGrid`, `QuickActions` (permission-aware),
+  `RecentActivity`, `ContentStateSummary` (Draft+Published+Archived table), `ReportStatus`,
+  `SystemStatus` (no invented health checks), `SearchShortcut`), and `dashboard-page.tsx`
+  (manual + React-Query refresh, per-card loading/error/retry).
+- **Search feature** `features/search/`: `api.ts` (`buildSearchQuery`/`searchAdmin`), `hooks.ts`
+  (`useSearchResults` min-length-gated, `groupResultsByType`), `content-type-meta.ts`
+  (icon/label/admin-route per content type), `search-provider.tsx` (global Ctrl/Cmd+K palette +
+  "/" shortcut), `components/` (`SearchModal` on shared `useFocusTrap` — focus trap/ESC/scroll-lock/
+  overlay/restore-focus; `SearchResults` grouped; `SearchResultCard`; `SearchFilters` content-type +
+  year), and `search-page.tsx` (URL-driven, paginated, full empty/loading/error/no-result states).
+- **Routes/shell:** `app/(admin)/dashboard/page.tsx` → `DashboardPage`; new
+  `app/(admin)/search/page.tsx` → `SearchPage` (Suspense-wrapped for `useSearchParams`);
+  `AdminShell` now wraps children in `SearchProvider`; `Topbar` search button + mobile icon open
+  the palette (replaced the disabled placeholder seam).
+- **Tests** (+18): search `hooks`/`content-type-meta`/`api`/`use-search-results`(renderHook gating)/
+  `search-result-card`(render); dashboard `api`(count reads total_items)/`quick-actions`(permission
+  matrix). Covers grouping, min-length gating, permission-aware affordances, and result rendering.
+
+Design notes: dashboard is fixed (no widget/report builder); KPIs are backend-resolved or
+backend-counted totals (no frontend KPI math). Search is fully server-side (no client index/filter/
+re-rank); results group only for scannability and preserve backend ranking. Permission-aware
+affordances (`usePermissions`/`<Can>`) hide what the user can't use — backend stays the security
+boundary. Recent Activity self-restricts to Super Admin instead of surfacing a 403. Result cards
+render only backend-provided fields (no invented publication-state/highlight). Admin results deep-
+link to the reserved admin route `${route}/${id}` (module detail pages land in later phases).
+
+Verified (in `admin/`): `tsc --noEmit` ✓, `next lint` ✓ (no warnings), `vitest` 46 passed
+(28 baseline + 18 new), `next build` ✓ (`/dashboard` + `/search` compile).
+
+Commit/push status: not committed (left for review).
+
 ## Sync Protocol
 
 1. Before starting work, run `git pull` and read the latest entries in this file.
@@ -284,5 +338,48 @@ ARCHITECTURE CONFLICTS — reported, NOT changed (need architect sign-off):
 
 Verified: `prisma validate` ✓, `tsc --noEmit` ✓ (src), `eslint` ✓, `vitest` 319 passed / 53 skipped
 (+25 new). Live `migrate deploy` not run (no local Postgres). Schema unchanged → no new migration.
+
+Commit/push status: not committed (left for review).
+
+---
+
+## Session — Phase 15.1: Shared CMS Infrastructure (admin frontend, CRUD hook layer)
+
+Scope: reusable CMS infrastructure only — no module/business pages. Built the keystone
+data-access tier that lets future module pages (Events, Documents, …) be composed from
+config rather than re-writing CRUD/list/lifecycle plumbing. Composes the existing Phase-15.0
+foundation (`lib/api/crud-factory`, `constants/query-keys`, `lib/query`, toast/dialog
+providers) — nothing in 15.0 or the backend was modified.
+
+Added (all under `admin/src/`):
+- **Shared types** `types/crud.ts` — `ResourceConfig`, `EntityRef`/`RelationOption`,
+  `FilterFieldDef`/`FilterState`/`FilterController`, `BulkActionDef`/`BulkResult`,
+  `MediaSelectable`/`DocumentSelectable`. Exported via `types/index.ts`.
+- **Server-error mapping** `lib/api/server-errors.ts` — `toFormSubmitResult`,
+  `extractFieldErrors`, `fieldErrorMessage`, `errorMessage` (maps a 422 `fields` map onto
+  the reusable `<Form>` wrapper; everything else → form-level banner). Exported via `lib/api`.
+- **CRUD React Query hooks** `hooks/crud/`: `useResourceApi` (memoized client),
+  `useCrudList` (keepPreviousData paging), `useCrudDetail` (id-gated), `useCrudCreate`,
+  `useCrudUpdate`, `useCrudDelete`, lifecycle `usePublish/useUnpublish/useArchive/useRestore`
+  (+ `useLifecycleActions` aggregate), `useBulkAction` (settle-all fan-out + summary toast),
+  `useFilters` (URL-synced, allow-listed, server-side filtering + reset), `useCrudSearch`
+  (debounced inline search). Re-exported through `hooks/index.ts`.
+- **Tests** (+7): `server-errors.test.ts`, `use-crud-list.test.tsx` (mocked API + QueryClient),
+  `use-bulk-action.test.tsx` (ToastProvider; success/failure breakdown + empty no-op).
+
+Design notes: create/update do NOT toast errors (the `<Form>` owns 422 field mapping);
+lifecycle/delete/bulk DO toast (explicit user actions). Permission gating stays in `<Can>`/
+PermissionButton at the call site — backend remains the security boundary. Filter keys are
+allow-listed client-side so non-allow-listed params are never sent (matches API §1.4).
+
+Verified (in `admin/`): `tsc --noEmit` ✓, `next lint` ✓ (no warnings), `vitest` 28 passed (+7).
+
+Remaining for Phase 15.1 (not yet built — composition UI on top of this tier): relationship
+selectors (EntitySelector/AsyncSearchSelector/hierarchical/virtualized), media & document
+pickers/browser dialogs, rich-text wrapper, publishing-workflow dialog components, detail-view
+framework (metadata/audit/relationship cards + timeline), reusable card set, generic
+List/Create/Edit/Detail page templates, and skeleton/error component variants. Status badges
+(`StatusBadge`/`HighlightBadge`), `<Can>`, DataTable + bulk bar, and the form shell already
+exist from 15.0 and are reused as-is.
 
 Commit/push status: not committed (left for review).

@@ -1,14 +1,15 @@
 'use client';
 
 /**
- * Top navigation bar: mobile menu toggle, global-search placeholder, language +
- * notifications placeholders, theme toggle, and the user/account menu. The
- * placeholders are intentional foundation seams — future phases wire real search,
- * i18n, and notifications behind these same affordances.
+ * Top navigation bar: mobile menu toggle, global search (Ctrl/Cmd+K), language +
+ * notifications placeholders, theme toggle, and the user/account menu. The search
+ * affordance opens the global command palette owned by SearchProvider; language and
+ * notifications remain foundation seams for later phases.
  */
 
 import { Bell, Globe, Menu, PanelLeftClose, PanelLeft, Search } from 'lucide-react';
 import { Tooltip } from '@/components/ui/tooltip';
+import { useGlobalSearch } from '@/features/search/search-provider';
 import { ThemeToggle } from './theme-toggle';
 import { UserMenu } from './user-menu';
 
@@ -21,6 +22,7 @@ export interface TopbarProps {
 }
 
 export function Topbar({ onMenuClick, onCollapseToggle, collapsed }: TopbarProps) {
+  const { open: openSearch } = useGlobalSearch();
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center gap-2 border-b border-border bg-surface/80 px-4 backdrop-blur supports-[backdrop-filter]:bg-surface/60">
       {/* Mobile drawer trigger */}
@@ -46,18 +48,32 @@ export function Topbar({ onMenuClick, onCollapseToggle, collapsed }: TopbarProps
         </button>
       </Tooltip>
 
-      {/* Global search placeholder */}
+      {/* Global search (opens the Ctrl/Cmd+K command palette) */}
       <div className="hidden flex-1 md:block">
         <button
           type="button"
-          disabled
-          className="flex w-full max-w-md items-center gap-2 rounded-md border border-border bg-background px-3 py-2 text-sm text-muted-foreground"
-          aria-label="Global search (coming soon)"
+          onClick={openSearch}
+          className="flex w-full max-w-md items-center gap-2 rounded-md border border-border bg-background px-3 py-2 text-sm text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          aria-label="Open global search"
+          aria-keyshortcuts="Control+K Meta+K"
         >
           <Search className="h-4 w-4" aria-hidden="true" />
-          <span>Search…</span>
+          <span className="flex-1 text-left">Search…</span>
+          <kbd className="rounded border border-border bg-muted px-1.5 py-0.5 text-[10px] font-medium">
+            Ctrl / ⌘ K
+          </kbd>
         </button>
       </div>
+
+      {/* Mobile search trigger (icon only) */}
+      <button
+        type="button"
+        onClick={openSearch}
+        aria-label="Open global search"
+        className="inline-flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:hidden"
+      >
+        <Search className="h-5 w-5" aria-hidden="true" />
+      </button>
 
       <div className="ml-auto flex items-center gap-1">
         <PlaceholderButton icon={Globe} label="Language (coming soon)" />

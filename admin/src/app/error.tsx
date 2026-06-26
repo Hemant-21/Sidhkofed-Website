@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 export default function Error({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
   useEffect(() => {
     // Hook for a real logger/telemetry sink.
+    // eslint-disable-next-line no-console -- dev-only diagnostic; replace with logger sink in prod
     if (process.env.NODE_ENV === 'development') console.error(error);
   }, [error]);
 

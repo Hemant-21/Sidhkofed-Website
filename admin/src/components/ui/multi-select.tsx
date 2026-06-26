@@ -6,7 +6,7 @@
  * shows selected count. Single-select searchable cases use Autocomplete instead.
  */
 
-import { useMemo, useRef, useState } from 'react';
+import { useId, useMemo, useRef, useState } from 'react';
 import { Check, ChevronsUpDown } from 'lucide-react';
 import { cn } from '@/utils/cn';
 import { useClickOutside } from '@/hooks/use-click-outside';
@@ -36,6 +36,7 @@ export function MultiSelect({
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const ref = useRef<HTMLDivElement>(null);
+  const listboxId = useId();
   useClickOutside(ref, () => setOpen(false), open);
 
   const filtered = useMemo(
@@ -52,8 +53,10 @@ export function MultiSelect({
       <button
         type="button"
         disabled={disabled}
+        role="combobox"
         aria-haspopup="listbox"
         aria-expanded={open}
+        aria-controls={listboxId}
         aria-invalid={invalid || undefined}
         onClick={() => setOpen((v) => !v)}
         className={cn(
@@ -81,7 +84,7 @@ export function MultiSelect({
           <div className="p-2">
             <SearchInput value={query} onValueChange={setQuery} placeholder="Filter options…" />
           </div>
-          <ul role="listbox" aria-multiselectable className="max-h-60 overflow-auto p-1">
+          <ul id={listboxId} role="listbox" aria-multiselectable className="max-h-60 overflow-auto p-1">
             {filtered.length === 0 ? (
               <li className="px-3 py-2 text-sm text-muted-foreground">No matches</li>
             ) : (

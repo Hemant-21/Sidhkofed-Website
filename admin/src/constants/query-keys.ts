@@ -22,4 +22,23 @@ export const queryKeys = {
 
   /** Master-data lists (cached aggressively — they rarely change). */
   master: (key: string) => ['master', key] as const,
+
+  /** Admin Dashboard (Phase 15.2). Each surface reads an existing backend endpoint. */
+  dashboard: {
+    all: ['dashboard'] as const,
+    kpis: (period?: object) => ['dashboard', 'kpis', period ?? {}] as const,
+    reports: (query?: ListQuery) => ['dashboard', 'reports', query ?? {}] as const,
+    /** Backend-computed total for one resource + filter set (read from `pagination`). */
+    contentCount: (resource: string, filters?: Record<string, unknown>) =>
+      ['dashboard', 'content-count', resource, filters ?? {}] as const,
+  },
+
+  /** Recent administrative activity — audit log (Super Admin only). */
+  audit: {
+    all: ['audit'] as const,
+    list: (query?: ListQuery) => ['audit', 'list', query ?? {}] as const,
+  },
+
+  /** Global search (Phase 15.2). Keyed by the full validated query object. */
+  search: (query?: ListQuery) => ['search', query ?? {}] as const,
 } as const;

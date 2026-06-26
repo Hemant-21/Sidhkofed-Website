@@ -27,8 +27,10 @@ interface BaseFieldProps<T extends FieldValues> {
   className?: string;
 }
 
-export function TextField<T extends FieldValues>(props: BaseFieldProps<T> & { type?: string }) {
-  const { type = 'text', placeholder, disabled, ...rest } = props;
+export function TextField<T extends FieldValues>(
+  props: BaseFieldProps<T> & { type?: string; autoComplete?: string },
+) {
+  const { type = 'text', placeholder, disabled, autoComplete, ...rest } = props;
   return (
     <FormField<T>
       {...rest}
@@ -38,6 +40,7 @@ export function TextField<T extends FieldValues>(props: BaseFieldProps<T> & { ty
           type={type}
           placeholder={placeholder}
           disabled={disabled}
+          autoComplete={autoComplete}
           invalid={invalid}
           value={field.value ?? ''}
           onChange={field.onChange}

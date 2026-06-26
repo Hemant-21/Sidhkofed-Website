@@ -11,3 +11,6 @@ export { useResponsive, useMediaQuery } from './use-responsive';
 export { useQueryParams } from './use-query-params';
 export { useClickOutside } from './use-click-outside';
 export { useFocusTrap } from './use-focus-trap';
+
+// Reusable CRUD framework hooks (Phase 15.1).
+export * from './crud';

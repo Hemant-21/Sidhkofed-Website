@@ -9,13 +9,21 @@ export const ROUTES = {
   home: '/',
   login: '/login',
 
-  // App shell landing (placeholder home — NOT a dashboard module).
+  // Admin Dashboard — fixed KPIs, activity, and report status (Phase 15.2).
   dashboard: '/dashboard',
 
-  // Error / status routes.
+  // Global search results page (Phase 15.2). The search modal (Ctrl/Cmd+K) is
+  // available everywhere; this is the dedicated, deep-linkable results surface.
+  search: '/search',
+
+  // Error / status routes. Runtime errors are caught by error.tsx / global-error.tsx;
+  // these are addressable status pages (e.g. for a reverse-proxy `error_page` map).
+  // NOTE: avoid the reserved `/500` segment — it collides with Next's generated
+  // 500.html at build time on the App Router, so the 500 surface lives at
+  // `/server-error`.
   forbidden: '/403',
   notFound: '/404',
-  serverError: '/500',
+  serverError: '/server-error',
 
   // Reserved future module list routes (folders not created in this foundation).
   // Kept here so navigation + breadcrumbs resolve without magic strings.

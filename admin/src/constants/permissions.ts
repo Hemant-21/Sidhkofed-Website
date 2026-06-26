@@ -50,3 +50,21 @@ export const ROLE_KEYS = {
   contentEditor: 'content_editor',
   publisher: 'publisher',
 } as const;
+
+/**
+ * Backend permission keys reused by permission-aware affordances (dashboard quick
+ * actions, etc.). These only MIRROR the seeded backend keys (auth.permissions.ts);
+ * the backend still enforces every action. Most content modules share the generic
+ * `content.*` lifecycle set; Phase-7 modules (programmes/toolkits) and the dashboard
+ * carry module-specific keys.
+ */
+export const CONTENT_PERMISSIONS = {
+  create: 'content.create',
+  update: 'content.update',
+  publish: 'content.publish',
+} as const;
+
+export const DASHBOARD_PERMISSIONS = {
+  manageData: 'dashboard.manage_data',
+  publish: 'dashboard.publish',
+} as const;

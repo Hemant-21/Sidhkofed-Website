@@ -3,7 +3,7 @@
 import { forwardRef, type InputHTMLAttributes } from 'react';
 import { cn } from '@/utils/cn';
 
-export interface RadioProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'type'> {}
+export type RadioProps = Omit<InputHTMLAttributes<HTMLInputElement>, 'type'>;
 
 /** Native radio styled with the design-system accent. Group via shared `name`. */
 export const Radio = forwardRef<HTMLInputElement, RadioProps>(function Radio(

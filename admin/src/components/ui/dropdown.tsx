@@ -17,7 +17,8 @@ import { cn } from '@/utils/cn';
 import { useClickOutside } from '@/hooks/use-click-outside';
 
 export interface DropdownItem {
-  label: ReactNode;
+  /** Optional — omitted for `separator` items. */
+  label?: ReactNode;
   onSelect?: () => void;
   icon?: ReactNode;
   /** Render as a destructive action. */

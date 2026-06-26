@@ -28,7 +28,7 @@ import {
   Menu as MenuIcon,
   Images,
   Video,
-  IdCard,
+  BadgeCheck,
   HelpCircle,
   AppWindow,
   Inbox,
@@ -110,7 +110,7 @@ export const NAVIGATION: NavSection[] = [
     key: 'engagement',
     label: 'Engagement & Data',
     items: [
-      { key: 'memberships', label: 'Institutional Membership', href: ROUTES.memberships, icon: IdCard },
+      { key: 'memberships', label: 'Institutional Membership', href: ROUTES.memberships, icon: BadgeCheck },
       { key: 'enquiries', label: 'Enquiries', href: ROUTES.enquiries, icon: Inbox },
       { key: 'dashboard-data', label: 'Dashboard Data', href: ROUTES.dashboardData, icon: BarChart3 },
     ],
