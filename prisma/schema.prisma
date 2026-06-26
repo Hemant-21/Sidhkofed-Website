@@ -1,31 +1,3 @@
-// SIDHKOFED CMS — Prisma schema (Phase 1).
-//
-// CURRENT SCOPE: infrastructure + Phase 2 Identity/Access/RBAC + governance.
-// Defined: the Identity & access graph (users, roles, permissions, role_permissions,
-// user_roles), the governance tables (audit_logs, settings). Content/business models
-// (events, documents, programmes, toolkits, media, dashboard, …) are still added
-// module by module per the dependency graph (docs/foundation/03-module-dependency-graph.md).
-//
-// All models below are copied VERBATIM from the approved schema (database-schema-design.md
-// Part 13) — this is the documented module-by-module process, NOT a redesign. The
-// identity graph is Tier 1–3 of the build order and a prerequisite for every later
-// module's `created_by`/`updated_by` and for audit logging.
-//
-// Conventions (docs/foundation/04-coding-standards.md §3):
-//   - Model names PascalCase + @@map("snake_case"); fields camelCase + @map("snake_case").
-//   - UUID primary keys; explicit @db.Uuid foreign keys; Decimal for money/quantities.
-//   - onDelete is part of the contract: Restrict (masters/linked), Cascade (junction
-//     children), SetNull (optional refs). Do not change without a reviewed migration.
-//
-// NOTE ON THE FTS MIGRATION (parked — pre-Phase-5 audit fix, Issue 1):
-//   The metadata `search_vector` migration (adds tsvector columns + GIN indexes to the
-//   CONTENT tables events/documents/official_communications/procurement_updates/
-//   success_stories) lives in `prisma/parked-migrations/`, NOT in the applied chain,
-//   because those tables do not exist yet and a forward reference would break a fresh
-//   `prisma migrate deploy`. It is re-introduced with a later timestamp once the content
-//   modules + their base migration land (see prisma/parked-migrations/README.md).
-//   The applied chain is: init_identity_governance → media_system → masters.
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -33,214 +5,73 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
-  directUrl=env("DIRECT_URL")
 }
 
-// ─────────────── Enums (identity/governance subset of Part 13) ───────────────
-enum Language {
-  en
-  hi
-}
-
-enum AuditAction {
-  create
-  update
-  publish
-  unpublish
-  archive
-  restore
-  media_replace
-  config_change
-  master_change
-  login
-}
-
-// Publishing-workflow enums (Part 13). Added now because galleries/videos carry the
-// publishing-workflow mixin; content modules added later reuse the same enums.
-enum PublicationState {
-  draft
-  published
-  unpublished
-  archived
-}
-
-enum HighlightType {
-  new
-  latest
-  important
-  urgent
-  featured
-}
-
-// Reporting-period granularity (Part 13). Drives dashboard period selection:
-// Month / Financial Year / Calendar Year / Cumulative. Added with the masters module
-// (the `reporting_periods` master); content/dashboard models reuse it when they land.
-enum ReportingPeriodType {
-  month
-  financial_year
-  calendar_year
-  cumulative
-}
-
-// ─────────────── Phase 6 content enums (Part 13 verbatim) ───────────────
-// Added with the Events/Programmes/Institutions modules (dependency-graph Tiers 7/10/11).
-// Casing is lower-case snake_case everywhere per the §C enum-casing reconciliation
-// (architecture-validation §C7); the requirements doc's `upcoming` maps to `scheduled` (§C1)
-// and `single_date|date_range` to `single|range|multi_day` (§C2).
-enum DateMode {
-  single
-  range
-  multi_day
-}
-
-enum EventStatus {
-  scheduled // public UI may label "Upcoming" (§C1)
-  ongoing
-  completed
-  postponed
-  cancelled
-}
-
-// Controlled dynamic-field data types (Part 13). NOT a form builder: an event type may
-// define a small, fixed set of typed fields validated against events.dynamic_values.
-// `select` = single-choice dropdown. Extended types (multi_select / reference / file /
-// datetime) are deliberately NOT added — they would require an approved enum change
-// (development-rules §3); see docs/modules/events.md.
-enum FieldDataType {
-  text
-  textarea
-  number
-  date
-  boolean
-  select
-}
-
-// Bilingual fallback provenance (master-build-context §7.1): manual Hindi always wins;
-// `automatic` is labeled machine translation; `missing` when no Hindi exists.
-enum TranslationSource {
-  manual
-  automatic
-  missing
-}
-
-// Phase 7 — Toolkit distribution classification (database-schema-design.md Part 6 / Part 13).
-// Item-level basis (per toolkit item / distribution item) and the per-event distribution model.
-enum DistributionBasis {
-  individual
-  group
-}
-
-enum DistributionModel {
-  individual
-  group
-  mixed
-}
-
-// Phase 11 — Institutional Membership classification (database-schema-design.md Part 13).
-// Two ORTHOGONAL axes (level × type) feed the four membership dashboard reports #10–#13
-// (SIDHKOFED Primary/Nominal, DU Primary/Nominal). Lower-case snake_case per §C7; the
-// requirements doc's UPPER-case `SIDHKOFED`/`DISTRICT_UNION` are display notation only (§C7).
-enum MembershipLevel {
-  sidhkofed
-  district_union
-}
-
-enum MembershipType {
-  primary
-  nominal
-}
-
-enum MembershipStatus {
-  active
-  inactive
-}
-
-// Dashboard dataset provenance (Part 8 — `dataset_source_enum`). Only these three are permitted:
-// `cms_derived` (computed from CMS content), `manual` (typed in the CMS), `excel` (uploaded sheet).
-// Never API/live-ERP sources (CMS requirements §13 / build-context §12 non-goals).
-enum DatasetSource {
-  cms_derived
-  manual
-  excel
-}
-
-// ─────────────── Users & RBAC ───────────────
 model User {
-  id                String    @id @default(uuid()) @db.Uuid
-  email             String    @unique
-  passwordHash      String    @map("password_hash")
-  fullName          String    @map("full_name")
-  preferredLanguage Language  @default(en) @map("preferred_language")
-  isActive          Boolean   @default(true) @map("is_active")
-  lastLoginAt       DateTime? @map("last_login_at")
-  createdAt         DateTime  @default(now()) @map("created_at")
-  updatedAt         DateTime  @updatedAt @map("updated_at")
-
-  userRoles UserRole[]
-  auditLogs AuditLog[]
-
-  // Audit-author back-relations (Issue 8). All use ON DELETE SET NULL so removing a user
-  // preserves the historical content rather than cascading or blocking the delete.
-  uploadedMedia                 MediaAsset[]                 @relation("MediaUploadedBy")
-  createdGalleries              Gallery[]                    @relation("GalleryCreatedBy")
-  updatedGalleries              Gallery[]                    @relation("GalleryUpdatedBy")
-  createdVideos                 Video[]                      @relation("VideoCreatedBy")
-  updatedVideos                 Video[]                      @relation("VideoUpdatedBy")
-  updatedSettings               Setting[]                    @relation("SettingUpdatedBy")
-  createdDocuments              Document[]                   @relation("DocumentCreatedBy")
-  updatedDocuments              Document[]                   @relation("DocumentUpdatedBy")
-  // Phase 6 content authors (same SET NULL convention as above).
-  createdEvents                 Event[]                      @relation("EventCreatedBy")
-  updatedEvents                 Event[]                      @relation("EventUpdatedBy")
-  createdEventNews              EventNews[]                  @relation("EventNewsCreatedBy")
-  updatedEventNews              EventNews[]                  @relation("EventNewsUpdatedBy")
-  createdProgrammes             ProgrammeScheme[]            @relation("ProgrammeCreatedBy")
-  updatedProgrammes             ProgrammeScheme[]            @relation("ProgrammeUpdatedBy")
-  createdInstitutions           Institution[]                @relation("InstitutionCreatedBy")
-  updatedInstitutions           Institution[]                @relation("InstitutionUpdatedBy")
-  // Phase 7 content authors (same SET NULL convention as above).
-  createdToolkits               Toolkit[]                    @relation("ToolkitCreatedBy")
-  updatedToolkits               Toolkit[]                    @relation("ToolkitUpdatedBy")
-  createdToolkitDistributions   ToolkitDistributionSummary[] @relation("ToolkitDistributionCreatedBy")
-  updatedToolkitDistributions   ToolkitDistributionSummary[] @relation("ToolkitDistributionUpdatedBy")
-  // Phase 9 content authors (same SET NULL convention as above).
-  createdOfficialCommunications OfficialCommunication[]      @relation("OfficialCommunicationCreatedBy")
-  updatedOfficialCommunications OfficialCommunication[]      @relation("OfficialCommunicationUpdatedBy")
-  createdTenders                Tender[]                     @relation("TenderCreatedBy")
-  updatedTenders                Tender[]                     @relation("TenderUpdatedBy")
-  createdProcurementUpdates     ProcurementUpdate[]          @relation("ProcurementUpdateCreatedBy")
-  updatedProcurementUpdates     ProcurementUpdate[]          @relation("ProcurementUpdateUpdatedBy")
-  // Phase 10 content authors (same SET NULL convention as above).
-  createdPages                  Page[]                       @relation("PageCreatedBy")
-  updatedPages                  Page[]                       @relation("PageUpdatedBy")
-  createdMenuItems              MenuItem[]                   @relation("MenuItemCreatedBy")
-  updatedMenuItems              MenuItem[]                   @relation("MenuItemUpdatedBy")
-  createdFaqs                   Faq[]                        @relation("FaqCreatedBy")
-  updatedFaqs                   Faq[]                        @relation("FaqUpdatedBy")
-  createdDigitalServices        DigitalService[]             @relation("DigitalServiceCreatedBy")
-  updatedDigitalServices        DigitalService[]             @relation("DigitalServiceUpdatedBy")
-  // Phase 11 content authors (same SET NULL convention as above).
-  createdMemberships            InstitutionalMembership[]    @relation("MembershipCreatedBy")
-  updatedMemberships            InstitutionalMembership[]    @relation("MembershipUpdatedBy")
-  // Phase 12 dashboard authors (same SET NULL convention as above).
-  createdDashboardReports       DashboardReport[]            @relation("DashboardReportCreatedBy")
-  updatedDashboardReports       DashboardReport[]            @relation("DashboardReportUpdatedBy")
+  id                            String                       @id @default(uuid()) @db.Uuid
+  email                         String                       @unique
+  passwordHash                  String                       @map("password_hash")
+  fullName                      String                       @map("full_name")
+  preferredLanguage             Language                     @default(en) @map("preferred_language")
+  isActive                      Boolean                      @default(true) @map("is_active")
+  lastLoginAt                   DateTime?                    @map("last_login_at")
+  createdAt                     DateTime                     @default(now()) @map("created_at")
+  updatedAt                     DateTime                     @updatedAt @map("updated_at")
+  auditLogs                     AuditLog[]
+  createdDashboardDatasets      DashboardDataset[]           @relation("DashboardDatasetCreatedBy")
   createdDashboardMetrics       DashboardMetric[]            @relation("DashboardMetricCreatedBy")
   updatedDashboardMetrics       DashboardMetric[]            @relation("DashboardMetricUpdatedBy")
-  createdDashboardDatasets      DashboardDataset[]           @relation("DashboardDatasetCreatedBy")
+  createdDashboardReports       DashboardReport[]            @relation("DashboardReportCreatedBy")
+  updatedDashboardReports       DashboardReport[]            @relation("DashboardReportUpdatedBy")
+  createdDigitalServices        DigitalService[]             @relation("DigitalServiceCreatedBy")
+  updatedDigitalServices        DigitalService[]             @relation("DigitalServiceUpdatedBy")
+  createdDocuments              Document[]                   @relation("DocumentCreatedBy")
+  updatedDocuments              Document[]                   @relation("DocumentUpdatedBy")
+  createdEventNews              EventNews[]                  @relation("EventNewsCreatedBy")
+  updatedEventNews              EventNews[]                  @relation("EventNewsUpdatedBy")
+  createdEvents                 Event[]                      @relation("EventCreatedBy")
+  updatedEvents                 Event[]                      @relation("EventUpdatedBy")
+  createdFaqs                   Faq[]                        @relation("FaqCreatedBy")
+  updatedFaqs                   Faq[]                        @relation("FaqUpdatedBy")
+  createdGalleries              Gallery[]                    @relation("GalleryCreatedBy")
+  updatedGalleries              Gallery[]                    @relation("GalleryUpdatedBy")
+  createdMemberships            InstitutionalMembership[]    @relation("MembershipCreatedBy")
+  updatedMemberships            InstitutionalMembership[]    @relation("MembershipUpdatedBy")
+  createdInstitutions           Institution[]                @relation("InstitutionCreatedBy")
+  updatedInstitutions           Institution[]                @relation("InstitutionUpdatedBy")
+  uploadedMedia                 MediaAsset[]                 @relation("MediaUploadedBy")
+  createdMenuItems              MenuItem[]                   @relation("MenuItemCreatedBy")
+  updatedMenuItems              MenuItem[]                   @relation("MenuItemUpdatedBy")
+  createdOfficialCommunications OfficialCommunication[]      @relation("OfficialCommunicationCreatedBy")
+  updatedOfficialCommunications OfficialCommunication[]      @relation("OfficialCommunicationUpdatedBy")
+  createdPages                  Page[]                       @relation("PageCreatedBy")
+  updatedPages                  Page[]                       @relation("PageUpdatedBy")
+  createdProcurementUpdates     ProcurementUpdate[]          @relation("ProcurementUpdateCreatedBy")
+  updatedProcurementUpdates     ProcurementUpdate[]          @relation("ProcurementUpdateUpdatedBy")
+  createdProgrammes             ProgrammeScheme[]            @relation("ProgrammeCreatedBy")
+  updatedProgrammes             ProgrammeScheme[]            @relation("ProgrammeUpdatedBy")
+  updatedSettings               Setting[]                    @relation("SettingUpdatedBy")
+  createdTenders                Tender[]                     @relation("TenderCreatedBy")
+  updatedTenders                Tender[]                     @relation("TenderUpdatedBy")
+  createdToolkitDistributions   ToolkitDistributionSummary[] @relation("ToolkitDistributionCreatedBy")
+  updatedToolkitDistributions   ToolkitDistributionSummary[] @relation("ToolkitDistributionUpdatedBy")
+  createdToolkits               Toolkit[]                    @relation("ToolkitCreatedBy")
+  updatedToolkits               Toolkit[]                    @relation("ToolkitUpdatedBy")
+  userRoles                     UserRole[]
+  createdVideos                 Video[]                      @relation("VideoCreatedBy")
+  updatedVideos                 Video[]                      @relation("VideoUpdatedBy")
 
   @@map("users")
 }
 
 model Role {
-  id          String   @id @default(uuid()) @db.Uuid
-  key         String   @unique
-  nameEn      String   @map("name_en")
-  description String?
-  isSystem    Boolean  @default(true) @map("is_system")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
-
+  id              String           @id @default(uuid()) @db.Uuid
+  key             String           @unique
+  nameEn          String           @map("name_en")
+  description     String?
+  isSystem        Boolean          @default(true) @map("is_system")
+  createdAt       DateTime         @default(now()) @map("created_at")
+  updatedAt       DateTime         @updatedAt @map("updated_at")
   rolePermissions RolePermission[]
   userRoles       UserRole[]
 
@@ -248,12 +79,11 @@ model Role {
 }
 
 model Permission {
-  id          String  @id @default(uuid()) @db.Uuid
-  key         String  @unique
-  module      String
-  action      String
-  description String?
-
+  id              String           @id @default(uuid()) @db.Uuid
+  key             String           @unique
+  module          String
+  action          String
+  description     String?
   rolePermissions RolePermission[]
 
   @@unique([module, action])
@@ -261,12 +91,11 @@ model Permission {
 }
 
 model RolePermission {
-  id           String @id @default(uuid()) @db.Uuid
-  roleId       String @map("role_id") @db.Uuid
-  permissionId String @map("permission_id") @db.Uuid
-
-  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
-  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  id           String     @id @default(uuid()) @db.Uuid
+  roleId       String     @map("role_id") @db.Uuid
+  permissionId String     @map("permission_id") @db.Uuid
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
 
   @@unique([roleId, permissionId])
   @@map("role_permissions")
@@ -276,17 +105,13 @@ model UserRole {
   id     String @id @default(uuid()) @db.Uuid
   userId String @map("user_id") @db.Uuid
   roleId String @map("role_id") @db.Uuid
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  role Role @relation(fields: [roleId], references: [id], onDelete: Restrict)
+  role   Role   @relation(fields: [roleId], references: [id])
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, roleId])
   @@map("user_roles")
 }
 
-// ─────────────── Governance: Audit log ───────────────
-// Append-only record of every state-changing action (CMS requirements §17). Written by
-// the cross-cutting audit service; never updated/deleted in the app layer.
 model AuditLog {
   id            String      @id @default(uuid()) @db.Uuid
   userId        String?     @map("user_id") @db.Uuid
@@ -299,8 +124,7 @@ model AuditLog {
   metadata      Json?
   ipHash        String?     @map("ip_hash")
   createdAt     DateTime    @default(now()) @map("created_at")
-
-  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+  user          User?       @relation(fields: [userId], references: [id])
 
   @@index([module, recordId])
   @@index([userId])
@@ -309,10 +133,6 @@ model AuditLog {
   @@map("audit_logs")
 }
 
-// ─────────────── Governance: Settings ───────────────
-// Schema-backed key/value config (site/footer/social/translation, enquiry recipient,
-// upload restrictions). Editable by Super Admin via /admin/settings; the env layer
-// provides bootstrap defaults/secrets (docs/foundation/05-environment-variables.md).
 model Setting {
   id          String   @id @default(uuid()) @db.Uuid
   key         String   @unique
@@ -321,60 +141,45 @@ model Setting {
   description String?
   updatedById String?  @map("updated_by") @db.Uuid
   updatedAt   DateTime @updatedAt @map("updated_at")
-
-  updatedBy User? @relation("SettingUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+  updatedBy   User?    @relation("SettingUpdatedBy", fields: [updatedById], references: [id])
 
   @@map("settings")
 }
 
-// ─────────────── Media System (Part 7 / Part 13) ───────────────
-// Added VERBATIM from Part 13, TRIMMED to the relations whose counterpart models exist
-// in this phase (self-replace chain, gallery images, media usages, gallery/video covers).
-// The content back-relations in Part 13 (event/news/programme/toolkit/institution/
-// document/story/service/commodity/dataset covers) are intentionally omitted here and
-// re-added additively when those content modules land — the documented module-by-module
-// process. `created_by`/`updated_by`/`uploaded_by` are scalar UUID columns (as in Part 13),
-// not modeled relations.
 model MediaAsset {
-  id            String    @id @default(uuid()) @db.Uuid
-  storageKey    String    @unique @map("storage_key")
-  url           String
-  fileName      String    @map("file_name")
-  mimeType      String    @map("mime_type")
-  fileSizeBytes BigInt    @map("file_size_bytes")
-  width         Int?
-  height        Int?
-  title         String?
-  altText       String?   @map("alt_text")
-  caption       String?
-  checksum      String?
-  replacedById  String?   @map("replaced_by_id") @db.Uuid
-  archivedAt    DateTime? @map("archived_at")
-  uploadedById  String?   @map("uploaded_by") @db.Uuid
-  createdAt     DateTime  @default(now()) @map("created_at")
-  updatedAt     DateTime  @updatedAt @map("updated_at")
-
-  uploadedBy       User?              @relation("MediaUploadedBy", fields: [uploadedById], references: [id], onDelete: SetNull)
+  id               String             @id @default(uuid()) @db.Uuid
+  storageKey       String             @unique @map("storage_key")
+  url              String
+  fileName         String             @map("file_name")
+  mimeType         String             @map("mime_type")
+  fileSizeBytes    BigInt             @map("file_size_bytes")
+  width            Int?
+  height           Int?
+  title            String?
+  altText          String?            @map("alt_text")
+  caption          String?
+  checksum         String?
+  replacedById     String?            @map("replaced_by_id") @db.Uuid
+  archivedAt       DateTime?          @map("archived_at")
+  uploadedById     String?            @map("uploaded_by") @db.Uuid
+  createdAt        DateTime           @default(now()) @map("created_at")
+  updatedAt        DateTime           @updatedAt @map("updated_at")
+  commodityIcons   Commodity[]        @relation("CommodityIcon")
+  datasetFiles     DashboardDataset[] @relation("DatasetFile")
+  serviceIcons     DigitalService[]   @relation("DigitalServiceIcon")
+  documentFiles    Document[]         @relation("DocumentFile")
+  newsCovers       EventNews[]        @relation("NewsCover")
+  eventCovers      Event[]            @relation("EventCover")
+  galleryCovers    Gallery[]          @relation("GalleryCover")
+  galleryImages    GalleryImage[]
+  institutionLogos Institution[]      @relation("InstitutionLogo")
   replacedBy       MediaAsset?        @relation("MediaReplace", fields: [replacedById], references: [id])
   replaces         MediaAsset[]       @relation("MediaReplace")
+  uploadedBy       User?              @relation("MediaUploadedBy", fields: [uploadedById], references: [id])
   usages           MediaUsage[]
-  galleryImages    GalleryImage[]
-  galleryCovers    Gallery[]          @relation("GalleryCover")
-  videoThumbnails  Video[]            @relation("VideoThumb")
-  commodityIcons   Commodity[]        @relation("CommodityIcon")
-  documentFiles    Document[]         @relation("DocumentFile")
-  // Phase 6 cover/logo references (optional; no onDelete = default Restrict so a linked
-  // media asset cannot be hard-deleted while in use — consistent with media-usage tracking).
-  eventCovers      Event[]            @relation("EventCover")
-  newsCovers       EventNews[]        @relation("NewsCover")
   programmeCovers  ProgrammeScheme[]  @relation("ProgrammeCover")
-  institutionLogos Institution[]      @relation("InstitutionLogo")
   toolkitCovers    Toolkit[]          @relation("ToolkitCover")
-  // Phase 10 — Digital Service icons (optional; default Restrict so a linked icon cannot be
-  // hard-deleted while in use — consistent with media-usage tracking).
-  serviceIcons     DigitalService[]   @relation("DigitalServiceIcon")
-  // Phase 12 — uploaded Excel/CSV dataset source files (optional; default Restrict).
-  datasetFiles     DashboardDataset[] @relation("DatasetFile")
+  videoThumbnails  Video[]            @relation("VideoThumb")
 
   @@index([mimeType])
   @@index([archivedAt])
@@ -404,27 +209,25 @@ model Gallery {
   updatedById      String?          @map("updated_by") @db.Uuid
   createdAt        DateTime         @default(now()) @map("created_at")
   updatedAt        DateTime         @updatedAt @map("updated_at")
-
-  coverMedia MediaAsset?    @relation("GalleryCover", fields: [coverMediaId], references: [id])
-  createdBy  User?          @relation("GalleryCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
-  updatedBy  User?          @relation("GalleryUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
-  images     GalleryImage[]
-  eventLinks EventGallery[]
+  eventLinks       EventGallery[]
+  coverMedia       MediaAsset?      @relation("GalleryCover", fields: [coverMediaId], references: [id])
+  createdBy        User?            @relation("GalleryCreatedBy", fields: [createdById], references: [id])
+  updatedBy        User?            @relation("GalleryUpdatedBy", fields: [updatedById], references: [id])
+  images           GalleryImage[]
 
   @@index([publicationState, publicVisibility, archivedAt, publishedAt])
   @@map("galleries")
 }
 
 model GalleryImage {
-  id           String  @id @default(uuid()) @db.Uuid
-  galleryId    String  @map("gallery_id") @db.Uuid
-  mediaId      String  @map("media_id") @db.Uuid
-  displayOrder Int     @default(0) @map("display_order")
-  captionEn    String? @map("caption_en")
-  captionHi    String? @map("caption_hi")
-
-  gallery Gallery    @relation(fields: [galleryId], references: [id], onDelete: Cascade)
-  media   MediaAsset @relation(fields: [mediaId], references: [id], onDelete: Restrict)
+  id           String     @id @default(uuid()) @db.Uuid
+  galleryId    String     @map("gallery_id") @db.Uuid
+  mediaId      String     @map("media_id") @db.Uuid
+  displayOrder Int        @default(0) @map("display_order")
+  captionEn    String?    @map("caption_en")
+  captionHi    String?    @map("caption_hi")
+  gallery      Gallery    @relation(fields: [galleryId], references: [id], onDelete: Cascade)
+  media        MediaAsset @relation(fields: [mediaId], references: [id])
 
   @@unique([galleryId, mediaId])
   @@map("gallery_images")
@@ -454,10 +257,9 @@ model Video {
   updatedById      String?          @map("updated_by") @db.Uuid
   createdAt        DateTime         @default(now()) @map("created_at")
   updatedAt        DateTime         @updatedAt @map("updated_at")
-
-  thumbnailMedia MediaAsset? @relation("VideoThumb", fields: [thumbnailMediaId], references: [id])
-  createdBy      User?       @relation("VideoCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
-  updatedBy      User?       @relation("VideoUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+  createdBy        User?            @relation("VideoCreatedBy", fields: [createdById], references: [id])
+  thumbnailMedia   MediaAsset?      @relation("VideoThumb", fields: [thumbnailMediaId], references: [id])
+  updatedBy        User?            @relation("VideoUpdatedBy", fields: [updatedById], references: [id])
 
   @@index([publicationState, publicVisibility, archivedAt, publishedAt])
   @@index([showOnHomepage, displayOrder])
@@ -465,58 +267,43 @@ model Video {
 }
 
 model MediaUsage {
-  id         String   @id @default(uuid()) @db.Uuid
-  mediaId    String   @map("media_id") @db.Uuid
-  entityType String   @map("entity_type")
-  entityId   String   @map("entity_id") @db.Uuid
+  id         String     @id @default(uuid()) @db.Uuid
+  mediaId    String     @map("media_id") @db.Uuid
+  entityType String     @map("entity_type")
+  entityId   String     @map("entity_id") @db.Uuid
   field      String
-  createdAt  DateTime @default(now()) @map("created_at")
-
-  media MediaAsset @relation(fields: [mediaId], references: [id], onDelete: Restrict)
+  createdAt  DateTime   @default(now()) @map("created_at")
+  media      MediaAsset @relation(fields: [mediaId], references: [id])
 
   @@unique([mediaId, entityType, entityId, field])
   @@index([entityType, entityId])
   @@map("media_usages")
 }
 
-// ─────────────── Masters (Phase 4 — database-schema-design.md Part 4 / Part 13) ───────────────
-// Added VERBATIM from Part 13, TRIMMED to the relations whose counterpart models exist in
-// this phase (only `commodities.icon_media_id` → MediaAsset, and the District↔Block and
-// FinancialYear↔ReportingPeriod intra-masters relations). The content back-relations in
-// Part 13 (events, documents, toolkits, institutions, communications, tenders, procurement,
-// stories, enquiries, faqs, dashboard metrics/datasets, document junctions) are intentionally
-// omitted here and re-added additively when those content modules land — the documented
-// module-by-module process (foundation/03-module-dependency-graph.md, Tier 5).
-//
-// Shared shape (Part 4): id, name_en (UNIQUE), name_hi?, slug (UNIQUE), is_active,
-// display_order?, timestamps. FKs use onDelete: Restrict so a master in use cannot be removed.
-
 model EventType {
-  id           String   @id @default(uuid()) @db.Uuid
-  nameEn       String   @unique @map("name_en")
-  nameHi       String?  @map("name_hi")
-  slug         String   @unique
-  isActive     Boolean  @default(true) @map("is_active")
-  displayOrder Int?     @map("display_order")
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
-
-  events           Event[]
+  id               String                 @id @default(uuid()) @db.Uuid
+  nameEn           String                 @unique @map("name_en")
+  nameHi           String?                @map("name_hi")
+  slug             String                 @unique
+  isActive         Boolean                @default(true) @map("is_active")
+  displayOrder     Int?                   @map("display_order")
+  createdAt        DateTime               @default(now()) @map("created_at")
+  updatedAt        DateTime               @updatedAt @map("updated_at")
   fieldDefinitions EventFieldDefinition[]
+  events           Event[]
 
   @@map("event_types")
 }
 
 model TrainingType {
-  id           String   @id @default(uuid()) @db.Uuid
-  nameEn       String   @unique @map("name_en")
-  nameHi       String?  @map("name_hi")
-  slug         String   @unique
-  isActive     Boolean  @default(true) @map("is_active")
-  displayOrder Int?     @map("display_order")
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
-
+  id                    String                           @id @default(uuid()) @db.Uuid
+  nameEn                String                           @unique @map("name_en")
+  nameHi                String?                          @map("name_hi")
+  slug                  String                           @unique
+  isActive              Boolean                          @default(true) @map("is_active")
+  displayOrder          Int?                             @map("display_order")
+  createdAt             DateTime                         @default(now()) @map("created_at")
+  updatedAt             DateTime                         @updatedAt @map("updated_at")
   events                Event[]
   permittedInProgrammes ProgrammePermittedTrainingType[]
 
@@ -524,61 +311,58 @@ model TrainingType {
 }
 
 model Commodity {
-  id            String   @id @default(uuid()) @db.Uuid
-  nameEn        String   @unique @map("name_en")
-  nameHi        String?  @map("name_hi")
-  slug          String   @unique
-  descriptionEn String?  @map("description_en")
-  descriptionHi String?  @map("description_hi")
-  iconMediaId   String?  @map("icon_media_id") @db.Uuid
-  isActive      Boolean  @default(true) @map("is_active")
-  displayOrder  Int?     @map("display_order")
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @updatedAt @map("updated_at")
-
+  id                 String               @id @default(uuid()) @db.Uuid
+  nameEn             String               @unique @map("name_en")
+  nameHi             String?              @map("name_hi")
+  slug               String               @unique
+  descriptionEn      String?              @map("description_en")
+  descriptionHi      String?              @map("description_hi")
+  iconMediaId        String?              @map("icon_media_id") @db.Uuid
+  isActive           Boolean              @default(true) @map("is_active")
+  displayOrder       Int?                 @map("display_order")
+  createdAt          DateTime             @default(now()) @map("created_at")
+  updatedAt          DateTime             @updatedAt @map("updated_at")
   iconMedia          MediaAsset?          @relation("CommodityIcon", fields: [iconMediaId], references: [id])
   documentLinks      DocumentCommodity[]
   eventLinks         EventCommodity[]
+  procurementUpdates ProcurementUpdate[]
   programmeLinks     ProgrammeCommodity[]
   toolkits           Toolkit[]
-  procurementUpdates ProcurementUpdate[]
 
   @@map("commodities")
 }
 
 model District {
-  id           String   @id @default(uuid()) @db.Uuid
-  nameEn       String   @unique @map("name_en")
-  nameHi       String?  @map("name_hi")
-  slug         String   @unique
-  state        String   @default("Jharkhand")
-  isActive     Boolean  @default(true) @map("is_active")
-  displayOrder Int?     @map("display_order")
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
-
+  id                 String                    @id @default(uuid()) @db.Uuid
+  nameEn             String                    @unique @map("name_en")
+  nameHi             String?                   @map("name_hi")
+  slug               String                    @unique
+  state              String                    @default("Jharkhand")
+  isActive           Boolean                   @default(true) @map("is_active")
+  displayOrder       Int?                      @map("display_order")
+  createdAt          DateTime                  @default(now()) @map("created_at")
+  updatedAt          DateTime                  @updatedAt @map("updated_at")
   blocks             Block[]
   documentLinks      DocumentDistrict[]
   events             Event[]
+  memberships        InstitutionalMembership[]
   institutions       Institution[]
   procurementUpdates ProcurementUpdate[]
-  memberships        InstitutionalMembership[]
 
   @@map("districts")
 }
 
 model Block {
-  id           String   @id @default(uuid()) @db.Uuid
-  districtId   String   @map("district_id") @db.Uuid
-  nameEn       String   @map("name_en")
-  nameHi       String?  @map("name_hi")
-  slug         String   @unique
-  isActive     Boolean  @default(true) @map("is_active")
-  displayOrder Int?     @map("display_order")
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
-
-  district           District            @relation(fields: [districtId], references: [id], onDelete: Restrict)
+  id                 String              @id @default(uuid()) @db.Uuid
+  districtId         String              @map("district_id") @db.Uuid
+  nameEn             String              @map("name_en")
+  nameHi             String?             @map("name_hi")
+  slug               String              @unique
+  isActive           Boolean             @default(true) @map("is_active")
+  displayOrder       Int?                @map("display_order")
+  createdAt          DateTime            @default(now()) @map("created_at")
+  updatedAt          DateTime            @updatedAt @map("updated_at")
+  district           District            @relation(fields: [districtId], references: [id])
   events             Event[]
   procurementUpdates ProcurementUpdate[]
 
@@ -588,60 +372,56 @@ model Block {
 }
 
 model InstitutionType {
-  id           String   @id @default(uuid()) @db.Uuid
-  nameEn       String   @unique @map("name_en")
-  nameHi       String?  @map("name_hi")
-  slug         String   @unique
-  isActive     Boolean  @default(true) @map("is_active")
-  displayOrder Int?     @map("display_order")
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
-
+  id           String        @id @default(uuid()) @db.Uuid
+  nameEn       String        @unique @map("name_en")
+  nameHi       String?       @map("name_hi")
+  slug         String        @unique
+  isActive     Boolean       @default(true) @map("is_active")
+  displayOrder Int?          @map("display_order")
+  createdAt    DateTime      @default(now()) @map("created_at")
+  updatedAt    DateTime      @updatedAt @map("updated_at")
   institutions Institution[]
 
   @@map("institution_types")
 }
 
 model DocumentType {
-  id           String   @id @default(uuid()) @db.Uuid
-  nameEn       String   @unique @map("name_en")
-  nameHi       String?  @map("name_hi")
-  slug         String   @unique
-  isActive     Boolean  @default(true) @map("is_active")
-  displayOrder Int?     @map("display_order")
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
-
-  documents Document[]
+  id           String     @id @default(uuid()) @db.Uuid
+  nameEn       String     @unique @map("name_en")
+  nameHi       String?    @map("name_hi")
+  slug         String     @unique
+  isActive     Boolean    @default(true) @map("is_active")
+  displayOrder Int?       @map("display_order")
+  createdAt    DateTime   @default(now()) @map("created_at")
+  updatedAt    DateTime   @updatedAt @map("updated_at")
+  documents    Document[]
 
   @@map("document_types")
 }
 
 model KnowledgeCategory {
-  id           String   @id @default(uuid()) @db.Uuid
-  nameEn       String   @unique @map("name_en")
-  nameHi       String?  @map("name_hi")
-  slug         String   @unique
-  isActive     Boolean  @default(true) @map("is_active")
-  displayOrder Int?     @map("display_order")
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
-
-  documents Document[]
+  id           String     @id @default(uuid()) @db.Uuid
+  nameEn       String     @unique @map("name_en")
+  nameHi       String?    @map("name_hi")
+  slug         String     @unique
+  isActive     Boolean    @default(true) @map("is_active")
+  displayOrder Int?       @map("display_order")
+  createdAt    DateTime   @default(now()) @map("created_at")
+  updatedAt    DateTime   @updatedAt @map("updated_at")
+  documents    Document[]
 
   @@map("knowledge_categories")
 }
 
 model CommunicationType {
-  id           String   @id @default(uuid()) @db.Uuid
-  nameEn       String   @unique @map("name_en")
-  nameHi       String?  @map("name_hi")
-  slug         String   @unique
-  isActive     Boolean  @default(true) @map("is_active")
-  displayOrder Int?     @map("display_order")
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
-
+  id                     String                  @id @default(uuid()) @db.Uuid
+  nameEn                 String                  @unique @map("name_en")
+  nameHi                 String?                 @map("name_hi")
+  slug                   String                  @unique
+  isActive               Boolean                 @default(true) @map("is_active")
+  displayOrder           Int?                    @map("display_order")
+  createdAt              DateTime                @default(now()) @map("created_at")
+  updatedAt              DateTime                @updatedAt @map("updated_at")
   officialCommunications OfficialCommunication[]
 
   @@map("communication_types")
@@ -656,22 +436,20 @@ model TenderType {
   displayOrder Int?     @map("display_order")
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
-
-  tenders Tender[]
+  tenders      Tender[]
 
   @@map("tender_types")
 }
 
 model ProcurementUpdateType {
-  id           String   @id @default(uuid()) @db.Uuid
-  nameEn       String   @unique @map("name_en")
-  nameHi       String?  @map("name_hi")
-  slug         String   @unique
-  isActive     Boolean  @default(true) @map("is_active")
-  displayOrder Int?     @map("display_order")
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
-
+  id                 String              @id @default(uuid()) @db.Uuid
+  nameEn             String              @unique @map("name_en")
+  nameHi             String?             @map("name_hi")
+  slug               String              @unique
+  isActive           Boolean             @default(true) @map("is_active")
+  displayOrder       Int?                @map("display_order")
+  createdAt          DateTime            @default(now()) @map("created_at")
+  updatedAt          DateTime            @updatedAt @map("updated_at")
   procurementUpdates ProcurementUpdate[]
 
   @@map("procurement_update_types")
@@ -686,8 +464,7 @@ model FaqCategory {
   displayOrder Int?     @map("display_order")
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
-
-  faqs Faq[]
+  faqs         Faq[]
 
   @@map("faq_categories")
 }
@@ -706,121 +483,98 @@ model EnquiryType {
 }
 
 model FinancialYear {
-  id        String   @id @default(uuid()) @db.Uuid
-  label     String   @unique // e.g. 2025-2026
-  startDate DateTime @map("start_date") @db.Date
-  endDate   DateTime @map("end_date") @db.Date
-  isActive  Boolean  @default(true) @map("is_active")
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  reportingPeriods  ReportingPeriod[]
-  documents         Document[]
-  dashboardMetrics  DashboardMetric[]
+  id                String             @id @default(uuid()) @db.Uuid
+  label             String             @unique
+  startDate         DateTime           @map("start_date") @db.Date
+  endDate           DateTime           @map("end_date") @db.Date
+  isActive          Boolean            @default(true) @map("is_active")
+  createdAt         DateTime           @default(now()) @map("created_at")
+  updatedAt         DateTime           @updatedAt @map("updated_at")
   dashboardDatasets DashboardDataset[]
+  dashboardMetrics  DashboardMetric[]
+  documents         Document[]
+  reportingPeriods  ReportingPeriod[]
 
   @@map("financial_years")
 }
 
 model ReportingPeriod {
-  id              String              @id @default(uuid()) @db.Uuid
-  financialYearId String?             @map("financial_year_id") @db.Uuid
-  nameEn          String              @map("name_en")
-  nameHi          String?             @map("name_hi")
-  slug            String              @unique
-  periodType      ReportingPeriodType @map("period_type") // month | financial_year | calendar_year | cumulative
-  calendarYear    Int?                @map("calendar_year")
-  startDate       DateTime            @map("start_date") @db.Date
-  endDate         DateTime            @map("end_date") @db.Date
-  isActive        Boolean             @default(true) @map("is_active")
-  createdAt       DateTime            @default(now()) @map("created_at")
-  updatedAt       DateTime            @updatedAt @map("updated_at")
-
-  financialYear     FinancialYear?            @relation(fields: [financialYearId], references: [id])
-  memberships       InstitutionalMembership[]
-  dashboardMetrics  DashboardMetric[]
+  id                String                    @id @default(uuid()) @db.Uuid
+  financialYearId   String?                   @map("financial_year_id") @db.Uuid
+  nameEn            String                    @map("name_en")
+  nameHi            String?                   @map("name_hi")
+  slug              String                    @unique
+  periodType        ReportingPeriodType       @map("period_type")
+  calendarYear      Int?                      @map("calendar_year")
+  startDate         DateTime                  @map("start_date") @db.Date
+  endDate           DateTime                  @map("end_date") @db.Date
+  isActive          Boolean                   @default(true) @map("is_active")
+  createdAt         DateTime                  @default(now()) @map("created_at")
+  updatedAt         DateTime                  @updatedAt @map("updated_at")
   dashboardDatasets DashboardDataset[]
+  dashboardMetrics  DashboardMetric[]
+  memberships       InstitutionalMembership[]
+  financialYear     FinancialYear?            @relation(fields: [financialYearId], references: [id])
 
   @@index([financialYearId])
   @@map("reporting_periods")
 }
 
 model Tag {
-  id        String   @id @default(uuid()) @db.Uuid
-  nameEn    String   @unique @map("name_en")
-  nameHi    String?  @map("name_hi")
-  slug      String   @unique
-  isActive  Boolean  @default(true) @map("is_active")
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
+  id            String        @id @default(uuid()) @db.Uuid
+  nameEn        String        @unique @map("name_en")
+  nameHi        String?       @map("name_hi")
+  slug          String        @unique
+  isActive      Boolean       @default(true) @map("is_active")
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
   documentLinks DocumentTag[]
 
   @@map("tags")
 }
 
-// ─────────────── Documents (Phase 5 — database-schema-design.md Part 6 / Part 13) ───────────────
-// Added VERBATIM from the approved Part 13 `Document` model, TRIMMED to the relations whose
-// counterpart models exist in this phase: documentType, fileAsset (MediaAsset, "DocumentFile"),
-// knowledgeCategory, financialYear, and the commodity/district/tag junctions. The programme and
-// institution junctions (`document_programmes`, `document_institutions`) and the content
-// back-relations (`events EventDocument[]`, `communications OfficialCommunication[]`,
-// `procurementUpdates ProcurementUpdate[]`) are intentionally OMITTED here and re-added
-// additively when those modules land (programmes/institutions = Tier 7, events = Tier 10,
-// communications/procurement = Tier 12) — the documented module-by-module process
-// (docs/foundation/03-module-dependency-graph.md). This is NOT a redesign: the Document table
-// shape, field names, enums, and onDelete contract are unchanged from the approved schema.
-//
-// created_by / updated_by are scalar UUID columns (as in Part 13), not modeled User relations.
-// The metadata `search_vector` GIN column lands later via the parked FTS migration
-// (prisma/parked-migrations/) once all FTS content tables exist (see schema header note).
 model Document {
-  id                    String           @id @default(uuid()) @db.Uuid
-  titleEn               String           @map("title_en")
-  titleHi               String?          @map("title_hi")
-  descriptionEn         String?          @map("description_en")
-  descriptionHi         String?          @map("description_hi")
-  documentTypeId        String           @map("document_type_id") @db.Uuid
-  fileAssetId           String           @map("file_asset_id") @db.Uuid
-  publicationDate       DateTime?        @map("publication_date") @db.Date
-  language              Language         @default(en)
-  isPublic              Boolean          @default(true) @map("is_public")
-  showInKnowledgeCentre Boolean          @default(false) @map("show_in_knowledge_centre")
-  knowledgeCategoryId   String?          @map("knowledge_category_id") @db.Uuid
-  financialYearId       String?          @map("financial_year_id") @db.Uuid
-  slug                  String           @unique
-  publicationState      PublicationState @default(draft) @map("publication_state")
-  publicVisibility      Boolean          @default(true) @map("public_visibility")
-  publishStartAt        DateTime?        @map("publish_start_at")
-  publishedAt           DateTime?        @map("published_at")
-  archivedAt            DateTime?        @map("archived_at")
-  highlightType         HighlightType?   @map("highlight_type")
-  highlightStartAt      DateTime?        @map("highlight_start_at")
-  highlightEndAt        DateTime?        @map("highlight_end_at")
-  displayOrder          Int?             @map("display_order")
-  showOnHomepage        Boolean          @default(false) @map("show_on_homepage")
-  createdById           String?          @map("created_by") @db.Uuid
-  updatedById           String?          @map("updated_by") @db.Uuid
-  createdAt             DateTime         @default(now()) @map("created_at")
-  updatedAt             DateTime         @updatedAt @map("updated_at")
-
-  documentType           DocumentType            @relation(fields: [documentTypeId], references: [id], onDelete: Restrict)
-  fileAsset              MediaAsset              @relation("DocumentFile", fields: [fileAssetId], references: [id], onDelete: Restrict)
-  knowledgeCategory      KnowledgeCategory?      @relation(fields: [knowledgeCategoryId], references: [id])
-  financialYear          FinancialYear?          @relation(fields: [financialYearId], references: [id])
-  // Audit-author relations (remediation Issue 1) — nullable, ON DELETE SET NULL, consistent
-  // with Media/Gallery/Video/Settings so removing a user preserves the historical document.
-  createdBy              User?                   @relation("DocumentCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
-  updatedBy              User?                   @relation("DocumentUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+  id                     String                   @id @default(uuid()) @db.Uuid
+  titleEn                String                   @map("title_en")
+  titleHi                String?                  @map("title_hi")
+  descriptionEn          String?                  @map("description_en")
+  descriptionHi          String?                  @map("description_hi")
+  documentTypeId         String                   @map("document_type_id") @db.Uuid
+  fileAssetId            String                   @map("file_asset_id") @db.Uuid
+  publicationDate        DateTime?                @map("publication_date") @db.Date
+  language               Language                 @default(en)
+  isPublic               Boolean                  @default(true) @map("is_public")
+  showInKnowledgeCentre  Boolean                  @default(false) @map("show_in_knowledge_centre")
+  knowledgeCategoryId    String?                  @map("knowledge_category_id") @db.Uuid
+  financialYearId        String?                  @map("financial_year_id") @db.Uuid
+  slug                   String                   @unique
+  publicationState       PublicationState         @default(draft) @map("publication_state")
+  publicVisibility       Boolean                  @default(true) @map("public_visibility")
+  publishStartAt         DateTime?                @map("publish_start_at")
+  publishedAt            DateTime?                @map("published_at")
+  archivedAt             DateTime?                @map("archived_at")
+  highlightType          HighlightType?           @map("highlight_type")
+  highlightStartAt       DateTime?                @map("highlight_start_at")
+  highlightEndAt         DateTime?                @map("highlight_end_at")
+  displayOrder           Int?                     @map("display_order")
+  showOnHomepage         Boolean                  @default(false) @map("show_on_homepage")
+  createdById            String?                  @map("created_by") @db.Uuid
+  updatedById            String?                  @map("updated_by") @db.Uuid
+  createdAt              DateTime                 @default(now()) @map("created_at")
+  updatedAt              DateTime                 @updatedAt @map("updated_at")
+  search_vector          Unsupported("tsvector")? @default(dbgenerated("to_tsvector('simple'::regconfig, ((((((COALESCE(title_en, ''::text) || ' '::text) || COALESCE(title_hi, ''::text)) || ' '::text) || COALESCE(description_en, ''::text)) || ' '::text) || COALESCE(description_hi, ''::text)))"))
   commodities            DocumentCommodity[]
   districts              DocumentDistrict[]
-  tags                   DocumentTag[]
-  // Phase 6 additive junctions/back-references (re-added when programmes/institutions/events
-  // land — Tiers 7/10). Document table shape itself is unchanged.
-  programmes             DocumentProgramme[]
   institutions           DocumentInstitution[]
+  programmes             DocumentProgramme[]
+  tags                   DocumentTag[]
+  createdBy              User?                    @relation("DocumentCreatedBy", fields: [createdById], references: [id])
+  documentType           DocumentType             @relation(fields: [documentTypeId], references: [id])
+  fileAsset              MediaAsset               @relation("DocumentFile", fields: [fileAssetId], references: [id])
+  financialYear          FinancialYear?           @relation(fields: [financialYearId], references: [id])
+  knowledgeCategory      KnowledgeCategory?       @relation(fields: [knowledgeCategoryId], references: [id])
+  updatedBy              User?                    @relation("DocumentUpdatedBy", fields: [updatedById], references: [id])
   events                 EventDocument[]
-  // Phase 9 optional single-document links (official communications, procurement updates).
   officialCommunications OfficialCommunication[]
   procurementUpdates     ProcurementUpdate[]
 
@@ -830,21 +584,18 @@ model Document {
   @@index([documentTypeId])
   @@index([knowledgeCategoryId])
   @@index([financialYearId])
-  // Public-listing hot path (remediation Issue 7): equality on the visibility predicate
-  // (published + public_visibility + is_public + not archived) then the default sort key.
   @@index([publicationState, publicVisibility, isPublic, archivedAt, publicationDate])
-  // Scheduled-publishing gate (Issue 6): same predicate ending in the publish_start_at window.
   @@index([publicationState, publicVisibility, isPublic, archivedAt, publishStartAt], map: "documents_pubstate_vis_ispublic_archived_publishstart_idx")
+  @@index([search_vector], map: "documents_search_vector_gin_idx", type: Gin)
   @@map("documents")
 }
 
 model DocumentCommodity {
-  id          String @id @default(uuid()) @db.Uuid
-  documentId  String @map("document_id") @db.Uuid
-  commodityId String @map("commodity_id") @db.Uuid
-
-  document  Document  @relation(fields: [documentId], references: [id], onDelete: Cascade)
-  commodity Commodity @relation(fields: [commodityId], references: [id], onDelete: Restrict)
+  id          String    @id @default(uuid()) @db.Uuid
+  documentId  String    @map("document_id") @db.Uuid
+  commodityId String    @map("commodity_id") @db.Uuid
+  commodity   Commodity @relation(fields: [commodityId], references: [id])
+  document    Document  @relation(fields: [documentId], references: [id], onDelete: Cascade)
 
   @@unique([documentId, commodityId])
   @@index([commodityId, documentId])
@@ -852,12 +603,11 @@ model DocumentCommodity {
 }
 
 model DocumentDistrict {
-  id         String @id @default(uuid()) @db.Uuid
-  documentId String @map("document_id") @db.Uuid
-  districtId String @map("district_id") @db.Uuid
-
-  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
-  district District @relation(fields: [districtId], references: [id], onDelete: Restrict)
+  id         String   @id @default(uuid()) @db.Uuid
+  documentId String   @map("document_id") @db.Uuid
+  districtId String   @map("district_id") @db.Uuid
+  district   District @relation(fields: [districtId], references: [id])
+  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
 
   @@unique([documentId, districtId])
   @@index([districtId, documentId])
@@ -865,29 +615,23 @@ model DocumentDistrict {
 }
 
 model DocumentTag {
-  id         String @id @default(uuid()) @db.Uuid
-  documentId String @map("document_id") @db.Uuid
-  tagId      String @map("tag_id") @db.Uuid
-
-  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
-  tag      Tag      @relation(fields: [tagId], references: [id], onDelete: Restrict)
+  id         String   @id @default(uuid()) @db.Uuid
+  documentId String   @map("document_id") @db.Uuid
+  tagId      String   @map("tag_id") @db.Uuid
+  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  tag        Tag      @relation(fields: [tagId], references: [id])
 
   @@unique([documentId, tagId])
   @@index([tagId, documentId])
   @@map("document_tags")
 }
 
-// ─────────────── Phase 6: Document additive junctions (programmes / institutions) ───────────────
-// Added with the Programmes/Institutions modules (Tier 7). They let an already-uploaded Document
-// be linked by reference to programmes/institutions (CMS requirements §4.5). Junction child →
-// CASCADE on the document; → RESTRICT on the master/content side (in-use record can't be removed).
 model DocumentProgramme {
-  id                String @id @default(uuid()) @db.Uuid
-  documentId        String @map("document_id") @db.Uuid
-  programmeSchemeId String @map("programme_scheme_id") @db.Uuid
-
-  document        Document        @relation(fields: [documentId], references: [id], onDelete: Cascade)
-  programmeScheme ProgrammeScheme @relation(fields: [programmeSchemeId], references: [id], onDelete: Restrict)
+  id                String          @id @default(uuid()) @db.Uuid
+  documentId        String          @map("document_id") @db.Uuid
+  programmeSchemeId String          @map("programme_scheme_id") @db.Uuid
+  document          Document        @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  programmeScheme   ProgrammeScheme @relation(fields: [programmeSchemeId], references: [id])
 
   @@unique([documentId, programmeSchemeId])
   @@index([programmeSchemeId, documentId])
@@ -895,102 +639,89 @@ model DocumentProgramme {
 }
 
 model DocumentInstitution {
-  id            String @id @default(uuid()) @db.Uuid
-  documentId    String @map("document_id") @db.Uuid
-  institutionId String @map("institution_id") @db.Uuid
-
-  document    Document    @relation(fields: [documentId], references: [id], onDelete: Cascade)
-  institution Institution @relation(fields: [institutionId], references: [id], onDelete: Restrict)
+  id            String      @id @default(uuid()) @db.Uuid
+  documentId    String      @map("document_id") @db.Uuid
+  institutionId String      @map("institution_id") @db.Uuid
+  document      Document    @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  institution   Institution @relation(fields: [institutionId], references: [id])
 
   @@unique([documentId, institutionId])
   @@index([institutionId, documentId])
   @@map("document_institutions")
 }
 
-// ─────────────── Phase 6: Events (database-schema-design.md Part 6 / Part 13) ───────────────
-// The relational hub for all institutional activities (one Events operation, configurable type).
-// Status is derived from dates unless `status_override=true` (postponed/cancelled only).
-// `dynamic_values` is a CONTROLLED JSONB object validated against the active
-// event_field_definitions for the chosen type — not a form builder.
-//
-// TRIMMED (scope discipline): the `toolkitDistributions` back-relation from Part 13 is OMITTED
-// here because Toolkits are out of Phase 6 scope; it is re-added additively when the Toolkit
-// module lands (Tier 9). The Event table shape itself is unchanged from the approved schema.
-// createdBy/updatedBy follow the applied-codebase convention (nullable + ON DELETE SET NULL),
-// matching Document/Gallery/Video.
 model Event {
-  id                     String            @id @default(uuid()) @db.Uuid
-  eventTypeId            String            @map("event_type_id") @db.Uuid
-  trainingTypeId         String?           @map("training_type_id") @db.Uuid
-  titleEn                String            @map("title_en")
-  titleHi                String?           @map("title_hi")
-  summaryEn              String?           @map("summary_en")
-  summaryHi              String?           @map("summary_hi")
-  descriptionEn          String?           @map("description_en")
-  descriptionHi          String?           @map("description_hi")
-  dateMode               DateMode          @default(single) @map("date_mode")
-  startDate              DateTime          @map("start_date") @db.Date
-  endDate                DateTime?         @map("end_date") @db.Date
-  locationText           String?           @map("location_text")
-  districtId             String?           @map("district_id") @db.Uuid
-  blockId                String?           @map("block_id") @db.Uuid
-  coverMediaId           String?           @map("cover_media_id") @db.Uuid
-  eventStatus            EventStatus       @default(scheduled) @map("event_status")
-  statusOverride         Boolean           @default(false) @map("status_override")
-  cancellationReason     String?           @map("cancellation_reason")
-  revisedStartDate       DateTime?         @map("revised_start_date") @db.Date
-  dynamicValues          Json?             @map("dynamic_values")
-  // Completion fields — editable only when event_status = 'completed' (CMS requirements §4.1).
-  outcomeSummaryEn       String?           @map("outcome_summary_en")
-  outcomeSummaryHi       String?           @map("outcome_summary_hi")
-  keyHighlights          String?           @map("key_highlights")
-  finalParticipantCount  Int?              @map("final_participant_count")
-  participantMaleCount   Int?              @map("participant_male_count")
-  participantFemaleCount Int?              @map("participant_female_count")
-  participantOtherCount  Int?              @map("participant_other_count")
-  completionRemarksEn    String?           @map("completion_remarks_en")
-  completionRemarksHi    String?           @map("completion_remarks_hi")
-  completedDate          DateTime?         @map("completed_date") @db.Date
-  translationSource      TranslationSource @default(manual) @map("translation_source")
-  // publishing-workflow mixin
-  slug                   String            @unique
-  publicationState       PublicationState  @default(draft) @map("publication_state")
-  publicVisibility       Boolean           @default(true) @map("public_visibility")
-  publishStartAt         DateTime?         @map("publish_start_at")
-  publishedAt            DateTime?         @map("published_at")
-  archivedAt             DateTime?         @map("archived_at")
-  highlightType          HighlightType?    @map("highlight_type")
-  highlightStartAt       DateTime?         @map("highlight_start_at")
-  highlightEndAt         DateTime?         @map("highlight_end_at")
-  displayOrder           Int?              @map("display_order")
-  showOnHomepage         Boolean           @default(false) @map("show_on_homepage")
-  createdById            String?           @map("created_by") @db.Uuid
-  updatedById            String?           @map("updated_by") @db.Uuid
-  createdAt              DateTime          @default(now()) @map("created_at")
-  updatedAt              DateTime          @updatedAt @map("updated_at")
-
-  eventType            EventType                    @relation(fields: [eventTypeId], references: [id], onDelete: Restrict)
-  trainingType         TrainingType?                @relation(fields: [trainingTypeId], references: [id], onDelete: Restrict)
-  district             District?                    @relation(fields: [districtId], references: [id], onDelete: Restrict)
-  block                Block?                       @relation(fields: [blockId], references: [id], onDelete: Restrict)
-  coverMedia           MediaAsset?                  @relation("EventCover", fields: [coverMediaId], references: [id])
-  createdBy            User?                        @relation("EventCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
-  updatedBy            User?                        @relation("EventUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
-  commodities          EventCommodity[]
-  programmes           EventProgramme[]
-  institutions         EventInstitution[]
-  documents            EventDocument[]
-  galleries            EventGallery[]
-  news                 EventNews[]
-  toolkitDistributions ToolkitDistributionSummary[] // Phase 7 (re-added additively per the trim note above)
+  id                     String                       @id @default(uuid()) @db.Uuid
+  eventTypeId            String                       @map("event_type_id") @db.Uuid
+  trainingTypeId         String?                      @map("training_type_id") @db.Uuid
+  titleEn                String                       @map("title_en")
+  titleHi                String?                      @map("title_hi")
+  summaryEn              String?                      @map("summary_en")
+  summaryHi              String?                      @map("summary_hi")
+  descriptionEn          String?                      @map("description_en")
+  descriptionHi          String?                      @map("description_hi")
+  dateMode               DateMode                     @default(single) @map("date_mode")
+  startDate              DateTime                     @map("start_date") @db.Date
+  endDate                DateTime?                    @map("end_date") @db.Date
+  locationText           String?                      @map("location_text")
+  districtId             String?                      @map("district_id") @db.Uuid
+  blockId                String?                      @map("block_id") @db.Uuid
+  coverMediaId           String?                      @map("cover_media_id") @db.Uuid
+  eventStatus            EventStatus                  @default(scheduled) @map("event_status")
+  statusOverride         Boolean                      @default(false) @map("status_override")
+  cancellationReason     String?                      @map("cancellation_reason")
+  revisedStartDate       DateTime?                    @map("revised_start_date") @db.Date
+  dynamicValues          Json?                        @map("dynamic_values")
+  outcomeSummaryEn       String?                      @map("outcome_summary_en")
+  outcomeSummaryHi       String?                      @map("outcome_summary_hi")
+  keyHighlights          String?                      @map("key_highlights")
+  finalParticipantCount  Int?                         @map("final_participant_count")
+  participantMaleCount   Int?                         @map("participant_male_count")
+  participantFemaleCount Int?                         @map("participant_female_count")
+  participantOtherCount  Int?                         @map("participant_other_count")
+  completionRemarksEn    String?                      @map("completion_remarks_en")
+  completionRemarksHi    String?                      @map("completion_remarks_hi")
+  completedDate          DateTime?                    @map("completed_date") @db.Date
+  translationSource      TranslationSource            @default(manual) @map("translation_source")
+  slug                   String                       @unique
+  publicationState       PublicationState             @default(draft) @map("publication_state")
+  publicVisibility       Boolean                      @default(true) @map("public_visibility")
+  publishStartAt         DateTime?                    @map("publish_start_at")
+  publishedAt            DateTime?                    @map("published_at")
+  archivedAt             DateTime?                    @map("archived_at")
+  highlightType          HighlightType?               @map("highlight_type")
+  highlightStartAt       DateTime?                    @map("highlight_start_at")
+  highlightEndAt         DateTime?                    @map("highlight_end_at")
+  displayOrder           Int?                         @map("display_order")
+  showOnHomepage         Boolean                      @default(false) @map("show_on_homepage")
+  createdById            String?                      @map("created_by") @db.Uuid
+  updatedById            String?                      @map("updated_by") @db.Uuid
+  createdAt              DateTime                     @default(now()) @map("created_at")
+  updatedAt              DateTime                     @updatedAt @map("updated_at")
+  search_vector          Unsupported("tsvector")?     @default(dbgenerated("to_tsvector('simple'::regconfig, ((((((((((COALESCE(title_en, ''::text) || ' '::text) || COALESCE(title_hi, ''::text)) || ' '::text) || COALESCE(summary_en, ''::text)) || ' '::text) || COALESCE(summary_hi, ''::text)) || ' '::text) || COALESCE(description_en, ''::text)) || ' '::text) || COALESCE(description_hi, ''::text)))"))
+  commodities            EventCommodity[]
+  documents              EventDocument[]
+  galleries              EventGallery[]
+  institutions           EventInstitution[]
+  news                   EventNews?
+  programmes             EventProgramme[]
+  block                  Block?                       @relation(fields: [blockId], references: [id], onDelete: Restrict)
+  coverMedia             MediaAsset?                  @relation("EventCover", fields: [coverMediaId], references: [id])
+  createdBy              User?                        @relation("EventCreatedBy", fields: [createdById], references: [id])
+  district               District?                    @relation(fields: [districtId], references: [id], onDelete: Restrict)
+  eventType              EventType                    @relation(fields: [eventTypeId], references: [id])
+  trainingType           TrainingType?                @relation(fields: [trainingTypeId], references: [id], onDelete: Restrict)
+  updatedBy              User?                        @relation("EventUpdatedBy", fields: [updatedById], references: [id])
+  toolkitDistributions   ToolkitDistributionSummary[]
 
   @@index([publicationState, publicVisibility, archivedAt, publishedAt])
-  @@index([publicationState, publicVisibility, archivedAt, publishStartAt], map: "events_pubstate_vis_archived_publishstart_idx") // Issue 6: scheduled-publishing gate
+  @@index([publicationState, publicVisibility, archivedAt, publishStartAt], map: "events_pubstate_vis_archived_publishstart_idx")
   @@index([startDate])
   @@index([showOnHomepage, displayOrder])
   @@index([eventTypeId])
   @@index([districtId])
   @@index([eventStatus])
+  @@index([search_vector], map: "events_search_vector_gin_idx", type: Gin)
   @@map("events")
 }
 
@@ -1002,68 +733,63 @@ model EventFieldDefinition {
   labelHi      String?       @map("label_hi")
   dataType     FieldDataType @map("data_type")
   isRequired   Boolean       @default(false) @map("is_required")
-  options      Json? // only for data_type = 'select'
+  options      Json?
   displayOrder Int           @default(0) @map("display_order")
   isActive     Boolean       @default(true) @map("is_active")
   createdAt    DateTime      @default(now()) @map("created_at")
   updatedAt    DateTime      @updatedAt @map("updated_at")
-
-  eventType EventType @relation(fields: [eventTypeId], references: [id], onDelete: Cascade)
+  eventType    EventType     @relation(fields: [eventTypeId], references: [id], onDelete: Cascade)
 
   @@unique([eventTypeId, fieldKey])
   @@index([eventTypeId])
   @@map("event_field_definitions")
 }
 
-// Derived news: a completed event re-published as news, with independent editorial fields
-// and its OWN slug + lifecycle. Never mutates the source event (API spec §6).
 model EventNews {
-  id               String           @id @default(uuid()) @db.Uuid
-  eventId          String           @map("event_id") @db.Uuid
-  titleEn          String           @map("title_en")
-  titleHi          String?          @map("title_hi")
-  summaryEn        String?          @map("summary_en")
-  summaryHi        String?          @map("summary_hi")
-  bodyEn           String?          @map("body_en")
-  bodyHi           String?          @map("body_hi")
-  coverMediaId     String?          @map("cover_media_id") @db.Uuid
-  newsPublishedAt  DateTime?        @map("news_published_at")
-  slug             String           @unique
-  publicationState PublicationState @default(draft) @map("publication_state")
-  publicVisibility Boolean          @default(true) @map("public_visibility")
-  publishStartAt   DateTime?        @map("publish_start_at")
-  publishedAt      DateTime?        @map("published_at")
-  archivedAt       DateTime?        @map("archived_at")
-  highlightType    HighlightType?   @map("highlight_type")
-  highlightStartAt DateTime?        @map("highlight_start_at")
-  highlightEndAt   DateTime?        @map("highlight_end_at")
-  displayOrder     Int?             @map("display_order")
-  showOnHomepage   Boolean          @default(false) @map("show_on_homepage")
-  createdById      String?          @map("created_by") @db.Uuid
-  updatedById      String?          @map("updated_by") @db.Uuid
-  createdAt        DateTime         @default(now()) @map("created_at")
-  updatedAt        DateTime         @updatedAt @map("updated_at")
+  id               String                   @id @default(uuid()) @db.Uuid
+  eventId          String                   @unique @map("event_id") @db.Uuid
+  titleEn          String                   @map("title_en")
+  titleHi          String?                  @map("title_hi")
+  summaryEn        String?                  @map("summary_en")
+  summaryHi        String?                  @map("summary_hi")
+  bodyEn           String?                  @map("body_en")
+  bodyHi           String?                  @map("body_hi")
+  coverMediaId     String?                  @map("cover_media_id") @db.Uuid
+  newsPublishedAt  DateTime?                @map("news_published_at")
+  slug             String                   @unique
+  publicationState PublicationState         @default(draft) @map("publication_state")
+  publicVisibility Boolean                  @default(true) @map("public_visibility")
+  publishStartAt   DateTime?                @map("publish_start_at")
+  publishedAt      DateTime?                @map("published_at")
+  archivedAt       DateTime?                @map("archived_at")
+  highlightType    HighlightType?           @map("highlight_type")
+  highlightStartAt DateTime?                @map("highlight_start_at")
+  highlightEndAt   DateTime?                @map("highlight_end_at")
+  displayOrder     Int?                     @map("display_order")
+  showOnHomepage   Boolean                  @default(false) @map("show_on_homepage")
+  createdById      String?                  @map("created_by") @db.Uuid
+  updatedById      String?                  @map("updated_by") @db.Uuid
+  createdAt        DateTime                 @default(now()) @map("created_at")
+  updatedAt        DateTime                 @updatedAt @map("updated_at")
+  search_vector    Unsupported("tsvector")? @default(dbgenerated("to_tsvector('simple'::regconfig, ((((((((((COALESCE(title_en, ''::text) || ' '::text) || COALESCE(title_hi, ''::text)) || ' '::text) || COALESCE(summary_en, ''::text)) || ' '::text) || COALESCE(summary_hi, ''::text)) || ' '::text) || COALESCE(body_en, ''::text)) || ' '::text) || COALESCE(body_hi, ''::text)))"))
+  coverMedia       MediaAsset?              @relation("NewsCover", fields: [coverMediaId], references: [id])
+  createdBy        User?                    @relation("EventNewsCreatedBy", fields: [createdById], references: [id])
+  event            Event                    @relation(fields: [eventId], references: [id])
+  updatedBy        User?                    @relation("EventNewsUpdatedBy", fields: [updatedById], references: [id])
 
-  event      Event       @relation(fields: [eventId], references: [id], onDelete: Restrict)
-  coverMedia MediaAsset? @relation("NewsCover", fields: [coverMediaId], references: [id])
-  createdBy  User?       @relation("EventNewsCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
-  updatedBy  User?       @relation("EventNewsUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
-
-  @@unique([eventId]) // Issue 3: an event may be published as news at most once (also indexes event_id)
   @@index([publicationState, publicVisibility, archivedAt, publishedAt])
-  @@index([publicationState, publicVisibility, archivedAt, publishStartAt], map: "event_news_pubstate_vis_archived_publishstart_idx") // Issue 6: scheduled-publishing gate
+  @@index([publicationState, publicVisibility, archivedAt, publishStartAt], map: "event_news_pubstate_vis_archived_publishstart_idx")
   @@index([newsPublishedAt])
+  @@index([search_vector], map: "event_news_search_vector_gin_idx", type: Gin)
   @@map("event_news")
 }
 
-// ─────────────── Event junctions (shared relationships) ───────────────
 model EventCommodity {
-  id          String @id @default(uuid()) @db.Uuid
-  eventId     String @map("event_id") @db.Uuid
-  commodityId String @map("commodity_id") @db.Uuid
-
-  event     Event     @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  commodity Commodity @relation(fields: [commodityId], references: [id], onDelete: Restrict)
+  id          String    @id @default(uuid()) @db.Uuid
+  eventId     String    @map("event_id") @db.Uuid
+  commodityId String    @map("commodity_id") @db.Uuid
+  commodity   Commodity @relation(fields: [commodityId], references: [id])
+  event       Event     @relation(fields: [eventId], references: [id], onDelete: Cascade)
 
   @@unique([eventId, commodityId])
   @@index([commodityId, eventId])
@@ -1071,12 +797,11 @@ model EventCommodity {
 }
 
 model EventProgramme {
-  id                String @id @default(uuid()) @db.Uuid
-  eventId           String @map("event_id") @db.Uuid
-  programmeSchemeId String @map("programme_scheme_id") @db.Uuid
-
-  event           Event           @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  programmeScheme ProgrammeScheme @relation(fields: [programmeSchemeId], references: [id], onDelete: Restrict)
+  id                String          @id @default(uuid()) @db.Uuid
+  eventId           String          @map("event_id") @db.Uuid
+  programmeSchemeId String          @map("programme_scheme_id") @db.Uuid
+  event             Event           @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  programmeScheme   ProgrammeScheme @relation(fields: [programmeSchemeId], references: [id])
 
   @@unique([eventId, programmeSchemeId])
   @@index([programmeSchemeId, eventId])
@@ -1084,12 +809,11 @@ model EventProgramme {
 }
 
 model EventInstitution {
-  id            String @id @default(uuid()) @db.Uuid
-  eventId       String @map("event_id") @db.Uuid
-  institutionId String @map("institution_id") @db.Uuid
-
-  event       Event       @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  institution Institution @relation(fields: [institutionId], references: [id], onDelete: Restrict)
+  id            String      @id @default(uuid()) @db.Uuid
+  eventId       String      @map("event_id") @db.Uuid
+  institutionId String      @map("institution_id") @db.Uuid
+  event         Event       @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  institution   Institution @relation(fields: [institutionId], references: [id])
 
   @@unique([eventId, institutionId])
   @@index([institutionId, eventId])
@@ -1097,12 +821,11 @@ model EventInstitution {
 }
 
 model EventDocument {
-  id         String @id @default(uuid()) @db.Uuid
-  eventId    String @map("event_id") @db.Uuid
-  documentId String @map("document_id") @db.Uuid
-
-  event    Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  document Document @relation(fields: [documentId], references: [id], onDelete: Restrict)
+  id         String   @id @default(uuid()) @db.Uuid
+  eventId    String   @map("event_id") @db.Uuid
+  documentId String   @map("document_id") @db.Uuid
+  document   Document @relation(fields: [documentId], references: [id])
+  event      Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
 
   @@unique([eventId, documentId])
   @@index([documentId, eventId])
@@ -1110,81 +833,76 @@ model EventDocument {
 }
 
 model EventGallery {
-  id        String @id @default(uuid()) @db.Uuid
-  eventId   String @map("event_id") @db.Uuid
-  galleryId String @map("gallery_id") @db.Uuid
-
-  event   Event   @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  gallery Gallery @relation(fields: [galleryId], references: [id], onDelete: Restrict)
+  id        String  @id @default(uuid()) @db.Uuid
+  eventId   String  @map("event_id") @db.Uuid
+  galleryId String  @map("gallery_id") @db.Uuid
+  event     Event   @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  gallery   Gallery @relation(fields: [galleryId], references: [id])
 
   @@unique([eventId, galleryId])
   @@index([galleryId, eventId])
   @@map("event_galleries")
 }
 
-// ─────────────── Programme & Scheme (Part 6 / Part 13) ───────────────
-// One reusable programme/scheme record. TRIMMED (scope discipline): the `toolkits`,
-// `procurementUpdates`, and `enquiries` back-relations from Part 13 are OMITTED (those modules
-// are out of Phase 6 scope) and re-added additively later (Tiers 9/12/13).
 model ProgrammeScheme {
-  id                   String           @id @default(uuid()) @db.Uuid
-  titleEn              String           @map("title_en")
-  titleHi              String?          @map("title_hi")
-  shortCode            String?          @map("short_code")
-  summaryEn            String?          @map("summary_en")
-  summaryHi            String?          @map("summary_hi")
-  descriptionEn        String?          @map("description_en")
-  descriptionHi        String?          @map("description_hi")
-  objectivesEn         String?          @map("objectives_en")
-  objectivesHi         String?          @map("objectives_hi")
-  eligibilityEn        String?          @map("eligibility_en")
-  eligibilityHi        String?          @map("eligibility_hi")
-  benefitsEn           String?          @map("benefits_en")
-  benefitsHi           String?          @map("benefits_hi")
-  applicationProcessEn String?          @map("application_process_en")
-  applicationProcessHi String?          @map("application_process_hi")
-  fundingSource        String?          @map("funding_source")
-  startDate            DateTime?        @map("start_date") @db.Date
-  endDate              DateTime?        @map("end_date") @db.Date
-  coverMediaId         String?          @map("cover_media_id") @db.Uuid
-  slug                 String           @unique
-  publicationState     PublicationState @default(draft) @map("publication_state")
-  publicVisibility     Boolean          @default(true) @map("public_visibility")
-  publishStartAt       DateTime?        @map("publish_start_at")
-  publishedAt          DateTime?        @map("published_at")
-  archivedAt           DateTime?        @map("archived_at")
-  highlightType        HighlightType?   @map("highlight_type")
-  highlightStartAt     DateTime?        @map("highlight_start_at")
-  highlightEndAt       DateTime?        @map("highlight_end_at")
-  displayOrder         Int?             @map("display_order")
-  showOnHomepage       Boolean          @default(false) @map("show_on_homepage")
-  createdById          String?          @map("created_by") @db.Uuid
-  updatedById          String?          @map("updated_by") @db.Uuid
-  createdAt            DateTime         @default(now()) @map("created_at")
-  updatedAt            DateTime         @updatedAt @map("updated_at")
-
-  coverMedia             MediaAsset?                      @relation("ProgrammeCover", fields: [coverMediaId], references: [id])
-  createdBy              User?                            @relation("ProgrammeCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
-  updatedBy              User?                            @relation("ProgrammeUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
-  events                 EventProgramme[]
+  id                     String                           @id @default(uuid()) @db.Uuid
+  titleEn                String                           @map("title_en")
+  titleHi                String?                          @map("title_hi")
+  shortCode              String?                          @map("short_code")
+  summaryEn              String?                          @map("summary_en")
+  summaryHi              String?                          @map("summary_hi")
+  descriptionEn          String?                          @map("description_en")
+  descriptionHi          String?                          @map("description_hi")
+  objectivesEn           String?                          @map("objectives_en")
+  objectivesHi           String?                          @map("objectives_hi")
+  eligibilityEn          String?                          @map("eligibility_en")
+  eligibilityHi          String?                          @map("eligibility_hi")
+  benefitsEn             String?                          @map("benefits_en")
+  benefitsHi             String?                          @map("benefits_hi")
+  applicationProcessEn   String?                          @map("application_process_en")
+  applicationProcessHi   String?                          @map("application_process_hi")
+  fundingSource          String?                          @map("funding_source")
+  startDate              DateTime?                        @map("start_date") @db.Date
+  endDate                DateTime?                        @map("end_date") @db.Date
+  coverMediaId           String?                          @map("cover_media_id") @db.Uuid
+  slug                   String                           @unique
+  publicationState       PublicationState                 @default(draft) @map("publication_state")
+  publicVisibility       Boolean                          @default(true) @map("public_visibility")
+  publishStartAt         DateTime?                        @map("publish_start_at")
+  publishedAt            DateTime?                        @map("published_at")
+  archivedAt             DateTime?                        @map("archived_at")
+  highlightType          HighlightType?                   @map("highlight_type")
+  highlightStartAt       DateTime?                        @map("highlight_start_at")
+  highlightEndAt         DateTime?                        @map("highlight_end_at")
+  displayOrder           Int?                             @map("display_order")
+  showOnHomepage         Boolean                          @default(false) @map("show_on_homepage")
+  createdById            String?                          @map("created_by") @db.Uuid
+  updatedById            String?                          @map("updated_by") @db.Uuid
+  createdAt              DateTime                         @default(now()) @map("created_at")
+  updatedAt              DateTime                         @updatedAt @map("updated_at")
+  search_vector          Unsupported("tsvector")?         @default(dbgenerated("to_tsvector('simple'::regconfig, ((((((((((((COALESCE(title_en, ''::text) || ' '::text) || COALESCE(title_hi, ''::text)) || ' '::text) || COALESCE(short_code, ''::text)) || ' '::text) || COALESCE(summary_en, ''::text)) || ' '::text) || COALESCE(summary_hi, ''::text)) || ' '::text) || COALESCE(description_en, ''::text)) || ' '::text) || COALESCE(description_hi, ''::text)))"))
   documents              DocumentProgramme[]
+  events                 EventProgramme[]
+  procurementUpdates     ProcurementUpdate[]
   commodities            ProgrammeCommodity[]
   permittedTrainingTypes ProgrammePermittedTrainingType[]
-  toolkits               Toolkit[] // Phase 7 (re-added additively per the trim note above)
-  procurementUpdates     ProcurementUpdate[] // Phase 9
+  coverMedia             MediaAsset?                      @relation("ProgrammeCover", fields: [coverMediaId], references: [id])
+  createdBy              User?                            @relation("ProgrammeCreatedBy", fields: [createdById], references: [id])
+  updatedBy              User?                            @relation("ProgrammeUpdatedBy", fields: [updatedById], references: [id])
+  toolkits               Toolkit[]
 
   @@index([publicationState, publicVisibility, archivedAt, publishedAt])
   @@index([showOnHomepage, displayOrder])
+  @@index([search_vector], map: "programme_schemes_search_vector_gin_idx", type: Gin)
   @@map("programme_schemes")
 }
 
 model ProgrammeCommodity {
-  id                String @id @default(uuid()) @db.Uuid
-  programmeSchemeId String @map("programme_scheme_id") @db.Uuid
-  commodityId       String @map("commodity_id") @db.Uuid
-
-  programmeScheme ProgrammeScheme @relation(fields: [programmeSchemeId], references: [id], onDelete: Cascade)
-  commodity       Commodity       @relation(fields: [commodityId], references: [id], onDelete: Restrict)
+  id                String          @id @default(uuid()) @db.Uuid
+  programmeSchemeId String          @map("programme_scheme_id") @db.Uuid
+  commodityId       String          @map("commodity_id") @db.Uuid
+  commodity         Commodity       @relation(fields: [commodityId], references: [id])
+  programmeScheme   ProgrammeScheme @relation(fields: [programmeSchemeId], references: [id], onDelete: Cascade)
 
   @@unique([programmeSchemeId, commodityId])
   @@index([commodityId, programmeSchemeId])
@@ -1192,185 +910,159 @@ model ProgrammeCommodity {
 }
 
 model ProgrammePermittedTrainingType {
-  id                String @id @default(uuid()) @db.Uuid
-  programmeSchemeId String @map("programme_scheme_id") @db.Uuid
-  trainingTypeId    String @map("training_type_id") @db.Uuid
-
-  programmeScheme ProgrammeScheme @relation(fields: [programmeSchemeId], references: [id], onDelete: Cascade)
-  trainingType    TrainingType    @relation(fields: [trainingTypeId], references: [id], onDelete: Restrict)
+  id                String          @id @default(uuid()) @db.Uuid
+  programmeSchemeId String          @map("programme_scheme_id") @db.Uuid
+  trainingTypeId    String          @map("training_type_id") @db.Uuid
+  programmeScheme   ProgrammeScheme @relation(fields: [programmeSchemeId], references: [id], onDelete: Cascade)
+  trainingType      TrainingType    @relation(fields: [trainingTypeId], references: [id])
 
   @@unique([programmeSchemeId, trainingTypeId])
   @@index([trainingTypeId, programmeSchemeId])
   @@map("programme_permitted_training_types")
 }
 
-// ─────────────── Phase 7: Toolkit (database-schema-design.md Part 6 / Part 13) ───────────────
-// Reusable public toolkit definition: a Programme/Scheme + Commodity + ordered ToolkitItems
-// (AC#8). Per-event distribution is summary-only via toolkit_distribution_summaries/_items —
-// no beneficiary records, stock ledger, inventory, or acknowledgements (AC#10).
-// createdBy/updatedBy follow the applied-codebase convention (nullable + ON DELETE SET NULL).
-// programme_scheme_id / commodity_id / cover_media_id are optional refs with the default
-// RESTRICT (a referenced programme/commodity/media asset cannot be hard-deleted while linked).
 model Toolkit {
-  id                String           @id @default(uuid()) @db.Uuid
-  titleEn           String           @map("title_en")
-  titleHi           String?          @map("title_hi")
-  summaryEn         String?          @map("summary_en")
-  summaryHi         String?          @map("summary_hi")
-  descriptionEn     String?          @map("description_en")
-  descriptionHi     String?          @map("description_hi")
-  programmeSchemeId String?          @map("programme_scheme_id") @db.Uuid
-  commodityId       String?          @map("commodity_id") @db.Uuid
-  coverMediaId      String?          @map("cover_media_id") @db.Uuid
-  slug              String           @unique
-  publicationState  PublicationState @default(draft) @map("publication_state")
-  publicVisibility  Boolean          @default(true) @map("public_visibility")
-  publishStartAt    DateTime?        @map("publish_start_at")
-  publishedAt       DateTime?        @map("published_at")
-  archivedAt        DateTime?        @map("archived_at")
-  highlightType     HighlightType?   @map("highlight_type")
-  highlightStartAt  DateTime?        @map("highlight_start_at")
-  highlightEndAt    DateTime?        @map("highlight_end_at")
-  displayOrder      Int?             @map("display_order")
-  showOnHomepage    Boolean          @default(false) @map("show_on_homepage")
-  createdById       String?          @map("created_by") @db.Uuid
-  updatedById       String?          @map("updated_by") @db.Uuid
-  createdAt         DateTime         @default(now()) @map("created_at")
-  updatedAt         DateTime         @updatedAt @map("updated_at")
+  id                String                       @id @default(uuid()) @db.Uuid
+  titleEn           String                       @map("title_en")
+  titleHi           String?                      @map("title_hi")
+  summaryEn         String?                      @map("summary_en")
+  summaryHi         String?                      @map("summary_hi")
+  descriptionEn     String?                      @map("description_en")
+  descriptionHi     String?                      @map("description_hi")
+  programmeSchemeId String?                      @map("programme_scheme_id") @db.Uuid
+  commodityId       String?                      @map("commodity_id") @db.Uuid
+  coverMediaId      String?                      @map("cover_media_id") @db.Uuid
+  slug              String                       @unique
+  publicationState  PublicationState             @default(draft) @map("publication_state")
+  publicVisibility  Boolean                      @default(true) @map("public_visibility")
+  publishStartAt    DateTime?                    @map("publish_start_at")
+  publishedAt       DateTime?                    @map("published_at")
+  archivedAt        DateTime?                    @map("archived_at")
+  highlightType     HighlightType?               @map("highlight_type")
+  highlightStartAt  DateTime?                    @map("highlight_start_at")
+  highlightEndAt    DateTime?                    @map("highlight_end_at")
+  displayOrder      Int?                         @map("display_order")
+  showOnHomepage    Boolean                      @default(false) @map("show_on_homepage")
+  createdById       String?                      @map("created_by") @db.Uuid
+  updatedById       String?                      @map("updated_by") @db.Uuid
+  createdAt         DateTime                     @default(now()) @map("created_at")
+  updatedAt         DateTime                     @updatedAt @map("updated_at")
+  distributions     ToolkitDistributionSummary[]
+  items             ToolkitItem[]
+  commodity         Commodity?                   @relation(fields: [commodityId], references: [id], onDelete: Restrict)
+  coverMedia        MediaAsset?                  @relation("ToolkitCover", fields: [coverMediaId], references: [id])
+  createdBy         User?                        @relation("ToolkitCreatedBy", fields: [createdById], references: [id])
+  programmeScheme   ProgrammeScheme?             @relation(fields: [programmeSchemeId], references: [id], onDelete: Restrict)
+  updatedBy         User?                        @relation("ToolkitUpdatedBy", fields: [updatedById], references: [id])
 
-  programmeScheme ProgrammeScheme?             @relation(fields: [programmeSchemeId], references: [id], onDelete: Restrict)
-  commodity       Commodity?                   @relation(fields: [commodityId], references: [id], onDelete: Restrict)
-  coverMedia      MediaAsset?                  @relation("ToolkitCover", fields: [coverMediaId], references: [id])
-  createdBy       User?                        @relation("ToolkitCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
-  updatedBy       User?                        @relation("ToolkitUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
-  items           ToolkitItem[]
-  distributions   ToolkitDistributionSummary[]
-
-  // Explicit map names pin the index identifiers to the hand-written migration (avoids
-  // long-name-truncation drift between `prisma migrate dev` and the applied SQL).
   @@index([publicationState, publicVisibility, archivedAt, publishedAt], map: "toolkits_pubstate_vis_archived_published_idx")
   @@index([showOnHomepage, displayOrder])
   @@map("toolkits")
 }
 
-// Ordered toolkit definition lines (catalogue-level). No individual/beneficiary records.
 model ToolkitItem {
-  id                     String            @id @default(uuid()) @db.Uuid
-  toolkitId              String            @map("toolkit_id") @db.Uuid
-  nameEn                 String            @map("name_en")
-  nameHi                 String?           @map("name_hi")
-  descriptionEn          String?           @map("description_en")
-  descriptionHi          String?           @map("description_hi")
+  id                     String                    @id @default(uuid()) @db.Uuid
+  toolkitId              String                    @map("toolkit_id") @db.Uuid
+  nameEn                 String                    @map("name_en")
+  nameHi                 String?                   @map("name_hi")
+  descriptionEn          String?                   @map("description_en")
+  descriptionHi          String?                   @map("description_hi")
   unit                   String?
-  distributionBasis      DistributionBasis @default(individual) @map("distribution_basis")
-  defaultQuantityPerUnit Decimal?          @map("default_quantity_per_unit") @db.Decimal(14, 2)
-  defaultGroupSize       Int?              @map("default_group_size")
-  quantitySummary        Decimal?          @map("quantity_summary") @db.Decimal(14, 2)
-  isActive               Boolean           @default(true) @map("is_active")
-  displayOrder           Int               @default(0) @map("display_order")
-  createdAt              DateTime          @default(now()) @map("created_at")
-  updatedAt              DateTime          @updatedAt @map("updated_at")
-
-  toolkit           Toolkit                   @relation(fields: [toolkitId], references: [id], onDelete: Cascade)
-  distributionItems ToolkitDistributionItem[]
+  distributionBasis      DistributionBasis         @default(individual) @map("distribution_basis")
+  defaultQuantityPerUnit Decimal?                  @map("default_quantity_per_unit") @db.Decimal(14, 2)
+  defaultGroupSize       Int?                      @map("default_group_size")
+  quantitySummary        Decimal?                  @map("quantity_summary") @db.Decimal(14, 2)
+  isActive               Boolean                   @default(true) @map("is_active")
+  displayOrder           Int                       @default(0) @map("display_order")
+  createdAt              DateTime                  @default(now()) @map("created_at")
+  updatedAt              DateTime                  @updatedAt @map("updated_at")
+  distributionItems      ToolkitDistributionItem[]
+  toolkit                Toolkit                   @relation(fields: [toolkitId], references: [id], onDelete: Cascade)
 
   @@index([toolkitId, displayOrder])
   @@map("toolkit_items")
 }
 
-// Training-level (per-event) distribution summary — public summary figures only.
 model ToolkitDistributionSummary {
-  id                  String            @id @default(uuid()) @db.Uuid
-  eventId             String            @map("event_id") @db.Uuid
-  toolkitId           String            @map("toolkit_id") @db.Uuid
-  distributionDone    Boolean           @default(false) @map("distribution_done")
-  distributionModel   DistributionModel @map("distribution_model")
-  participantsCovered Int?              @map("participants_covered")
-  distributionDate    DateTime?         @map("distribution_date") @db.Date
-  remarksEn           String?           @map("remarks_en")
-  remarksHi           String?           @map("remarks_hi")
-  createdById         String?           @map("created_by") @db.Uuid
-  updatedById         String?           @map("updated_by") @db.Uuid
-  createdAt           DateTime          @default(now()) @map("created_at")
-  updatedAt           DateTime          @updatedAt @map("updated_at")
-
-  event     Event                     @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  toolkit   Toolkit                   @relation(fields: [toolkitId], references: [id], onDelete: Restrict)
-  createdBy User?                     @relation("ToolkitDistributionCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
-  updatedBy User?                     @relation("ToolkitDistributionUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
-  items     ToolkitDistributionItem[]
+  id                  String                    @id @default(uuid()) @db.Uuid
+  eventId             String                    @map("event_id") @db.Uuid
+  toolkitId           String                    @map("toolkit_id") @db.Uuid
+  distributionDone    Boolean                   @default(false) @map("distribution_done")
+  distributionModel   DistributionModel         @map("distribution_model")
+  participantsCovered Int?                      @map("participants_covered")
+  distributionDate    DateTime?                 @map("distribution_date") @db.Date
+  remarksEn           String?                   @map("remarks_en")
+  remarksHi           String?                   @map("remarks_hi")
+  createdById         String?                   @map("created_by") @db.Uuid
+  updatedById         String?                   @map("updated_by") @db.Uuid
+  createdAt           DateTime                  @default(now()) @map("created_at")
+  updatedAt           DateTime                  @updatedAt @map("updated_at")
+  items               ToolkitDistributionItem[]
+  createdBy           User?                     @relation("ToolkitDistributionCreatedBy", fields: [createdById], references: [id])
+  event               Event                     @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  toolkit             Toolkit                   @relation(fields: [toolkitId], references: [id])
+  updatedBy           User?                     @relation("ToolkitDistributionUpdatedBy", fields: [updatedById], references: [id])
 
   @@unique([eventId, toolkitId])
   @@index([toolkitId])
   @@map("toolkit_distribution_summaries")
 }
 
-// Item-level lines under a distribution summary. total_quantity auto = quantity_per_unit *
-// number_of_units_or_groups unless manual_override (computed in the service).
 model ToolkitDistributionItem {
-  id                           String            @id @default(uuid()) @db.Uuid
-  toolkitDistributionSummaryId String            @map("toolkit_distribution_summary_id") @db.Uuid
-  toolkitItemId                String            @map("toolkit_item_id") @db.Uuid
-  distributionBasis            DistributionBasis @map("distribution_basis")
-  quantityPerUnit              Decimal?          @map("quantity_per_unit") @db.Decimal(14, 2)
-  numberOfUnitsOrGroups        Int?              @map("number_of_units_or_groups")
-  totalQuantity                Decimal?          @map("total_quantity") @db.Decimal(14, 2)
-  manualOverride               Boolean           @default(false) @map("manual_override")
-
-  summary     ToolkitDistributionSummary @relation(fields: [toolkitDistributionSummaryId], references: [id], onDelete: Cascade)
-  toolkitItem ToolkitItem                @relation(fields: [toolkitItemId], references: [id], onDelete: Restrict)
+  id                           String                     @id @default(uuid()) @db.Uuid
+  toolkitDistributionSummaryId String                     @map("toolkit_distribution_summary_id") @db.Uuid
+  toolkitItemId                String                     @map("toolkit_item_id") @db.Uuid
+  distributionBasis            DistributionBasis          @map("distribution_basis")
+  quantityPerUnit              Decimal?                   @map("quantity_per_unit") @db.Decimal(14, 2)
+  numberOfUnitsOrGroups        Int?                       @map("number_of_units_or_groups")
+  totalQuantity                Decimal?                   @map("total_quantity") @db.Decimal(14, 2)
+  manualOverride               Boolean                    @default(false) @map("manual_override")
+  summary                      ToolkitDistributionSummary @relation(fields: [toolkitDistributionSummaryId], references: [id], onDelete: Cascade)
+  toolkitItem                  ToolkitItem                @relation(fields: [toolkitItemId], references: [id])
 
   @@unique([toolkitDistributionSummaryId, toolkitItemId], map: "toolkit_distribution_items_summary_id_item_id_key")
   @@index([toolkitItemId])
   @@map("toolkit_distribution_items")
 }
 
-// ─────────────── Institution (Part 6 / Part 13) ───────────────
-// One reusable Institution operation for all organisations. TRIMMED (scope discipline): the
-// `memberships`/`duMemberships` back-relations from Part 13 are OMITTED (Institutional
-// Membership is out of Phase 6 scope) and re-added additively later (Tier 14).
 model Institution {
-  id                String           @id @default(uuid()) @db.Uuid
-  institutionTypeId String           @map("institution_type_id") @db.Uuid
-  nameEn            String           @map("name_en")
-  nameHi            String?          @map("name_hi")
-  descriptionEn     String?          @map("description_en")
-  descriptionHi     String?          @map("description_hi")
-  addressEn         String?          @map("address_en")
-  addressHi         String?          @map("address_hi")
-  websiteUrl        String?          @map("website_url")
-  logoMediaId       String?          @map("logo_media_id") @db.Uuid
-  districtId        String?          @map("district_id") @db.Uuid
-  contactEmail      String?          @map("contact_email")
-  contactPhone      String?          @map("contact_phone")
-  slug              String           @unique
-  publicationState  PublicationState @default(draft) @map("publication_state")
-  publicVisibility  Boolean          @default(true) @map("public_visibility")
-  publishStartAt    DateTime?        @map("publish_start_at")
-  publishedAt       DateTime?        @map("published_at")
-  archivedAt        DateTime?        @map("archived_at")
-  highlightType     HighlightType?   @map("highlight_type")
-  highlightStartAt  DateTime?        @map("highlight_start_at")
-  highlightEndAt    DateTime?        @map("highlight_end_at")
-  displayOrder      Int?             @map("display_order")
-  showOnHomepage    Boolean          @default(false) @map("show_on_homepage")
-  createdById       String?          @map("created_by") @db.Uuid
-  updatedById       String?          @map("updated_by") @db.Uuid
-  createdAt         DateTime         @default(now()) @map("created_at")
-  updatedAt         DateTime         @updatedAt @map("updated_at")
-
-  institutionType InstitutionType           @relation(fields: [institutionTypeId], references: [id], onDelete: Restrict)
-  logoMedia       MediaAsset?               @relation("InstitutionLogo", fields: [logoMediaId], references: [id])
-  district        District?                 @relation(fields: [districtId], references: [id], onDelete: Restrict)
-  createdBy       User?                     @relation("InstitutionCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
-  updatedBy       User?                     @relation("InstitutionUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
-  events          EventInstitution[]
-  documents       DocumentInstitution[]
-  // Phase 11 — Institutional Membership references the org as the member institution AND,
-  // separately, as the District Union org (when membership_level = district_union). The two
-  // axes are NEVER collapsed (architecture-validation §C open decision).
-  memberships     InstitutionalMembership[] @relation("MembershipInstitution")
-  duMemberships   InstitutionalMembership[] @relation("MembershipDistrictUnion")
+  id                String                    @id @default(uuid()) @db.Uuid
+  institutionTypeId String                    @map("institution_type_id") @db.Uuid
+  nameEn            String                    @map("name_en")
+  nameHi            String?                   @map("name_hi")
+  descriptionEn     String?                   @map("description_en")
+  descriptionHi     String?                   @map("description_hi")
+  addressEn         String?                   @map("address_en")
+  addressHi         String?                   @map("address_hi")
+  websiteUrl        String?                   @map("website_url")
+  logoMediaId       String?                   @map("logo_media_id") @db.Uuid
+  districtId        String?                   @map("district_id") @db.Uuid
+  contactEmail      String?                   @map("contact_email")
+  contactPhone      String?                   @map("contact_phone")
+  slug              String                    @unique
+  publicationState  PublicationState          @default(draft) @map("publication_state")
+  publicVisibility  Boolean                   @default(true) @map("public_visibility")
+  publishStartAt    DateTime?                 @map("publish_start_at")
+  publishedAt       DateTime?                 @map("published_at")
+  archivedAt        DateTime?                 @map("archived_at")
+  highlightType     HighlightType?            @map("highlight_type")
+  highlightStartAt  DateTime?                 @map("highlight_start_at")
+  highlightEndAt    DateTime?                 @map("highlight_end_at")
+  displayOrder      Int?                      @map("display_order")
+  showOnHomepage    Boolean                   @default(false) @map("show_on_homepage")
+  createdById       String?                   @map("created_by") @db.Uuid
+  updatedById       String?                   @map("updated_by") @db.Uuid
+  createdAt         DateTime                  @default(now()) @map("created_at")
+  updatedAt         DateTime                  @updatedAt @map("updated_at")
+  documents         DocumentInstitution[]
+  events            EventInstitution[]
+  duMemberships     InstitutionalMembership[] @relation("MembershipDistrictUnion")
+  memberships       InstitutionalMembership[] @relation("MembershipInstitution")
+  createdBy         User?                     @relation("InstitutionCreatedBy", fields: [createdById], references: [id])
+  district          District?                 @relation(fields: [districtId], references: [id], onDelete: Restrict)
+  institutionType   InstitutionType           @relation(fields: [institutionTypeId], references: [id])
+  logoMedia         MediaAsset?               @relation("InstitutionLogo", fields: [logoMediaId], references: [id])
+  updatedBy         User?                     @relation("InstitutionUpdatedBy", fields: [updatedById], references: [id])
 
   @@index([publicationState, publicVisibility, archivedAt, publishedAt])
   @@index([institutionTypeId])
@@ -1379,154 +1071,136 @@ model Institution {
   @@map("institutions")
 }
 
-// ─────────────── Phase 9 — Official Communications ───────────────
-// One operation for notices, circulars, office orders, notifications, advisories, public
-// announcements (CMS requirements §4.6 / API spec §5/§6). Expiry is informational only — it never
-// auto-unpublishes/auto-archives (development-rules / build-context). createdBy/updatedBy follow the
-// project SET NULL convention (nullable) so removing a user preserves the historical record.
 model OfficialCommunication {
-  id                  String           @id @default(uuid()) @db.Uuid
-  titleEn             String           @map("title_en")
-  titleHi             String?          @map("title_hi")
-  summaryEn           String?          @map("summary_en")
-  summaryHi           String?          @map("summary_hi")
-  bodyEn              String?          @map("body_en")
-  bodyHi              String?          @map("body_hi")
-  communicationTypeId String           @map("communication_type_id") @db.Uuid
-  referenceNumber     String?          @map("reference_number")
-  issueDate           DateTime?        @map("issue_date") @db.Date
-  effectiveDate       DateTime?        @map("effective_date") @db.Date
-  expiryDate          DateTime?        @map("expiry_date") @db.Date
-  issuingAuthority    String?          @map("issuing_authority")
-  documentId          String?          @map("document_id") @db.Uuid
-  slug                String           @unique
-  publicationState    PublicationState @default(draft) @map("publication_state")
-  publicVisibility    Boolean          @default(true) @map("public_visibility")
-  publishStartAt      DateTime?        @map("publish_start_at")
-  publishedAt         DateTime?        @map("published_at")
-  archivedAt          DateTime?        @map("archived_at")
-  highlightType       HighlightType?   @map("highlight_type")
-  highlightStartAt    DateTime?        @map("highlight_start_at")
-  highlightEndAt      DateTime?        @map("highlight_end_at")
-  displayOrder        Int?             @map("display_order")
-  showOnHomepage      Boolean          @default(false) @map("show_on_homepage")
-  createdById         String?          @map("created_by") @db.Uuid
-  updatedById         String?          @map("updated_by") @db.Uuid
-  createdAt           DateTime         @default(now()) @map("created_at")
-  updatedAt           DateTime         @updatedAt @map("updated_at")
-
-  communicationType CommunicationType @relation(fields: [communicationTypeId], references: [id], onDelete: Restrict)
-  document          Document?         @relation(fields: [documentId], references: [id], onDelete: Restrict)
-  createdBy         User?             @relation("OfficialCommunicationCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
-  updatedBy         User?             @relation("OfficialCommunicationUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+  id                  String                   @id @default(uuid()) @db.Uuid
+  titleEn             String                   @map("title_en")
+  titleHi             String?                  @map("title_hi")
+  summaryEn           String?                  @map("summary_en")
+  summaryHi           String?                  @map("summary_hi")
+  bodyEn              String?                  @map("body_en")
+  bodyHi              String?                  @map("body_hi")
+  communicationTypeId String                   @map("communication_type_id") @db.Uuid
+  referenceNumber     String?                  @map("reference_number")
+  issueDate           DateTime?                @map("issue_date") @db.Date
+  effectiveDate       DateTime?                @map("effective_date") @db.Date
+  expiryDate          DateTime?                @map("expiry_date") @db.Date
+  issuingAuthority    String?                  @map("issuing_authority")
+  documentId          String?                  @map("document_id") @db.Uuid
+  slug                String                   @unique
+  publicationState    PublicationState         @default(draft) @map("publication_state")
+  publicVisibility    Boolean                  @default(true) @map("public_visibility")
+  publishStartAt      DateTime?                @map("publish_start_at")
+  publishedAt         DateTime?                @map("published_at")
+  archivedAt          DateTime?                @map("archived_at")
+  highlightType       HighlightType?           @map("highlight_type")
+  highlightStartAt    DateTime?                @map("highlight_start_at")
+  highlightEndAt      DateTime?                @map("highlight_end_at")
+  displayOrder        Int?                     @map("display_order")
+  showOnHomepage      Boolean                  @default(false) @map("show_on_homepage")
+  createdById         String?                  @map("created_by") @db.Uuid
+  updatedById         String?                  @map("updated_by") @db.Uuid
+  createdAt           DateTime                 @default(now()) @map("created_at")
+  updatedAt           DateTime                 @updatedAt @map("updated_at")
+  search_vector       Unsupported("tsvector")? @default(dbgenerated("to_tsvector('simple'::regconfig, ((((((((((COALESCE(title_en, ''::text) || ' '::text) || COALESCE(title_hi, ''::text)) || ' '::text) || COALESCE(summary_en, ''::text)) || ' '::text) || COALESCE(summary_hi, ''::text)) || ' '::text) || COALESCE(body_en, ''::text)) || ' '::text) || COALESCE(body_hi, ''::text)))"))
+  communicationType   CommunicationType        @relation(fields: [communicationTypeId], references: [id])
+  createdBy           User?                    @relation("OfficialCommunicationCreatedBy", fields: [createdById], references: [id])
+  document            Document?                @relation(fields: [documentId], references: [id], onDelete: Restrict)
+  updatedBy           User?                    @relation("OfficialCommunicationUpdatedBy", fields: [updatedById], references: [id])
 
   @@index([publicationState, publicVisibility, archivedAt, publishedAt])
   @@index([communicationTypeId])
   @@index([issueDate])
   @@index([showOnHomepage, displayOrder])
+  @@index([search_vector], map: "official_communications_search_vector_gin_idx", type: Gin)
   @@map("official_communications")
 }
 
-// ─────────────── Phase 9 — Tenders ───────────────
-// Lightweight structured tender metadata + external GeM link only. CMS never stores BOQ,
-// corrigenda, clarifications, award/cancellation notices, tender files, or bid data — those stay on
-// GeM (CMS requirements §4.7 / API spec §6). An expired tender stays public until manually
-// unpublished/archived.
 model Tender {
-  id                 String           @id @default(uuid()) @db.Uuid
-  titleEn            String           @map("title_en")
-  titleHi            String?          @map("title_hi")
-  summaryEn          String?          @map("summary_en")
-  summaryHi          String?          @map("summary_hi")
-  tenderTypeId       String           @map("tender_type_id") @db.Uuid
-  // Tender numbers are official reference codes and must be unique, CASE-INSENSITIVELY (business
-  // rule): "TND/001" and "tnd/001" are the same number. Stored as citext so the unique index +
-  // equality lookups are case-insensitive while the original casing is preserved. Nullable: a unique
-  // index over a nullable column treats NULLs as distinct in Postgres, so multiple tenders may omit
-  // the number while every supplied number stays globally unique (Phase 9 remediation — Issue 2).
-  tenderNumber       String?          @unique @map("tender_number") @db.Citext
-  publishDate        DateTime?        @map("publish_date") @db.Date
-  submissionDeadline DateTime?        @map("submission_deadline")
-  openingDate        DateTime?        @map("opening_date")
-  tenderStatus       String?          @map("tender_status")
-  gemUrl             String?          @map("gem_url")
-  slug               String           @unique
-  publicationState   PublicationState @default(draft) @map("publication_state")
-  publicVisibility   Boolean          @default(true) @map("public_visibility")
-  publishStartAt     DateTime?        @map("publish_start_at")
-  publishedAt        DateTime?        @map("published_at")
-  archivedAt         DateTime?        @map("archived_at")
-  highlightType      HighlightType?   @map("highlight_type")
-  highlightStartAt   DateTime?        @map("highlight_start_at")
-  highlightEndAt     DateTime?        @map("highlight_end_at")
-  displayOrder       Int?             @map("display_order")
-  showOnHomepage     Boolean          @default(false) @map("show_on_homepage")
-  createdById        String?          @map("created_by") @db.Uuid
-  updatedById        String?          @map("updated_by") @db.Uuid
-  createdAt          DateTime         @default(now()) @map("created_at")
-  updatedAt          DateTime         @updatedAt @map("updated_at")
-
-  tenderType TenderType @relation(fields: [tenderTypeId], references: [id], onDelete: Restrict)
-  createdBy  User?      @relation("TenderCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
-  updatedBy  User?      @relation("TenderUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+  id                 String                   @id @default(uuid()) @db.Uuid
+  titleEn            String                   @map("title_en")
+  titleHi            String?                  @map("title_hi")
+  summaryEn          String?                  @map("summary_en")
+  summaryHi          String?                  @map("summary_hi")
+  tenderTypeId       String                   @map("tender_type_id") @db.Uuid
+  tenderNumber       String?                  @unique @map("tender_number") @db.Citext
+  publishDate        DateTime?                @map("publish_date") @db.Date
+  submissionDeadline DateTime?                @map("submission_deadline")
+  openingDate        DateTime?                @map("opening_date")
+  tenderStatus       String?                  @map("tender_status")
+  gemUrl             String?                  @map("gem_url")
+  slug               String                   @unique
+  publicationState   PublicationState         @default(draft) @map("publication_state")
+  publicVisibility   Boolean                  @default(true) @map("public_visibility")
+  publishStartAt     DateTime?                @map("publish_start_at")
+  publishedAt        DateTime?                @map("published_at")
+  archivedAt         DateTime?                @map("archived_at")
+  highlightType      HighlightType?           @map("highlight_type")
+  highlightStartAt   DateTime?                @map("highlight_start_at")
+  highlightEndAt     DateTime?                @map("highlight_end_at")
+  displayOrder       Int?                     @map("display_order")
+  showOnHomepage     Boolean                  @default(false) @map("show_on_homepage")
+  createdById        String?                  @map("created_by") @db.Uuid
+  updatedById        String?                  @map("updated_by") @db.Uuid
+  createdAt          DateTime                 @default(now()) @map("created_at")
+  updatedAt          DateTime                 @updatedAt @map("updated_at")
+  search_vector      Unsupported("tsvector")? @default(dbgenerated("to_tsvector('simple'::regconfig, ((((((((COALESCE(title_en, ''::text) || ' '::text) || COALESCE(title_hi, ''::text)) || ' '::text) || COALESCE(summary_en, ''::text)) || ' '::text) || COALESCE(summary_hi, ''::text)) || ' '::text) || COALESCE((tender_number)::text, ''::text)))"))
+  createdBy          User?                    @relation("TenderCreatedBy", fields: [createdById], references: [id])
+  tenderType         TenderType               @relation(fields: [tenderTypeId], references: [id])
+  updatedBy          User?                    @relation("TenderUpdatedBy", fields: [updatedById], references: [id])
 
   @@index([publicationState, publicVisibility, archivedAt, publishedAt])
   @@index([tenderTypeId])
   @@index([submissionDeadline])
   @@index([showOnHomepage, displayOrder])
+  @@index([search_vector], map: "tenders_search_vector_gin_idx", type: Gin)
   @@map("tenders")
 }
 
-// ─────────────── Phase 9 — Procurement Updates ───────────────
-// One operation for all public procurement-related updates: rates, announcements, schedules, centre
-// updates, trade opportunities (CMS requirements §4.8 / API spec §6). INFORMATIONAL ONLY — no
-// procurement transactions, inventory, warehousing, beneficiary, or payment data. Rate/date/location
-// fields are conditional (filled only where the update type is relevant).
 model ProcurementUpdate {
-  id                      String           @id @default(uuid()) @db.Uuid
-  titleEn                 String           @map("title_en")
-  titleHi                 String?          @map("title_hi")
-  summaryEn               String?          @map("summary_en")
-  summaryHi               String?          @map("summary_hi")
-  descriptionEn           String?          @map("description_en")
-  descriptionHi           String?          @map("description_hi")
-  procurementUpdateTypeId String           @map("procurement_update_type_id") @db.Uuid
-  commodityId             String?          @map("commodity_id") @db.Uuid
-  rate                    Decimal?         @db.Decimal(14, 2)
+  id                      String                   @id @default(uuid()) @db.Uuid
+  titleEn                 String                   @map("title_en")
+  titleHi                 String?                  @map("title_hi")
+  summaryEn               String?                  @map("summary_en")
+  summaryHi               String?                  @map("summary_hi")
+  descriptionEn           String?                  @map("description_en")
+  descriptionHi           String?                  @map("description_hi")
+  procurementUpdateTypeId String                   @map("procurement_update_type_id") @db.Uuid
+  commodityId             String?                  @map("commodity_id") @db.Uuid
+  rate                    Decimal?                 @db.Decimal(14, 2)
   unit                    String?
-  effectiveDate           DateTime?        @map("effective_date") @db.Date
-  periodStart             DateTime?        @map("period_start") @db.Date
-  periodEnd               DateTime?        @map("period_end") @db.Date
-  districtId              String?          @map("district_id") @db.Uuid
-  blockId                 String?          @map("block_id") @db.Uuid
-  locationText            String?          @map("location_text")
-  programmeSchemeId       String?          @map("programme_scheme_id") @db.Uuid
-  documentId              String?          @map("document_id") @db.Uuid
+  effectiveDate           DateTime?                @map("effective_date") @db.Date
+  periodStart             DateTime?                @map("period_start") @db.Date
+  periodEnd               DateTime?                @map("period_end") @db.Date
+  districtId              String?                  @map("district_id") @db.Uuid
+  blockId                 String?                  @map("block_id") @db.Uuid
+  locationText            String?                  @map("location_text")
+  programmeSchemeId       String?                  @map("programme_scheme_id") @db.Uuid
+  documentId              String?                  @map("document_id") @db.Uuid
   status                  String?
-  slug                    String           @unique
-  publicationState        PublicationState @default(draft) @map("publication_state")
-  publicVisibility        Boolean          @default(true) @map("public_visibility")
-  publishStartAt          DateTime?        @map("publish_start_at")
-  publishedAt             DateTime?        @map("published_at")
-  archivedAt              DateTime?        @map("archived_at")
-  highlightType           HighlightType?   @map("highlight_type")
-  highlightStartAt        DateTime?        @map("highlight_start_at")
-  highlightEndAt          DateTime?        @map("highlight_end_at")
-  displayOrder            Int?             @map("display_order")
-  showOnHomepage          Boolean          @default(false) @map("show_on_homepage")
-  createdById             String?          @map("created_by") @db.Uuid
-  updatedById             String?          @map("updated_by") @db.Uuid
-  createdAt               DateTime         @default(now()) @map("created_at")
-  updatedAt               DateTime         @updatedAt @map("updated_at")
-
-  procurementUpdateType ProcurementUpdateType @relation(fields: [procurementUpdateTypeId], references: [id], onDelete: Restrict)
-  commodity             Commodity?            @relation(fields: [commodityId], references: [id], onDelete: Restrict)
-  district              District?             @relation(fields: [districtId], references: [id], onDelete: Restrict)
-  block                 Block?                @relation(fields: [blockId], references: [id], onDelete: Restrict)
-  programmeScheme       ProgrammeScheme?      @relation(fields: [programmeSchemeId], references: [id], onDelete: Restrict)
-  document              Document?             @relation(fields: [documentId], references: [id], onDelete: Restrict)
-  createdBy             User?                 @relation("ProcurementUpdateCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
-  updatedBy             User?                 @relation("ProcurementUpdateUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+  slug                    String                   @unique
+  publicationState        PublicationState         @default(draft) @map("publication_state")
+  publicVisibility        Boolean                  @default(true) @map("public_visibility")
+  publishStartAt          DateTime?                @map("publish_start_at")
+  publishedAt             DateTime?                @map("published_at")
+  archivedAt              DateTime?                @map("archived_at")
+  highlightType           HighlightType?           @map("highlight_type")
+  highlightStartAt        DateTime?                @map("highlight_start_at")
+  highlightEndAt          DateTime?                @map("highlight_end_at")
+  displayOrder            Int?                     @map("display_order")
+  showOnHomepage          Boolean                  @default(false) @map("show_on_homepage")
+  createdById             String?                  @map("created_by") @db.Uuid
+  updatedById             String?                  @map("updated_by") @db.Uuid
+  createdAt               DateTime                 @default(now()) @map("created_at")
+  updatedAt               DateTime                 @updatedAt @map("updated_at")
+  search_vector           Unsupported("tsvector")? @default(dbgenerated("to_tsvector('simple'::regconfig, ((((((((((COALESCE(title_en, ''::text) || ' '::text) || COALESCE(title_hi, ''::text)) || ' '::text) || COALESCE(summary_en, ''::text)) || ' '::text) || COALESCE(summary_hi, ''::text)) || ' '::text) || COALESCE(description_en, ''::text)) || ' '::text) || COALESCE(description_hi, ''::text)))"))
+  block                   Block?                   @relation(fields: [blockId], references: [id], onDelete: Restrict)
+  commodity               Commodity?               @relation(fields: [commodityId], references: [id], onDelete: Restrict)
+  createdBy               User?                    @relation("ProcurementUpdateCreatedBy", fields: [createdById], references: [id])
+  district                District?                @relation(fields: [districtId], references: [id], onDelete: Restrict)
+  document                Document?                @relation(fields: [documentId], references: [id], onDelete: Restrict)
+  procurementUpdateType   ProcurementUpdateType    @relation(fields: [procurementUpdateTypeId], references: [id])
+  programmeScheme         ProgrammeScheme?         @relation(fields: [programmeSchemeId], references: [id], onDelete: Restrict)
+  updatedBy               User?                    @relation("ProcurementUpdateUpdatedBy", fields: [updatedById], references: [id])
 
   @@index([publicationState, publicVisibility, archivedAt, publishedAt])
   @@index([procurementUpdateTypeId])
@@ -1534,84 +1208,72 @@ model ProcurementUpdate {
   @@index([districtId])
   @@index([effectiveDate])
   @@index([showOnHomepage, displayOrder])
+  @@index([search_vector], map: "procurement_updates_search_vector_gin_idx", type: Gin)
   @@map("procurement_updates")
 }
 
-// ─────────────── Phase 10 — Pages & Menus ───────────────
-// One reusable operation for static/institutional pages (About Us, Vision, policies, …) — CMS
-// requirements §4.10 / API spec §6. Layout stays code-controlled; the CMS only owns page CONTENT and
-// the page-only SEO meta fields. The slug is the public route key, generated once on create and
-// stable thereafter (only Super Admin may change it, audited). No page builder / drag-and-drop.
 model Page {
-  id                String           @id @default(uuid()) @db.Uuid
-  titleEn           String           @map("title_en")
-  titleHi           String?          @map("title_hi")
-  bodyEn            String?          @map("body_en")
-  bodyHi            String?          @map("body_hi")
-  metaTitleEn       String?          @map("meta_title_en")
-  metaTitleHi       String?          @map("meta_title_hi")
-  metaDescriptionEn String?          @map("meta_description_en")
-  metaDescriptionHi String?          @map("meta_description_hi")
-  slug              String           @unique
-  publicationState  PublicationState @default(draft) @map("publication_state")
-  publicVisibility  Boolean          @default(true) @map("public_visibility")
-  publishStartAt    DateTime?        @map("publish_start_at")
-  publishedAt       DateTime?        @map("published_at")
-  archivedAt        DateTime?        @map("archived_at")
-  highlightType     HighlightType?   @map("highlight_type")
-  highlightStartAt  DateTime?        @map("highlight_start_at")
-  highlightEndAt    DateTime?        @map("highlight_end_at")
-  displayOrder      Int?             @map("display_order")
-  showOnHomepage    Boolean          @default(false) @map("show_on_homepage")
-  createdById       String?          @map("created_by") @db.Uuid
-  updatedById       String?          @map("updated_by") @db.Uuid
-  createdAt         DateTime         @default(now()) @map("created_at")
-  updatedAt         DateTime         @updatedAt @map("updated_at")
-
-  menuItems MenuItem[]
-  createdBy User?      @relation("PageCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
-  updatedBy User?      @relation("PageUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+  id                String                   @id @default(uuid()) @db.Uuid
+  titleEn           String                   @map("title_en")
+  titleHi           String?                  @map("title_hi")
+  bodyEn            String?                  @map("body_en")
+  bodyHi            String?                  @map("body_hi")
+  metaTitleEn       String?                  @map("meta_title_en")
+  metaTitleHi       String?                  @map("meta_title_hi")
+  metaDescriptionEn String?                  @map("meta_description_en")
+  metaDescriptionHi String?                  @map("meta_description_hi")
+  slug              String                   @unique
+  publicationState  PublicationState         @default(draft) @map("publication_state")
+  publicVisibility  Boolean                  @default(true) @map("public_visibility")
+  publishStartAt    DateTime?                @map("publish_start_at")
+  publishedAt       DateTime?                @map("published_at")
+  archivedAt        DateTime?                @map("archived_at")
+  highlightType     HighlightType?           @map("highlight_type")
+  highlightStartAt  DateTime?                @map("highlight_start_at")
+  highlightEndAt    DateTime?                @map("highlight_end_at")
+  displayOrder      Int?                     @map("display_order")
+  showOnHomepage    Boolean                  @default(false) @map("show_on_homepage")
+  createdById       String?                  @map("created_by") @db.Uuid
+  updatedById       String?                  @map("updated_by") @db.Uuid
+  createdAt         DateTime                 @default(now()) @map("created_at")
+  updatedAt         DateTime                 @updatedAt @map("updated_at")
+  search_vector     Unsupported("tsvector")? @default(dbgenerated("to_tsvector('simple'::regconfig, ((((((((((((((COALESCE(title_en, ''::text) || ' '::text) || COALESCE(title_hi, ''::text)) || ' '::text) || COALESCE(body_en, ''::text)) || ' '::text) || COALESCE(body_hi, ''::text)) || ' '::text) || COALESCE(meta_title_en, ''::text)) || ' '::text) || COALESCE(meta_title_hi, ''::text)) || ' '::text) || COALESCE(meta_description_en, ''::text)) || ' '::text) || COALESCE(meta_description_hi, ''::text)))"))
+  menuItems         MenuItem[]
+  createdBy         User?                    @relation("PageCreatedBy", fields: [createdById], references: [id])
+  updatedBy         User?                    @relation("PageUpdatedBy", fields: [updatedById], references: [id])
 
   @@index([publicationState, publicVisibility, archivedAt, publishedAt])
   @@index([showOnHomepage, displayOrder])
+  @@index([search_vector], map: "pages_search_vector_gin_idx", type: Gin)
   @@map("pages")
 }
 
-// Simple menu configuration for header / footer / utility navigation (CMS requirements §4.11 /
-// API spec §6). Self-referencing tree (parent_id) — children cascade on parent delete. A menu item
-// links EITHER to an internal page (page_id) OR to an explicit url (internal path or external URL).
-// Hierarchy must stay acyclic (self-parent + cycles rejected in the service). is_active toggles
-// public visibility. Only Super Admin may delete (cascade) per API spec §6.
 model MenuItem {
-  id           String   @id @default(uuid()) @db.Uuid
-  labelEn      String   @map("label_en")
-  labelHi      String?  @map("label_hi")
-  location     String // header | footer | utility
+  id           String     @id @default(uuid()) @db.Uuid
+  labelEn      String     @map("label_en")
+  labelHi      String?    @map("label_hi")
+  location     String
   url          String?
-  pageId       String?  @map("page_id") @db.Uuid
-  parentId     String?  @map("parent_id") @db.Uuid
-  opensNewTab  Boolean  @default(false) @map("opens_new_tab")
-  displayOrder Int      @default(0) @map("display_order")
-  isActive     Boolean  @default(true) @map("is_active")
-  createdById  String?  @map("created_by") @db.Uuid
-  updatedById  String?  @map("updated_by") @db.Uuid
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
-
-  page      Page?      @relation(fields: [pageId], references: [id], onDelete: SetNull)
-  parent    MenuItem?  @relation("MenuTree", fields: [parentId], references: [id], onDelete: Cascade)
-  children  MenuItem[] @relation("MenuTree")
-  createdBy User?      @relation("MenuItemCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
-  updatedBy User?      @relation("MenuItemUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+  pageId       String?    @map("page_id") @db.Uuid
+  parentId     String?    @map("parent_id") @db.Uuid
+  opensNewTab  Boolean    @default(false) @map("opens_new_tab")
+  displayOrder Int        @default(0) @map("display_order")
+  isActive     Boolean    @default(true) @map("is_active")
+  createdById  String?    @map("created_by") @db.Uuid
+  updatedById  String?    @map("updated_by") @db.Uuid
+  createdAt    DateTime   @default(now()) @map("created_at")
+  updatedAt    DateTime   @updatedAt @map("updated_at")
+  createdBy    User?      @relation("MenuItemCreatedBy", fields: [createdById], references: [id])
+  page         Page?      @relation(fields: [pageId], references: [id])
+  parent       MenuItem?  @relation("MenuTree", fields: [parentId], references: [id], onDelete: Cascade)
+  children     MenuItem[] @relation("MenuTree")
+  updatedBy    User?      @relation("MenuItemUpdatedBy", fields: [updatedById], references: [id])
 
   @@index([location, displayOrder])
   @@index([parentId])
   @@map("menu_items")
 }
 
-// ─────────────── Phase 10 — FAQ & Digital Services ───────────────
-// FAQs reuse the FAQ Category master (CMS requirements §4.13 / API spec §6). No nested FAQs; public
-// search covers question + answer; ordering follows category + display order. Publishable **P**.
 model Faq {
   id               String           @id @default(uuid()) @db.Uuid
   faqCategoryId    String?          @map("faq_category_id") @db.Uuid
@@ -1634,10 +1296,9 @@ model Faq {
   updatedById      String?          @map("updated_by") @db.Uuid
   createdAt        DateTime         @default(now()) @map("created_at")
   updatedAt        DateTime         @updatedAt @map("updated_at")
-
-  faqCategory FaqCategory? @relation(fields: [faqCategoryId], references: [id], onDelete: Restrict)
-  createdBy   User?        @relation("FaqCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
-  updatedBy   User?        @relation("FaqUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+  createdBy        User?            @relation("FaqCreatedBy", fields: [createdById], references: [id])
+  faqCategory      FaqCategory?     @relation(fields: [faqCategoryId], references: [id], onDelete: Restrict)
+  updatedBy        User?            @relation("FaqUpdatedBy", fields: [updatedById], references: [id])
 
   @@index([publicationState, publicVisibility, archivedAt, publishedAt])
   @@index([faqCategoryId])
@@ -1645,10 +1306,6 @@ model Faq {
   @@map("faqs")
 }
 
-// Digital Services are controlled links to APPROVED external systems only (ERP, MIS, membership,
-// beneficiary portal, government portals) — CMS requirements §4.14 / API spec §6. The CMS never
-// simulates, proxies, or embeds those systems; clients open `external_url` in a new tab with
-// rel="noopener noreferrer". Optional icon comes from the Media Library. Publishable **P**.
 model DigitalService {
   id               String           @id @default(uuid()) @db.Uuid
   titleEn          String           @map("title_en")
@@ -1672,28 +1329,20 @@ model DigitalService {
   updatedById      String?          @map("updated_by") @db.Uuid
   createdAt        DateTime         @default(now()) @map("created_at")
   updatedAt        DateTime         @updatedAt @map("updated_at")
-
-  iconMedia MediaAsset? @relation("DigitalServiceIcon", fields: [iconMediaId], references: [id])
-  createdBy User?       @relation("DigitalServiceCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
-  updatedBy User?       @relation("DigitalServiceUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+  createdBy        User?            @relation("DigitalServiceCreatedBy", fields: [createdById], references: [id])
+  iconMedia        MediaAsset?      @relation("DigitalServiceIcon", fields: [iconMediaId], references: [id])
+  updatedBy        User?            @relation("DigitalServiceUpdatedBy", fields: [updatedById], references: [id])
 
   @@index([publicationState, publicVisibility, archivedAt, publishedAt])
   @@index([showOnHomepage, displayOrder])
   @@map("digital_services")
 }
 
-// ─────────────── Phase 11 — Institutional Membership ───────────────
-// Institution-wise membership ONLY — no personal/voting/dividend data (CMS requirements §4.15 /
-// build-context §8.3). Two orthogonal classification axes (membership_level × membership_type)
-// feed dashboard reports #10–#13; this module is a DATA SOURCE only and performs no aggregation.
-// The member is an existing Institution; the District Union is ALSO an existing Institution
-// (district_union_id), never a duplicated entity. createdBy/updatedBy follow the project SET NULL
-// convention (nullable) so removing a user preserves the historical record. Publishable **P**.
 model InstitutionalMembership {
   id                String           @id @default(uuid()) @db.Uuid
   institutionId     String           @map("institution_id") @db.Uuid
-  membershipLevel   MembershipLevel  @map("membership_level") // sidhkofed | district_union
-  membershipType    MembershipType   @map("membership_type") // primary | nominal
+  membershipLevel   MembershipLevel  @map("membership_level")
+  membershipType    MembershipType   @map("membership_type")
   membershipNumber  String?          @unique @map("membership_number")
   districtId        String?          @map("district_id") @db.Uuid
   districtUnionId   String?          @map("district_union_id") @db.Uuid
@@ -1717,18 +1366,13 @@ model InstitutionalMembership {
   updatedById       String?          @map("updated_by") @db.Uuid
   createdAt         DateTime         @default(now()) @map("created_at")
   updatedAt         DateTime         @updatedAt @map("updated_at")
+  createdBy         User?            @relation("MembershipCreatedBy", fields: [createdById], references: [id])
+  district          District?        @relation(fields: [districtId], references: [id], onDelete: Restrict)
+  districtUnion     Institution?     @relation("MembershipDistrictUnion", fields: [districtUnionId], references: [id], onDelete: Restrict)
+  institution       Institution      @relation("MembershipInstitution", fields: [institutionId], references: [id])
+  reportingPeriod   ReportingPeriod? @relation(fields: [reportingPeriodId], references: [id])
+  updatedBy         User?            @relation("MembershipUpdatedBy", fields: [updatedById], references: [id])
 
-  institution     Institution      @relation("MembershipInstitution", fields: [institutionId], references: [id], onDelete: Restrict)
-  districtUnion   Institution?     @relation("MembershipDistrictUnion", fields: [districtUnionId], references: [id], onDelete: Restrict)
-  district        District?        @relation(fields: [districtId], references: [id], onDelete: Restrict)
-  reportingPeriod ReportingPeriod? @relation(fields: [reportingPeriodId], references: [id])
-  createdBy       User?            @relation("MembershipCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
-  updatedBy       User?            @relation("MembershipUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
-
-  // Business uniqueness key (audit-critical-fixes Fix 2; feeds dashboard reports #10–#13): one
-  // membership per institution × level × type × district-union × reporting-period. district_union_id
-  // and reporting_period_id are nullable — the migration creates this index with NULLS NOT DISTINCT
-  // (PostgreSQL 15+) so duplicates with an omitted DU/period still collide at the database layer.
   @@unique([institutionId, membershipLevel, membershipType, districtUnionId, reportingPeriodId], map: "institutional_memberships_business_key")
   @@index([publicationState, publicVisibility, archivedAt, publishedAt])
   @@index([membershipLevel, membershipType, reportingPeriodId])
@@ -1738,108 +1382,191 @@ model InstitutionalMembership {
   @@map("institutional_memberships")
 }
 
-// ─────────────── Dashboard (Phase 12 — Part 8) ───────────────
-// FIXED public reports (fixed keys + fixed layouts; NOT a user-defined report builder). Admins
-// manage data + visibility/order/period only (CMS requirements §13). `layout_config` is an approved
-// fixed presentation descriptor, never runtime SQL/formulas. Carries the publishing-workflow mixin so
-// a report is exposed publicly only when published + visible + not archived (schema Part 10).
 model DashboardReport {
-  id               String           @id @default(uuid()) @db.Uuid
-  reportKey        String           @unique @map("report_key")
-  titleEn          String           @map("title_en")
-  titleHi          String?          @map("title_hi")
-  descriptionEn    String?          @map("description_en")
-  descriptionHi    String?          @map("description_hi")
-  layoutConfig     Json?            @map("layout_config")
-  publicationState PublicationState @default(draft) @map("publication_state")
-  publicVisibility Boolean          @default(true) @map("public_visibility")
-  publishStartAt   DateTime?        @map("publish_start_at")
-  publishedAt      DateTime?        @map("published_at")
-  archivedAt       DateTime?        @map("archived_at")
-  highlightType    HighlightType?   @map("highlight_type")
-  highlightStartAt DateTime?        @map("highlight_start_at")
-  highlightEndAt   DateTime?        @map("highlight_end_at")
-  displayOrder     Int?             @map("display_order")
-  showOnHomepage   Boolean          @default(false) @map("show_on_homepage")
-  isActive         Boolean          @default(true) @map("is_active")
-  createdById      String?          @map("created_by") @db.Uuid
-  updatedById      String?          @map("updated_by") @db.Uuid
-  createdAt        DateTime         @default(now()) @map("created_at")
-  updatedAt        DateTime         @updatedAt @map("updated_at")
-
-  metrics   DashboardMetric[]
-  datasets  DashboardDataset[]
-  createdBy User?              @relation("DashboardReportCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
-  updatedBy User?              @relation("DashboardReportUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+  id               String             @id @default(uuid()) @db.Uuid
+  reportKey        String             @unique @map("report_key")
+  titleEn          String             @map("title_en")
+  titleHi          String?            @map("title_hi")
+  descriptionEn    String?            @map("description_en")
+  descriptionHi    String?            @map("description_hi")
+  layoutConfig     Json?              @map("layout_config")
+  publicationState PublicationState   @default(draft) @map("publication_state")
+  publicVisibility Boolean            @default(true) @map("public_visibility")
+  publishStartAt   DateTime?          @map("publish_start_at")
+  publishedAt      DateTime?          @map("published_at")
+  archivedAt       DateTime?          @map("archived_at")
+  highlightType    HighlightType?     @map("highlight_type")
+  highlightStartAt DateTime?          @map("highlight_start_at")
+  highlightEndAt   DateTime?          @map("highlight_end_at")
+  displayOrder     Int?               @map("display_order")
+  showOnHomepage   Boolean            @default(false) @map("show_on_homepage")
+  isActive         Boolean            @default(true) @map("is_active")
+  createdById      String?            @map("created_by") @db.Uuid
+  updatedById      String?            @map("updated_by") @db.Uuid
+  createdAt        DateTime           @default(now()) @map("created_at")
+  updatedAt        DateTime           @updatedAt @map("updated_at")
+  datasets         DashboardDataset[]
+  metrics          DashboardMetric[]
+  createdBy        User?              @relation("DashboardReportCreatedBy", fields: [createdById], references: [id])
+  updatedBy        User?              @relation("DashboardReportUpdatedBy", fields: [updatedById], references: [id])
 
   @@index([publicationState, publicVisibility, archivedAt, publishedAt])
   @@index([showOnHomepage, displayOrder])
   @@map("dashboard_reports")
 }
 
-// Normalized metric values rendered into a report's fixed layout. Exactly one of `value`/`valueText`
-// carries the figure; FY + reporting period give the period dimension. `source` records provenance and
-// `datasetId` links the ingest that produced it (SetNull so deleting a dataset keeps the durable metric).
 model DashboardMetric {
-  id                String        @id @default(uuid()) @db.Uuid
-  reportId          String        @map("report_id") @db.Uuid
-  metricKey         String        @map("metric_key")
-  labelEn           String        @map("label_en")
-  labelHi           String?       @map("label_hi")
-  value             Decimal?      @db.Decimal(18, 4)
-  valueText         String?       @map("value_text")
+  id                String            @id @default(uuid()) @db.Uuid
+  reportId          String            @map("report_id") @db.Uuid
+  metricKey         String            @map("metric_key")
+  labelEn           String            @map("label_en")
+  labelHi           String?           @map("label_hi")
+  value             Decimal?          @db.Decimal(18, 4)
+  valueText         String?           @map("value_text")
   unit              String?
-  financialYearId   String?       @map("financial_year_id") @db.Uuid
-  reportingPeriodId String?       @map("reporting_period_id") @db.Uuid
-  source            DatasetSource @default(manual)
-  datasetId         String?       @map("dataset_id") @db.Uuid
-  displayOrder      Int           @default(0) @map("display_order")
-  createdById       String?       @map("created_by") @db.Uuid
-  updatedById       String?       @map("updated_by") @db.Uuid
-  createdAt         DateTime      @default(now()) @map("created_at")
-  updatedAt         DateTime      @updatedAt @map("updated_at")
+  financialYearId   String?           @map("financial_year_id") @db.Uuid
+  reportingPeriodId String?           @map("reporting_period_id") @db.Uuid
+  source            DatasetSource     @default(manual)
+  datasetId         String?           @map("dataset_id") @db.Uuid
+  displayOrder      Int               @default(0) @map("display_order")
+  createdById       String?           @map("created_by") @db.Uuid
+  updatedById       String?           @map("updated_by") @db.Uuid
+  createdAt         DateTime          @default(now()) @map("created_at")
+  updatedAt         DateTime          @updatedAt @map("updated_at")
+  createdBy         User?             @relation("DashboardMetricCreatedBy", fields: [createdById], references: [id])
+  dataset           DashboardDataset? @relation(fields: [datasetId], references: [id])
+  financialYear     FinancialYear?    @relation(fields: [financialYearId], references: [id])
+  report            DashboardReport   @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  reportingPeriod   ReportingPeriod?  @relation(fields: [reportingPeriodId], references: [id])
+  updatedBy         User?             @relation("DashboardMetricUpdatedBy", fields: [updatedById], references: [id])
 
-  report          DashboardReport   @relation(fields: [reportId], references: [id], onDelete: Cascade)
-  financialYear   FinancialYear?    @relation(fields: [financialYearId], references: [id])
-  reportingPeriod ReportingPeriod?  @relation(fields: [reportingPeriodId], references: [id])
-  dataset         DashboardDataset? @relation(fields: [datasetId], references: [id], onDelete: SetNull)
-  createdBy       User?             @relation("DashboardMetricCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
-  updatedBy       User?             @relation("DashboardMetricUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
-
-  // One metric per report × key × financial-year × reporting-period. financial_year_id and
-  // reporting_period_id are nullable; the migration recreates this index with NULLS NOT DISTINCT
-  // (PostgreSQL 15+) so a duplicate metric with an omitted FY/period still collides at the database
-  // layer (Phase 12 remediation — Issue 3). Mapped to a stable name for that raw-SQL override.
   @@unique([reportId, metricKey, financialYearId, reportingPeriodId], map: "dashboard_metrics_unique")
-  @@index([reportId, financialYearId, reportingPeriodId])
+  @@index([reportId, financialYearId, reportingPeriodId], map: "dashboard_metrics_report_id_financial_year_id_reporting_peri_id")
   @@map("dashboard_metrics")
 }
 
-// Ingest unit for manual entry or an Excel/CSV upload; transient tabular staging before durable
-// metrics are derived. `rawRows` is controlled JSON staging only (not a stored content module). The
-// report FK is Restrict so a report with ingest history cannot be silently hard-deleted.
 model DashboardDataset {
-  id                String        @id @default(uuid()) @db.Uuid
-  reportId          String        @map("report_id") @db.Uuid
+  id                String            @id @default(uuid()) @db.Uuid
+  reportId          String            @map("report_id") @db.Uuid
   source            DatasetSource
-  financialYearId   String?       @map("financial_year_id") @db.Uuid
-  reportingPeriodId String?       @map("reporting_period_id") @db.Uuid
-  sourceFileAssetId String?       @map("source_file_asset_id") @db.Uuid
-  rawRows           Json?         @map("raw_rows")
-  rowCount          Int           @default(0) @map("row_count")
-  status            String        @default("pending")
-  processedAt       DateTime?     @map("processed_at")
-  createdById       String?       @map("created_by") @db.Uuid
-  createdAt         DateTime      @default(now()) @map("created_at")
-  updatedAt         DateTime      @updatedAt @map("updated_at")
-
-  report          DashboardReport   @relation(fields: [reportId], references: [id], onDelete: Restrict)
-  financialYear   FinancialYear?    @relation(fields: [financialYearId], references: [id])
-  reportingPeriod ReportingPeriod?  @relation(fields: [reportingPeriodId], references: [id])
-  sourceFileAsset MediaAsset?       @relation("DatasetFile", fields: [sourceFileAssetId], references: [id])
-  createdBy       User?             @relation("DashboardDatasetCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
-  metrics         DashboardMetric[]
+  financialYearId   String?           @map("financial_year_id") @db.Uuid
+  reportingPeriodId String?           @map("reporting_period_id") @db.Uuid
+  sourceFileAssetId String?           @map("source_file_asset_id") @db.Uuid
+  rawRows           Json?             @map("raw_rows")
+  rowCount          Int               @default(0) @map("row_count")
+  status            String            @default("pending")
+  processedAt       DateTime?         @map("processed_at")
+  createdById       String?           @map("created_by") @db.Uuid
+  createdAt         DateTime          @default(now()) @map("created_at")
+  updatedAt         DateTime          @updatedAt @map("updated_at")
+  createdBy         User?             @relation("DashboardDatasetCreatedBy", fields: [createdById], references: [id])
+  financialYear     FinancialYear?    @relation(fields: [financialYearId], references: [id])
+  report            DashboardReport   @relation(fields: [reportId], references: [id])
+  reportingPeriod   ReportingPeriod?  @relation(fields: [reportingPeriodId], references: [id])
+  sourceFileAsset   MediaAsset?       @relation("DatasetFile", fields: [sourceFileAssetId], references: [id])
+  metrics           DashboardMetric[]
 
   @@index([reportId])
   @@map("dashboard_datasets")
+}
+
+enum Language {
+  en
+  hi
+}
+
+enum AuditAction {
+  create
+  update
+  publish
+  unpublish
+  archive
+  restore
+  media_replace
+  config_change
+  master_change
+  login
+}
+
+enum PublicationState {
+  draft
+  published
+  unpublished
+  archived
+}
+
+enum HighlightType {
+  new
+  latest
+  important
+  urgent
+  featured
+}
+
+enum ReportingPeriodType {
+  month
+  financial_year
+  calendar_year
+  cumulative
+}
+
+enum DateMode {
+  single
+  range
+  multi_day
+}
+
+enum EventStatus {
+  scheduled
+  ongoing
+  completed
+  postponed
+  cancelled
+}
+
+enum FieldDataType {
+  text
+  textarea
+  number
+  date
+  boolean
+  select
+}
+
+enum TranslationSource {
+  manual
+  automatic
+  missing
+}
+
+enum DistributionBasis {
+  individual
+  group
+}
+
+enum DistributionModel {
+  individual
+  group
+  mixed
+}
+
+enum MembershipLevel {
+  sidhkofed
+  district_union
+}
+
+enum MembershipType {
+  primary
+  nominal
+}
+
+enum MembershipStatus {
+  active
+  inactive
+}
+
+enum DatasetSource {
+  cms_derived
+  manual
+  excel
 }

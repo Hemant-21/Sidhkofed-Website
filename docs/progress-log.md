@@ -383,3 +383,43 @@ List/Create/Edit/Detail page templates, and skeleton/error component variants. S
 exist from 15.0 and are reused as-is.
 
 Commit/push status: not committed (left for review).
+
+---
+
+## Phase 15.3 — Events & News Frontend (admin)
+
+Implemented the complete admin frontend for the two modules **Events** and **Event News**,
+consuming the backend contracts exactly (events/news DTOs, validators, dynamic-field engine,
+`content.*` RBAC) and built entirely on the 15.0/15.1/15.2 shared infrastructure (DataTable,
+form framework, CRUD/lifecycle/filter hooks, feedback states, `<Can>`, dialogs, status badges).
+
+New reusable infra (reference pattern for every later content module):
+`admin/src/components/relationships/` — master/relation option hooks (`useMasterOptions`,
+`useRelationOptions`, programme/institution/gallery/document wrappers), the shared media picker
+dialog (browse library + upload via existing `/admin/media`), and the RHF-bound `CoverMediaField`.
+
+Events (`admin/src/features/events/`): list (server pagination/search/filters/sort/column-select/
+bulk publish+archive), create/edit form (bilingual tabs, dynamic type-specific fields rendered
+from `event_field_definitions`, relationship multi-selects, cover picker, scheduling/highlight,
+read-only slug), detail/view (overview, bilingual content, dynamic values, relationships,
+timeline, completion panel), lifecycle (publish/unpublish/archive/restore) + postpone/cancel
+(status override) + complete + publish-as-news. Routes: `/events`, `/events/new`,
+`/events/[id]`, `/events/[id]/edit`.
+
+News (`admin/src/features/news/`): list, detail/view, edit form (bilingual, cover, publish
+scheduling, highlight, read-only slug + immutable linked event). No standalone create — `/news/new`
+is an honest guidance page pointing to the event publish-as-news flow. Routes: `/news`,
+`/news/[id]`, `/news/[id]/edit`, `/news/new`.
+
+Design fidelity: dynamic fields limited to the backend's six data types; event status is
+display-only (never recomputed; `scheduled`→"Upcoming"); HTML bodies rendered as escaped text
+(no XSS); filters are the exact backend allow-lists; permission gating via `<Can>` with the
+backend as the security boundary. Nav entries + reserved routes already existed in 15.0 (no
+sidebar change needed).
+
+Verified (in `admin/`): `tsc --noEmit` ✓, `next lint` ✓ (no warnings/errors),
+`vitest` 74 passed (20 files, +28 new), `next build` ✓ (all 8 new routes compile).
+No backend files modified (`prisma/schema.prisma` change predates this work and was left
+untouched; `package-lock.json` changed only because admin deps were installed to run the build).
+
+Commit/push status: not committed (left for review).
