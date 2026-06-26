@@ -332,6 +332,41 @@ export async function activeFieldDefinitions(eventTypeId: string): Promise<
   }));
 }
 
+// ── Scheduled event-status recompute (Phase 14 lifecycle automation) ────────────
+/** A lightweight candidate row for the date-derived status recompute job. */
+export interface StatusCandidate {
+  id: string;
+  startDate: Date;
+  endDate: Date | null;
+  eventStatus: import('@prisma/client').EventStatus;
+}
+
+/**
+ * Candidates whose date-derived `event_status` may still advance over time: automatic-status events
+ * (`status_override = false`) that are not explicitly completed (`completed_date IS NULL`) and are
+ * still in a non-terminal derived state (`scheduled` or `ongoing`). Postponed/cancelled
+ * (override=true) and already-completed events are excluded — they never auto-transition. Bounded
+ * by `take`; oldest start first for stable batching.
+ */
+export async function findStatusRecomputeCandidates(take: number): Promise<StatusCandidate[]> {
+  return prisma.event.findMany({
+    where: { statusOverride: false, completedDate: null, eventStatus: { in: ['scheduled', 'ongoing'] } },
+    select: { id: true, startDate: true, endDate: true, eventStatus: true },
+    orderBy: { startDate: 'asc' },
+    take,
+  });
+}
+
+/** Minimal status write (no relationship includes) used by the recompute job. */
+export async function updateEventStatus(
+  id: string,
+  eventStatus: import('@prisma/client').EventStatus,
+  userId: string,
+  db: Db = prisma,
+): Promise<void> {
+  await db.event.update({ where: { id }, data: { eventStatus, updatedById: userId }, select: { id: true } });
+}
+
 export const eventRepository = {
   slugExists,
   create,
@@ -348,4 +383,6 @@ export const eventRepository = {
   validateReferences,
   validateTrainingTypeAgainstProgrammes,
   activeFieldDefinitions,
+  findStatusRecomputeCandidates,
+  updateEventStatus,
 };

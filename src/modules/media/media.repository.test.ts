@@ -13,6 +13,8 @@ const { db } = vi.hoisted(() => ({
     video: { count: vi.fn() },
     event: { count: vi.fn() },
     eventNews: { count: vi.fn() },
+    programmeScheme: { count: vi.fn() },
+    toolkit: { count: vi.fn() },
     institution: { count: vi.fn() },
     commodity: { count: vi.fn() },
     digitalService: { count: vi.fn() },
@@ -72,6 +74,55 @@ describe('isPubliclyLinked — Digital Service icon (Phase 10 Issue 1)', () => {
   it('returns false when no Digital Service publicly references the asset (draft/archived/hidden/future)', async () => {
     // A draft/archived/hidden/future-scheduled service fails the predicate → count 0 → not linked.
     db.digitalService.count.mockResolvedValue(0);
+    expect(await isPubliclyLinked('m1')).toBe(false);
+  });
+});
+
+describe('isPubliclyLinked — Programme cover (Phase 13 remediation)', () => {
+  it('returns true when only a published Programme references the asset as its cover', async () => {
+    db.programmeScheme.count.mockResolvedValue(1);
+    expect(await isPubliclyLinked('m1')).toBe(true);
+  });
+
+  it('gates the Programme query on coverMediaId + the shared published public-visibility predicate', async () => {
+    await isPubliclyLinked('m1');
+    expect(db.programmeScheme.count).toHaveBeenCalledOnce();
+    const where = db.programmeScheme.count.mock.calls[0][0].where;
+    expect(where.coverMediaId).toBe('m1');
+    expect(where.publicationState).toBe('published');
+    expect(where.publicVisibility).toBe(true);
+    expect(where.archivedAt).toBeNull();
+    // The scheduled-publishing gate is present (publishStartAt null OR <= now) — future covers excluded.
+    expect(where.OR).toBeTruthy();
+  });
+
+  it('returns false for a draft / archived / future-scheduled Programme cover (predicate → count 0)', async () => {
+    // Each non-public state fails the shared predicate, so the gated count is 0 → not linked → 403.
+    db.programmeScheme.count.mockResolvedValue(0);
+    expect(await isPubliclyLinked('m1')).toBe(false);
+  });
+});
+
+describe('isPubliclyLinked — Toolkit cover (Phase 13 remediation)', () => {
+  it('returns true when only a published Toolkit references the asset as its cover', async () => {
+    db.toolkit.count.mockResolvedValue(1);
+    expect(await isPubliclyLinked('m1')).toBe(true);
+  });
+
+  it('gates the Toolkit query on coverMediaId + the shared published public-visibility predicate', async () => {
+    await isPubliclyLinked('m1');
+    expect(db.toolkit.count).toHaveBeenCalledOnce();
+    const where = db.toolkit.count.mock.calls[0][0].where;
+    expect(where.coverMediaId).toBe('m1');
+    expect(where.publicationState).toBe('published');
+    expect(where.publicVisibility).toBe(true);
+    expect(where.archivedAt).toBeNull();
+    // The scheduled-publishing gate is present (publishStartAt null OR <= now) — future covers excluded.
+    expect(where.OR).toBeTruthy();
+  });
+
+  it('returns false for a draft / archived / future-scheduled Toolkit cover (predicate → count 0)', async () => {
+    db.toolkit.count.mockResolvedValue(0);
     expect(await isPubliclyLinked('m1')).toBe(false);
   });
 });

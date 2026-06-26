@@ -154,6 +154,15 @@ enum MembershipStatus {
   inactive
 }
 
+// Dashboard dataset provenance (Part 8 — `dataset_source_enum`). Only these three are permitted:
+// `cms_derived` (computed from CMS content), `manual` (typed in the CMS), `excel` (uploaded sheet).
+// Never API/live-ERP sources (CMS requirements §13 / build-context §12 non-goals).
+enum DatasetSource {
+  cms_derived
+  manual
+  excel
+}
+
 // ─────────────── Users & RBAC ───────────────
 model User {
   id                String    @id @default(uuid()) @db.Uuid
@@ -212,6 +221,12 @@ model User {
   // Phase 11 content authors (same SET NULL convention as above).
   createdMemberships            InstitutionalMembership[]    @relation("MembershipCreatedBy")
   updatedMemberships            InstitutionalMembership[]    @relation("MembershipUpdatedBy")
+  // Phase 12 dashboard authors (same SET NULL convention as above).
+  createdDashboardReports       DashboardReport[]            @relation("DashboardReportCreatedBy")
+  updatedDashboardReports       DashboardReport[]            @relation("DashboardReportUpdatedBy")
+  createdDashboardMetrics       DashboardMetric[]            @relation("DashboardMetricCreatedBy")
+  updatedDashboardMetrics       DashboardMetric[]            @relation("DashboardMetricUpdatedBy")
+  createdDashboardDatasets      DashboardDataset[]           @relation("DashboardDatasetCreatedBy")
 
   @@map("users")
 }
@@ -338,25 +353,27 @@ model MediaAsset {
   createdAt     DateTime  @default(now()) @map("created_at")
   updatedAt     DateTime  @updatedAt @map("updated_at")
 
-  uploadedBy       User?             @relation("MediaUploadedBy", fields: [uploadedById], references: [id], onDelete: SetNull)
-  replacedBy       MediaAsset?       @relation("MediaReplace", fields: [replacedById], references: [id])
-  replaces         MediaAsset[]      @relation("MediaReplace")
+  uploadedBy       User?              @relation("MediaUploadedBy", fields: [uploadedById], references: [id], onDelete: SetNull)
+  replacedBy       MediaAsset?        @relation("MediaReplace", fields: [replacedById], references: [id])
+  replaces         MediaAsset[]       @relation("MediaReplace")
   usages           MediaUsage[]
   galleryImages    GalleryImage[]
-  galleryCovers    Gallery[]         @relation("GalleryCover")
-  videoThumbnails  Video[]           @relation("VideoThumb")
-  commodityIcons   Commodity[]       @relation("CommodityIcon")
-  documentFiles    Document[]        @relation("DocumentFile")
+  galleryCovers    Gallery[]          @relation("GalleryCover")
+  videoThumbnails  Video[]            @relation("VideoThumb")
+  commodityIcons   Commodity[]        @relation("CommodityIcon")
+  documentFiles    Document[]         @relation("DocumentFile")
   // Phase 6 cover/logo references (optional; no onDelete = default Restrict so a linked
   // media asset cannot be hard-deleted while in use — consistent with media-usage tracking).
-  eventCovers      Event[]           @relation("EventCover")
-  newsCovers       EventNews[]       @relation("NewsCover")
-  programmeCovers  ProgrammeScheme[] @relation("ProgrammeCover")
-  institutionLogos Institution[]     @relation("InstitutionLogo")
-  toolkitCovers    Toolkit[]         @relation("ToolkitCover")
+  eventCovers      Event[]            @relation("EventCover")
+  newsCovers       EventNews[]        @relation("NewsCover")
+  programmeCovers  ProgrammeScheme[]  @relation("ProgrammeCover")
+  institutionLogos Institution[]      @relation("InstitutionLogo")
+  toolkitCovers    Toolkit[]          @relation("ToolkitCover")
   // Phase 10 — Digital Service icons (optional; default Restrict so a linked icon cannot be
   // hard-deleted while in use — consistent with media-usage tracking).
-  serviceIcons     DigitalService[]  @relation("DigitalServiceIcon")
+  serviceIcons     DigitalService[]   @relation("DigitalServiceIcon")
+  // Phase 12 — uploaded Excel/CSV dataset source files (optional; default Restrict).
+  datasetFiles     DashboardDataset[] @relation("DatasetFile")
 
   @@index([mimeType])
   @@index([archivedAt])
@@ -696,8 +713,10 @@ model FinancialYear {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  reportingPeriods ReportingPeriod[]
-  documents        Document[]
+  reportingPeriods  ReportingPeriod[]
+  documents         Document[]
+  dashboardMetrics  DashboardMetric[]
+  dashboardDatasets DashboardDataset[]
 
   @@map("financial_years")
 }
@@ -716,8 +735,10 @@ model ReportingPeriod {
   createdAt       DateTime            @default(now()) @map("created_at")
   updatedAt       DateTime            @updatedAt @map("updated_at")
 
-  financialYear FinancialYear?            @relation(fields: [financialYearId], references: [id])
-  memberships   InstitutionalMembership[]
+  financialYear     FinancialYear?            @relation(fields: [financialYearId], references: [id])
+  memberships       InstitutionalMembership[]
+  dashboardMetrics  DashboardMetric[]
+  dashboardDatasets DashboardDataset[]
 
   @@index([financialYearId])
   @@map("reporting_periods")
@@ -1714,4 +1735,110 @@ model InstitutionalMembership {
   @@index([districtId])
   @@index([showOnHomepage, displayOrder])
   @@map("institutional_memberships")
+}
+
+// ─────────────── Dashboard (Phase 12 — Part 8) ───────────────
+// FIXED public reports (fixed keys + fixed layouts; NOT a user-defined report builder). Admins
+// manage data + visibility/order/period only (CMS requirements §13). `layout_config` is an approved
+// fixed presentation descriptor, never runtime SQL/formulas. Carries the publishing-workflow mixin so
+// a report is exposed publicly only when published + visible + not archived (schema Part 10).
+model DashboardReport {
+  id               String           @id @default(uuid()) @db.Uuid
+  reportKey        String           @unique @map("report_key")
+  titleEn          String           @map("title_en")
+  titleHi          String?          @map("title_hi")
+  descriptionEn    String?          @map("description_en")
+  descriptionHi    String?          @map("description_hi")
+  layoutConfig     Json?            @map("layout_config")
+  publicationState PublicationState @default(draft) @map("publication_state")
+  publicVisibility Boolean          @default(true) @map("public_visibility")
+  publishStartAt   DateTime?        @map("publish_start_at")
+  publishedAt      DateTime?        @map("published_at")
+  archivedAt       DateTime?        @map("archived_at")
+  highlightType    HighlightType?   @map("highlight_type")
+  highlightStartAt DateTime?        @map("highlight_start_at")
+  highlightEndAt   DateTime?        @map("highlight_end_at")
+  displayOrder     Int?             @map("display_order")
+  showOnHomepage   Boolean          @default(false) @map("show_on_homepage")
+  isActive         Boolean          @default(true) @map("is_active")
+  createdById      String?          @map("created_by") @db.Uuid
+  updatedById      String?          @map("updated_by") @db.Uuid
+  createdAt        DateTime         @default(now()) @map("created_at")
+  updatedAt        DateTime         @updatedAt @map("updated_at")
+
+  metrics   DashboardMetric[]
+  datasets  DashboardDataset[]
+  createdBy User?              @relation("DashboardReportCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedBy User?              @relation("DashboardReportUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  @@index([publicationState, publicVisibility, archivedAt, publishedAt])
+  @@index([showOnHomepage, displayOrder])
+  @@map("dashboard_reports")
+}
+
+// Normalized metric values rendered into a report's fixed layout. Exactly one of `value`/`valueText`
+// carries the figure; FY + reporting period give the period dimension. `source` records provenance and
+// `datasetId` links the ingest that produced it (SetNull so deleting a dataset keeps the durable metric).
+model DashboardMetric {
+  id                String        @id @default(uuid()) @db.Uuid
+  reportId          String        @map("report_id") @db.Uuid
+  metricKey         String        @map("metric_key")
+  labelEn           String        @map("label_en")
+  labelHi           String?       @map("label_hi")
+  value             Decimal?      @db.Decimal(18, 4)
+  valueText         String?       @map("value_text")
+  unit              String?
+  financialYearId   String?       @map("financial_year_id") @db.Uuid
+  reportingPeriodId String?       @map("reporting_period_id") @db.Uuid
+  source            DatasetSource @default(manual)
+  datasetId         String?       @map("dataset_id") @db.Uuid
+  displayOrder      Int           @default(0) @map("display_order")
+  createdById       String?       @map("created_by") @db.Uuid
+  updatedById       String?       @map("updated_by") @db.Uuid
+  createdAt         DateTime      @default(now()) @map("created_at")
+  updatedAt         DateTime      @updatedAt @map("updated_at")
+
+  report          DashboardReport   @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  financialYear   FinancialYear?    @relation(fields: [financialYearId], references: [id])
+  reportingPeriod ReportingPeriod?  @relation(fields: [reportingPeriodId], references: [id])
+  dataset         DashboardDataset? @relation(fields: [datasetId], references: [id], onDelete: SetNull)
+  createdBy       User?             @relation("DashboardMetricCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedBy       User?             @relation("DashboardMetricUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  // One metric per report × key × financial-year × reporting-period. financial_year_id and
+  // reporting_period_id are nullable; the migration recreates this index with NULLS NOT DISTINCT
+  // (PostgreSQL 15+) so a duplicate metric with an omitted FY/period still collides at the database
+  // layer (Phase 12 remediation — Issue 3). Mapped to a stable name for that raw-SQL override.
+  @@unique([reportId, metricKey, financialYearId, reportingPeriodId], map: "dashboard_metrics_unique")
+  @@index([reportId, financialYearId, reportingPeriodId])
+  @@map("dashboard_metrics")
+}
+
+// Ingest unit for manual entry or an Excel/CSV upload; transient tabular staging before durable
+// metrics are derived. `rawRows` is controlled JSON staging only (not a stored content module). The
+// report FK is Restrict so a report with ingest history cannot be silently hard-deleted.
+model DashboardDataset {
+  id                String        @id @default(uuid()) @db.Uuid
+  reportId          String        @map("report_id") @db.Uuid
+  source            DatasetSource
+  financialYearId   String?       @map("financial_year_id") @db.Uuid
+  reportingPeriodId String?       @map("reporting_period_id") @db.Uuid
+  sourceFileAssetId String?       @map("source_file_asset_id") @db.Uuid
+  rawRows           Json?         @map("raw_rows")
+  rowCount          Int           @default(0) @map("row_count")
+  status            String        @default("pending")
+  processedAt       DateTime?     @map("processed_at")
+  createdById       String?       @map("created_by") @db.Uuid
+  createdAt         DateTime      @default(now()) @map("created_at")
+  updatedAt         DateTime      @updatedAt @map("updated_at")
+
+  report          DashboardReport   @relation(fields: [reportId], references: [id], onDelete: Restrict)
+  financialYear   FinancialYear?    @relation(fields: [financialYearId], references: [id])
+  reportingPeriod ReportingPeriod?  @relation(fields: [reportingPeriodId], references: [id])
+  sourceFileAsset MediaAsset?       @relation("DatasetFile", fields: [sourceFileAssetId], references: [id])
+  createdBy       User?             @relation("DashboardDatasetCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  metrics         DashboardMetric[]
+
+  @@index([reportId])
+  @@map("dashboard_datasets")
 }

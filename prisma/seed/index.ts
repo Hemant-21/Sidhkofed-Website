@@ -19,6 +19,7 @@ import {
   ROLE_KEYS,
 } from '@/modules/auth/auth.permissions';
 import { seedMasters } from './masters';
+import { seedDashboardReports } from './dashboard';
 
 const prisma = new PrismaClient();
 
@@ -80,7 +81,7 @@ async function seedRolePermissions(
   console.log('  ✓ role→permission grants applied');
 }
 
-async function seedSuperAdminUser(roleIds: Map<string, string>): Promise<void> {
+async function seedSuperAdminUser(roleIds: Map<string, string>): Promise<string> {
   const { superAdminEmail, superAdminPassword, superAdminName } = seedConfig;
   if (!superAdminEmail || !superAdminPassword || !superAdminName) {
     throw new Error(
@@ -106,6 +107,7 @@ async function seedSuperAdminUser(roleIds: Map<string, string>): Promise<void> {
     });
   }
   console.log(`  ✓ super admin user: ${email}`);
+  return user.id;
 }
 
 async function main(): Promise<void> {
@@ -113,8 +115,9 @@ async function main(): Promise<void> {
   const roleIds = await seedRoles();
   const permIds = await seedPermissions();
   await seedRolePermissions(roleIds, permIds);
-  await seedSuperAdminUser(roleIds);
+  const superAdminUserId = await seedSuperAdminUser(roleIds);
   await seedMasters(prisma);
+  await seedDashboardReports(prisma, superAdminUserId);
   console.log('Seed complete.');
 }
 

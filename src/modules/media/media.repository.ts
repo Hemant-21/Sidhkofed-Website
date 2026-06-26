@@ -89,8 +89,8 @@ export async function setReplacedBy(oldId: string, newId: string) {
  * Public-visibility check for media delivery (remediation — scheduled-publishing gate). An
  * asset may be served publicly only when it is referenced by at least one PUBLIC parent: a
  * published Document (file), Gallery (cover or image), Video (thumbnail), Event cover, News
- * cover, or Institution logo, or an active commodity icon (commodities are public reference
- * masters). Otherwise the public media endpoint returns 403.
+ * cover, Programme cover, Toolkit cover, or Institution logo, or an active commodity icon
+ * (commodities are public reference masters). Otherwise the public media endpoint returns 403.
  *
  * The parent predicate is the SINGLE shared `publicVisibilityWhere()` used by every content
  * read path — so it now ALSO honours `publish_start_at` (a future-scheduled parent no longer
@@ -99,25 +99,51 @@ export async function setReplacedBy(oldId: string, newId: string) {
  * Institution logos are included (Phase 8 remediation Issue 1) so homepage/partner logos surfaced
  * by the public Institution DTOs are actually downloadable. Published Digital Service icons are
  * included (Phase 10 remediation Issue 1) so the public `/digital-services` icons are downloadable.
- * Read-only cross-table check kept here (the media repository is the Prisma caller for media delivery).
+ * Programme and Toolkit cover media are included (Phase 13 remediation) so the cover URLs emitted by
+ * the public Programme/Toolkit DTOs — and by Global Search results pointing at them — are actually
+ * downloadable instead of 403ing. Read-only cross-table check kept here (the media repository is the
+ * Prisma caller for media delivery).
  */
 export async function isPubliclyLinked(mediaId: string): Promise<boolean> {
   const parent = publicVisibilityWhere(); // published + public + not archived + publish window due
   const documentParent = publicVisibilityWhere({ requireIsPublic: true });
-  const [doc, galleryCover, galleryImage, video, eventCover, newsCover, institutionLogo, commodityIcon, serviceIcon] =
-    await Promise.all([
-      prisma.document.count({ where: { fileAssetId: mediaId, ...documentParent } as Prisma.DocumentWhereInput }),
-      prisma.gallery.count({ where: { coverMediaId: mediaId, ...parent } as Prisma.GalleryWhereInput }),
-      prisma.galleryImage.count({ where: { mediaId, gallery: { is: parent as Prisma.GalleryWhereInput } } }),
-      prisma.video.count({ where: { thumbnailMediaId: mediaId, ...parent } as Prisma.VideoWhereInput }),
-      prisma.event.count({ where: { coverMediaId: mediaId, ...parent } as Prisma.EventWhereInput }),
-      prisma.eventNews.count({ where: { coverMediaId: mediaId, ...parent } as Prisma.EventNewsWhereInput }),
-      prisma.institution.count({ where: { logoMediaId: mediaId, ...parent } as Prisma.InstitutionWhereInput }),
-      prisma.commodity.count({ where: { iconMediaId: mediaId, isActive: true } }),
-      prisma.digitalService.count({ where: { iconMediaId: mediaId, ...parent } as Prisma.DigitalServiceWhereInput }),
-    ]);
+  const [
+    doc,
+    galleryCover,
+    galleryImage,
+    video,
+    eventCover,
+    newsCover,
+    programmeCover,
+    toolkitCover,
+    institutionLogo,
+    commodityIcon,
+    serviceIcon,
+  ] = await Promise.all([
+    prisma.document.count({ where: { fileAssetId: mediaId, ...documentParent } as Prisma.DocumentWhereInput }),
+    prisma.gallery.count({ where: { coverMediaId: mediaId, ...parent } as Prisma.GalleryWhereInput }),
+    prisma.galleryImage.count({ where: { mediaId, gallery: { is: parent as Prisma.GalleryWhereInput } } }),
+    prisma.video.count({ where: { thumbnailMediaId: mediaId, ...parent } as Prisma.VideoWhereInput }),
+    prisma.event.count({ where: { coverMediaId: mediaId, ...parent } as Prisma.EventWhereInput }),
+    prisma.eventNews.count({ where: { coverMediaId: mediaId, ...parent } as Prisma.EventNewsWhereInput }),
+    prisma.programmeScheme.count({ where: { coverMediaId: mediaId, ...parent } as Prisma.ProgrammeSchemeWhereInput }),
+    prisma.toolkit.count({ where: { coverMediaId: mediaId, ...parent } as Prisma.ToolkitWhereInput }),
+    prisma.institution.count({ where: { logoMediaId: mediaId, ...parent } as Prisma.InstitutionWhereInput }),
+    prisma.commodity.count({ where: { iconMediaId: mediaId, isActive: true } }),
+    prisma.digitalService.count({ where: { iconMediaId: mediaId, ...parent } as Prisma.DigitalServiceWhereInput }),
+  ]);
   return (
-    doc + galleryCover + galleryImage + video + eventCover + newsCover + institutionLogo + commodityIcon + serviceIcon >
+    doc +
+      galleryCover +
+      galleryImage +
+      video +
+      eventCover +
+      newsCover +
+      programmeCover +
+      toolkitCover +
+      institutionLogo +
+      commodityIcon +
+      serviceIcon >
     0
   );
 }

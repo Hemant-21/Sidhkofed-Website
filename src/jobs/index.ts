@@ -1,22 +1,19 @@
 /**
- * Background-jobs foundation entrypoint.
+ * Background-jobs entrypoint.
  *
- * FOUNDATION ONLY — no queues or workers are started yet. This module exposes the
- * lifecycle hooks the server calls at boot/shutdown and the place future Phase-1 job
- * modules will register themselves.
- *
- * When jobs are added, each gets its own file (e.g. src/jobs/scheduled-publishing.ts)
- * exporting a queue (via createQueue) and a worker factory (via createWorker), and is
- * referenced from `startWorkers()` below. Workers call module services, not repos.
+ * Exposes the lifecycle hooks the server calls at boot/shutdown. Phase 14 registers the recurring
+ * maintenance scheduler here: `startWorkers()` boots the scheduler worker (gated by
+ * SCHEDULER_ENABLED), and `shutdownJobs()` drains it. Workers call module services, not repos.
  */
 import type { Worker } from 'bullmq';
 import { pingQueueBackend, closeQueueConnection } from './connection';
 import { getRegisteredQueues } from './queue';
+import { startScheduler } from './scheduler/scheduler';
 import { logger } from '@/shared/logger';
 
 const jobsLog = logger.child({ component: 'jobs' });
 
-/** Workers started at boot. Empty until Phase-1 jobs are introduced. */
+/** Workers started at boot. Phase 14 registers the scheduler worker here. */
 const workers: Worker[] = [];
 
 /**
@@ -30,14 +27,15 @@ export async function initJobs(): Promise<void> {
 }
 
 /**
- * Start background workers. No-op in the foundation; future job modules push their
- * worker here. Kept separate from initJobs so the API process and a dedicated worker
+ * Start background workers. Boots the Phase 14 scheduler worker (a no-op when SCHEDULER_ENABLED is
+ * false or under tests). Kept separate from initJobs so the API process and a dedicated worker
  * process can opt in independently.
  */
-export function startWorkers(): void {
-  // e.g. workers.push(startScheduledPublishingWorker());
+export async function startWorkers(): Promise<void> {
+  const schedulerWorker = await startScheduler();
+  if (schedulerWorker) workers.push(schedulerWorker);
   if (workers.length === 0) {
-    jobsLog.info('No background workers registered (foundation phase)');
+    jobsLog.info('No background workers registered (scheduler disabled)');
   }
 }
 

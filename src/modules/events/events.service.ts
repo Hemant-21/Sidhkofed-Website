@@ -429,6 +429,60 @@ export async function publicDetailBySlug(slug: string): Promise<PublicEventDetai
   return dto;
 }
 
+// ── Scheduled event-status recompute (Phase 14 lifecycle automation) ────────────
+export interface StatusRecomputeResult {
+  processed: number;
+  updated: number;
+  errors: Array<{ recordId: string; message: string }>;
+}
+
+/**
+ * Recompute the date-derived `event_status` for automatic-status events whose dates have moved them
+ * to a new state (scheduled → ongoing → completed). Reuses {@link deriveEventStatus} — the single
+ * source of the date→status rule (events.status.ts), explicitly intended for "the scheduled recompute
+ * job" — so no status logic is duplicated. Override events (postponed/cancelled) and explicitly
+ * completed events are excluded by the candidate query and never touched. Each change is audited and
+ * the public cache is invalidated once when anything changed. Idempotent: a record already in its
+ * derived state is skipped.
+ */
+export async function recomputeScheduledStatuses(
+  ctx: AuditContext,
+  batchSize: number,
+  now: Date = new Date(),
+): Promise<StatusRecomputeResult> {
+  const userId = requireUser(ctx);
+  const candidates = await eventRepository.findStatusRecomputeCandidates(batchSize);
+  let updated = 0;
+  const errors: Array<{ recordId: string; message: string }> = [];
+
+  for (const c of candidates) {
+    const derived = deriveEventStatus({
+      startDate: c.startDate,
+      endDate: c.endDate,
+      statusOverride: false,
+      manualStatus: 'scheduled',
+      now,
+    });
+    if (derived === c.eventStatus) continue; // already correct — idempotent skip
+    try {
+      await eventRepository.updateEventStatus(c.id, derived, userId);
+      await auditService.log('UPDATE', ctx, {
+        module: EVENT_ENTITY,
+        recordId: c.id,
+        summary: 'EVENT_STATUS_RECOMPUTED',
+        previousState: c.eventStatus,
+        newState: derived,
+      });
+      updated += 1;
+    } catch (err) {
+      errors.push({ recordId: c.id, message: err instanceof Error ? err.message : String(err) });
+    }
+  }
+
+  if (updated > 0) await invalidatePublicCache();
+  return { processed: candidates.length, updated, errors };
+}
+
 export const eventService = {
   create,
   update,
@@ -439,4 +493,5 @@ export const eventService = {
   cancel,
   publicList,
   publicDetailBySlug,
+  recomputeScheduledStatuses,
 };

@@ -53,6 +53,8 @@ import {
   digitalServicePublicRouter,
 } from '@/modules/digital-services/digital-services.routes';
 import { membershipAdminRouter, membershipPublicRouter } from '@/modules/memberships/memberships.routes';
+import { dashboardAdminRouter, dashboardPublicRouter } from '@/modules/dashboard/dashboard.routes';
+import { searchAdminRouter, searchPublicRouter } from '@/modules/search/search.routes';
 
 export const apiRouter = Router();
 
@@ -98,6 +100,8 @@ apiRouter.use('/admin/menu-items', menuAdminRouter);
 apiRouter.use('/admin/faqs', faqAdminRouter);
 apiRouter.use('/admin/digital-services', digitalServiceAdminRouter);
 apiRouter.use('/admin/memberships', membershipAdminRouter);
+apiRouter.use('/admin/dashboard', dashboardAdminRouter);
+apiRouter.use('/admin/search', searchAdminRouter);
 
 // Public namespace (no auth; active + visible records only).
 apiRouter.use('/public/masters', mastersPublicRouter);
@@ -118,3 +122,5 @@ apiRouter.use('/public/menus', menuPublicRouter);
 apiRouter.use('/public/faqs', faqPublicRouter);
 apiRouter.use('/public/digital-services', digitalServicePublicRouter);
 apiRouter.use('/public/memberships', membershipPublicRouter);
+apiRouter.use('/public/dashboard', dashboardPublicRouter);
+apiRouter.use('/public/search', searchPublicRouter);

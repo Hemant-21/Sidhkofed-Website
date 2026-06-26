@@ -136,6 +136,24 @@ const envSchema = z
     DEFAULT_LANGUAGE: z.enum(['en', 'hi']).default('en'),
     SUPPORTED_LANGUAGES: csv('en,hi'),
     TRANSLATION_FALLBACK_ENABLED: boolish(false),
+
+    // ── Background scheduler (Phase 14) ───────────────────────────────────────
+    // Recurring maintenance jobs (scheduled publishing, highlight expiry, event-status
+    // recompute, dashboard cache refresh). The scheduler runs inside the worker boot
+    // step; disable it for an API-only process or in tests. Cron strings are standard
+    // 5-field expressions (BullMQ repeatable jobs). Batch size bounds rows processed per
+    // tick; lock TTL guards against overlapping runs across processes.
+    SCHEDULER_ENABLED: boolish(true),
+    SCHEDULER_TIMEZONE: z.string().min(1).default('Asia/Kolkata'),
+    // Default cadence: publishing/highlight every 5 min; status every 15 min; dashboard hourly.
+    SCHEDULER_PUBLISHING_CRON: z.string().min(1).default('*/5 * * * *'),
+    SCHEDULER_HIGHLIGHT_CRON: z.string().min(1).default('*/5 * * * *'),
+    SCHEDULER_EVENT_STATUS_CRON: z.string().min(1).default('*/15 * * * *'),
+    SCHEDULER_DASHBOARD_REFRESH_CRON: z.string().min(1).default('0 * * * *'),
+    SCHEDULER_BATCH_SIZE: intWithDefault(100, 1),
+    SCHEDULER_JOB_ATTEMPTS: intWithDefault(3, 1),
+    SCHEDULER_JOB_BACKOFF_MS: intWithDefault(5000, 0),
+    SCHEDULER_LOCK_TTL_SECONDS: intWithDefault(600, 5),
   })
   // S3 keys required when storage provider is s3.
   .superRefine((env, ctx) => {

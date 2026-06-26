@@ -39,8 +39,8 @@ async function start(): Promise<void> {
   // unavailable scanner is fatal; a disabled scanner is a loud warning.
   await verifyScannerStartup({ enabled: uploadConfig.malwareScanEnabled, isProduction });
 
-  // 5: background workers (none registered in the foundation phase).
-  startWorkers();
+  // 5: background workers (Phase 14 recurring maintenance scheduler, gated by SCHEDULER_ENABLED).
+  await startWorkers();
 
   // 6: start accepting traffic.
   const app = createApp();

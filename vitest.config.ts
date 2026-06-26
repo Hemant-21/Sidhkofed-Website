@@ -23,8 +23,17 @@ export default defineConfig({
   test: {
     environment: 'node',
     include: ['src/**/*.test.ts', 'tests/**/*.test.ts'],
+    // Integration `beforeAll` hooks seed users and log in, each running multiple bcrypt
+    // operations; with all suites starting in parallel this is CPU-bound, not I/O-bound.
+    // 30s gives headroom over the default 10s so a busy machine doesn't abort mid-seed
+    // (an aborted hook races its own afterAll cleanup → spurious FK/"record not found" noise).
+    hookTimeout: 30000,
     env: {
       NODE_ENV: 'test',
+      // bcryptjs (pure-JS) at the production work factor of 12, run ~6× per suite across
+      // ~12 parallel suites, saturates the CPU and blows the hook budget. 4 is the schema's
+      // validated minimum (env.ts) and cuts each hash ~256×. Test-process only; prod uses 12.
+      PASSWORD_HASH_ROUNDS: '4',
       DATABASE_URL: 'postgresql://test:test@localhost:5432/sidhkofed_test?schema=public',
       REDIS_URL: 'redis://localhost:6379',
       JWT_SECRET: 'test_jwt_secret_at_least_32_characters_long_xx',

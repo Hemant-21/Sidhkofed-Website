@@ -118,6 +118,26 @@ export const localizationConfig = {
   translationFallbackEnabled: env.TRANSLATION_FALLBACK_ENABLED,
 } as const;
 
+/**
+ * Background scheduler (Phase 14). Cadence, batch size, retry policy and the cross-process
+ * lock TTL for the recurring maintenance jobs. `enabled` is forced off under tests so unit
+ * runs never start real BullMQ repeatable jobs.
+ */
+export const schedulerConfig = {
+  enabled: env.SCHEDULER_ENABLED && env.NODE_ENV !== 'test',
+  timezone: env.SCHEDULER_TIMEZONE,
+  batchSize: env.SCHEDULER_BATCH_SIZE,
+  jobAttempts: env.SCHEDULER_JOB_ATTEMPTS,
+  jobBackoffMs: env.SCHEDULER_JOB_BACKOFF_MS,
+  lockTtlSeconds: env.SCHEDULER_LOCK_TTL_SECONDS,
+  cron: {
+    scheduledPublishing: env.SCHEDULER_PUBLISHING_CRON,
+    highlightExpiry: env.SCHEDULER_HIGHLIGHT_CRON,
+    eventStatus: env.SCHEDULER_EVENT_STATUS_CRON,
+    dashboardRefresh: env.SCHEDULER_DASHBOARD_REFRESH_CRON,
+  },
+} as const;
+
 export const config = {
   app: appConfig,
   db: dbConfig,
@@ -130,6 +150,7 @@ export const config = {
   abuse: abuseConfig,
   rateLimit: rateLimitConfig,
   localization: localizationConfig,
+  scheduler: schedulerConfig,
 } as const;
 
 export type AppConfig = typeof config;

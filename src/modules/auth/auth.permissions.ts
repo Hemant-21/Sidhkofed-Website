@@ -95,6 +95,16 @@ export const PERMISSIONS: PermissionSeed[] = [
   // Nested resources have no publish lifecycle of their own (they follow the parent toolkit).
   ...moduleCrudPermissions('toolkit_items', 'Toolkit item'),
   ...moduleCrudPermissions('toolkit_distributions', 'Toolkit distribution summary'),
+  // ── Phase 12 dashboard (API spec §8). Report definition/layout is Super Admin only at the route.
+  // Report public LIFECYCLE uses dedicated `dashboard.*` keys (Publisher by default) instead of the
+  // generic `content.*` set, so dashboard exposure can be granted independently of other content.
+  // `dashboard.manage_data` gates the dashboard DATA surface (metric CRUD + dataset/Excel import);
+  // Publisher holds it by default, a Content Editor needs an EXPLICIT grant, Super Admin is wildcard.
+  { key: 'dashboard.publish', module: 'dashboard', action: 'publish', description: 'Publish dashboard reports.' },
+  { key: 'dashboard.unpublish', module: 'dashboard', action: 'unpublish', description: 'Unpublish dashboard reports.' },
+  { key: 'dashboard.archive', module: 'dashboard', action: 'archive', description: 'Archive dashboard reports.' },
+  { key: 'dashboard.restore', module: 'dashboard', action: 'restore', description: 'Restore archived dashboard reports.' },
+  { key: 'dashboard.manage_data', module: 'dashboard', action: 'manage_data', description: 'Manage dashboard metrics and import datasets.' },
 ];
 
 /**
@@ -122,6 +132,7 @@ export const ROLE_PERMISSIONS: Record<Exclude<RoleKey, 'super_admin'>, string[]>
   content_editor: ['content.create', 'content.update', 'masters.view', ...EDITOR_MODULE_GRANTS],
   publisher: [
     'content.publish', 'content.unpublish', 'content.archive', 'content.restore', 'content.update', 'masters.view',
+    'dashboard.publish', 'dashboard.unpublish', 'dashboard.archive', 'dashboard.restore', 'dashboard.manage_data',
     ...PUBLISHER_MODULE_GRANTS,
   ],
 };
