@@ -1,0 +1,101 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * Design-system tokens as HSL CSS variables. Tailwind colors (tailwind.config.ts)
+ * reference these, so one class set works in both themes. `.dark` overrides flip
+ * the palette. Tokens are semantic (primary/surface/danger…), never raw hex in
+ * components.
+ */
+@layer base {
+  :root {
+    --background: 210 20% 98%;
+    --foreground: 222 22% 12%;
+
+    --surface: 0 0% 100%;
+    --surface-foreground: 222 22% 12%;
+
+    --muted: 214 16% 92%;
+    --muted-foreground: 215 16% 42%;
+
+    --border: 214 18% 88%;
+    --input: 214 18% 84%;
+    --ring: 158 64% 32%;
+
+    /* SIDHKOFED cooperative green primary. */
+    --primary: 158 64% 28%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 214 16% 92%;
+    --secondary-foreground: 222 22% 18%;
+
+    --success: 150 60% 32%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 35 92% 42%;
+    --warning-foreground: 0 0% 100%;
+
+    --danger: 0 72% 46%;
+    --danger-foreground: 0 0% 100%;
+
+    --info: 211 80% 44%;
+    --info-foreground: 0 0% 100%;
+
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 222 24% 9%;
+    --foreground: 210 20% 92%;
+
+    --surface: 222 22% 12%;
+    --surface-foreground: 210 20% 92%;
+
+    --muted: 217 19% 20%;
+    --muted-foreground: 215 16% 64%;
+
+    --border: 217 19% 22%;
+    --input: 217 19% 26%;
+    --ring: 158 54% 48%;
+
+    --primary: 158 54% 42%;
+    --primary-foreground: 222 24% 9%;
+
+    --secondary: 217 19% 22%;
+    --secondary-foreground: 210 20% 92%;
+
+    --success: 150 50% 46%;
+    --success-foreground: 222 24% 9%;
+
+    --warning: 35 86% 56%;
+    --warning-foreground: 222 24% 9%;
+
+    --danger: 0 68% 58%;
+    --danger-foreground: 222 24% 9%;
+
+    --info: 211 76% 60%;
+    --info-foreground: 222 24% 9%;
+  }
+
+  * {
+    border-color: hsl(var(--border));
+  }
+
+  body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    font-feature-settings: 'rlig' 1, 'calt' 1;
+  }
+
+  /* Respect reduced-motion preference (WCAG). */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+    }
+  }
+}
