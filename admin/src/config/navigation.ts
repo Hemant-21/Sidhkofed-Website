@@ -21,6 +21,7 @@ import {
   Building2,
   FileText,
   Megaphone,
+  Library,
   Gavel,
   ShoppingCart,
   Trophy,
@@ -83,6 +84,7 @@ export const NAVIGATION: NavSection[] = [
     label: 'Governance & Transparency',
     items: [
       { key: 'documents', label: 'Documents', href: ROUTES.documents, icon: FileText },
+      { key: 'knowledge-centre', label: 'Knowledge Centre', href: ROUTES.knowledgeCentre, icon: Library },
       { key: 'communications', label: 'Official Communications', href: ROUTES.communications, icon: Megaphone },
       { key: 'tenders', label: 'Tenders', href: ROUTES.tenders, icon: Gavel },
       { key: 'procurement', label: 'Procurement Updates', href: ROUTES.procurement, icon: ShoppingCart },

@@ -16,6 +16,11 @@ export const ROUTES = {
   // available everywhere; this is the dedicated, deep-linkable results surface.
   search: '/search',
 
+  // Knowledge Centre (Phase 15.4) — a curated reader over Documents tagged with
+  // show_in_knowledge_centre=true, grouped by knowledge category. It reuses the
+  // documents resource; it is not a separate backend entity.
+  knowledgeCentre: '/knowledge-centre',
+
   // Error / status routes. Runtime errors are caught by error.tsx / global-error.tsx;
   // these are addressable status pages (e.g. for a reverse-proxy `error_page` map).
   // NOTE: avoid the reserved `/500` segment — it collides with Next's generated
