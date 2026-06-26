@@ -167,15 +167,22 @@ function galleryLinks(e: EventRow): GalleryLinkRef[] {
     image_count: g.gallery._count.images,
   }));
 }
+// `news` is a nullable one-to-one relation (Prisma `EventNews?`; `event_news.event_id` is UNIQUE —
+// an event is published as news at most once). The DTO contract exposes `news` as an array, so map
+// the single optional relation into a 0-or-1 element list rather than iterating a collection.
 function newsLinks(e: EventRow): NewsLinkRef[] {
-  return e.news.map((n) => ({
-    id: n.id,
-    slug: n.slug,
-    title_en: n.titleEn,
-    publication_state: n.publicationState,
-    news_published_at: iso(n.newsPublishedAt),
-    public_url: `/news/${n.slug}`,
-  }));
+  const n = e.news;
+  if (!n) return [];
+  return [
+    {
+      id: n.id,
+      slug: n.slug,
+      title_en: n.titleEn,
+      publication_state: n.publicationState,
+      news_published_at: iso(n.newsPublishedAt),
+      public_url: `/news/${n.slug}`,
+    },
+  ];
 }
 
 export function toEventDetailDto(e: EventRow): EventDetailDto {

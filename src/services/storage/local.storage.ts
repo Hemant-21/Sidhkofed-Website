@@ -7,10 +7,11 @@
  */
 import { promises as fs } from 'node:fs';
 import { createReadStream } from 'node:fs';
+import { PassThrough } from 'node:stream';
 import path from 'node:path';
 import { storageConfig } from '@/config';
 import { logger } from '@/shared/logger';
-import { BadRequestError } from '@/shared/errors';
+import { BadRequestError, NotFoundError } from '@/shared/errors';
 import type {
   ObjectMetadata,
   PutObjectInput,
@@ -58,12 +59,31 @@ export class LocalStorageService implements StorageService {
   }
 
   async get(key: string): Promise<Buffer> {
-    return fs.readFile(this.resolveKey(key));
+    try {
+      return await fs.readFile(this.resolveKey(key));
+    } catch (err) {
+      // A missing object is a controlled 404, never a raw ENOENT → 500 leak (round-2 Issue 2).
+      if ((err as NodeJS.ErrnoException)?.code === 'ENOENT') {
+        throw new NotFoundError('Storage object not found.');
+      }
+      throw err;
+    }
   }
 
-  /** Streaming read for large files (e.g. media delivery). */
+  /**
+   * Streaming read for large files (e.g. media delivery). Bytes are piped through a PassThrough so
+   * a missing object (ENOENT) surfaces as a typed {@link NotFoundError} on the returned stream's
+   * `error` event instead of a raw filesystem error — the route error handler then renders a
+   * controlled 404, never a leaked 500 (round-2 Issue 2). Callers attach `.on('error', next)`.
+   */
   createReadStream(key: string): NodeJS.ReadableStream {
-    return createReadStream(this.resolveKey(key));
+    const source = createReadStream(this.resolveKey(key));
+    const out = new PassThrough();
+    source.on('error', (err: NodeJS.ErrnoException) => {
+      out.destroy(err?.code === 'ENOENT' ? new NotFoundError('Storage object not found.') : err);
+    });
+    source.pipe(out);
+    return out;
   }
 
   async delete(key: string): Promise<void> {

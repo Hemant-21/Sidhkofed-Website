@@ -20,7 +20,22 @@ const PASSWORD = 'Integration#Pass123';
 let app: Express;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let prisma: any;
-const created: { users: string[]; institutionTypeId?: string; logoId?: string; institutionId?: string } = { users: [] };
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let storage: any;
+const created: {
+  users: string[];
+  institutionTypeId?: string;
+  logoId?: string;
+  logoKey?: string;
+  institutionId?: string;
+} = { users: [] };
+
+// Minimal valid PNG bytes so the logo asset has a REAL backing object in storage (round-2 Issue 2):
+// fixtures must create media through the storage path, never fabricate a row whose object is absent.
+const PNG_BYTES = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
+  'base64',
+);
 
 async function login(email: string): Promise<string> {
   const res = await request(app).post('/api/v1/auth/login').send({ email, password: PASSWORD });
@@ -37,9 +52,11 @@ describe.skipIf(!RUN)('institutions (integration)', () => {
     const { connectRedis } = await import('@/services/redis');
     const { hashPassword } = await import('@/modules/auth/password');
     const { ROLE_KEYS } = await import('@/modules/auth/auth.permissions');
+    const storageMod = await import('@/services/storage');
 
     app = createApp();
     prisma = db.prisma;
+    storage = storageMod.storage;
     await db.connectDatabase();
     await connectRedis();
 
@@ -72,15 +89,20 @@ describe.skipIf(!RUN)('institutions (integration)', () => {
     });
     created.institutionTypeId = type.id;
 
+    // Create the logo through the real storage path: write the object, THEN the DB row that
+    // references it — so `GET /public/media/:id/file` has real bytes to stream (round-2 Issue 2).
+    const logoKey = `it/logo-${STAMP}.png`;
+    await storage.put({ key: logoKey, body: PNG_BYTES, contentType: 'image/png' });
+    created.logoKey = logoKey;
     const logo = await prisma.mediaAsset.create({
       data: {
-        storageKey: `it/logo-${STAMP}.png`,
+        storageKey: logoKey,
         url: `/api/v1/public/media/it-logo-${STAMP}/file`,
         fileName: 'logo.png',
         mimeType: 'image/png',
-        fileSizeBytes: BigInt(2048),
-        width: 256,
-        height: 256,
+        fileSizeBytes: BigInt(PNG_BYTES.byteLength),
+        width: 1,
+        height: 1,
       },
     });
     created.logoId = logo.id;
@@ -94,6 +116,7 @@ describe.skipIf(!RUN)('institutions (integration)', () => {
     if (created.institutionId) await prisma.institution.delete({ where: { id: created.institutionId } }).catch(() => undefined);
     if (created.logoId) await prisma.mediaUsage.deleteMany({ where: { mediaId: created.logoId } }).catch(() => undefined);
     if (created.logoId) await prisma.mediaAsset.delete({ where: { id: created.logoId } }).catch(() => undefined);
+    if (created.logoKey) await storage?.delete(created.logoKey).catch(() => undefined);
     if (created.institutionTypeId) await prisma.institutionType.delete({ where: { id: created.institutionTypeId } }).catch(() => undefined);
     for (const id of created.users) {
       await prisma.userRole.deleteMany({ where: { userId: id } }).catch(() => undefined);

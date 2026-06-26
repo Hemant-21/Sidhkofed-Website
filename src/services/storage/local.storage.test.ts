@@ -1,6 +1,7 @@
 /** Storage tests — LocalStorageService against the real filesystem (scratchpad keys). */
 import { describe, it, expect, afterAll } from 'vitest';
 import { LocalStorageService } from './local.storage';
+import { NotFoundError } from '@/shared/errors';
 
 const storage = new LocalStorageService();
 const key = `test-tmp/${Date.now()}-${Math.random().toString(36).slice(2)}.txt`;
@@ -34,5 +35,20 @@ describe('LocalStorageService', () => {
 
   it('rejects path traversal keys', async () => {
     await expect(storage.get('../../etc/passwd')).rejects.toThrow();
+  });
+
+  it('translates a missing object into a controlled NotFoundError on get (round-2 Issue 2)', async () => {
+    await expect(storage.get(`test-tmp/missing-${Date.now()}.txt`)).rejects.toBeInstanceOf(NotFoundError);
+  });
+
+  it('emits a controlled NotFoundError on a missing-object read stream (round-2 Issue 2)', async () => {
+    const stream = storage.createReadStream(`test-tmp/missing-${Date.now()}.bin`);
+    const err = await new Promise<unknown>((resolve) => {
+      stream.on('error', resolve);
+      stream.on('end', () => resolve(null));
+      // Drain so the stream flows and surfaces the source error.
+      stream.resume();
+    });
+    expect(err).toBeInstanceOf(NotFoundError);
   });
 });

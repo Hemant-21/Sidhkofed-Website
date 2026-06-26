@@ -55,6 +55,7 @@ import {
 import { membershipAdminRouter, membershipPublicRouter } from '@/modules/memberships/memberships.routes';
 import { dashboardAdminRouter, dashboardPublicRouter } from '@/modules/dashboard/dashboard.routes';
 import { searchAdminRouter, searchPublicRouter } from '@/modules/search/search.routes';
+import { userAdminRouter, profileRouter } from '@/modules/users/users.routes';
 
 export const apiRouter = Router();
 
@@ -77,6 +78,8 @@ apiRouter.get('/', (req: Request, res: Response) => {
 apiRouter.use('/auth', authRouter);
 
 // Admin namespace (bearer token + RBAC enforced inside each router).
+apiRouter.use('/admin/users', userAdminRouter);
+apiRouter.use('/admin/profile', profileRouter);
 apiRouter.use('/admin/settings', settingsRouter);
 apiRouter.use('/admin/audit-logs', auditRouter);
 apiRouter.use('/admin/media', mediaRouter);

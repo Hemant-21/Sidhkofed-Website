@@ -291,6 +291,17 @@ export async function openFile(id: string): Promise<MediaDelivery> {
     throw new PermissionError('This media asset is not publicly available.');
   }
 
+  // Storage-object existence (round-2 Issue 2): the DB row may reference an object that is missing
+  // from the backing store (e.g. a hand-seeded asset that bypassed the upload pipeline, or an
+  // object deleted out-of-band). Verify it exists BEFORE creating a redirect/stream/buffer so a
+  // missing object becomes a controlled 404 — never a 500 from a raw ENOENT / S3 redirect to a
+  // 404 / mid-flight stream error. `stat` is uniform across the local and S3 drivers.
+  const objectMeta = await storage.stat(asset.storageKey);
+  if (!objectMeta) {
+    mediaLog.warn({ mediaId: id, storageKey: asset.storageKey }, 'Media object missing from storage');
+    throw new NotFoundError('Media file is no longer available.');
+  }
+
   if (!storage.servesThroughApp) {
     return { kind: 'redirect', url: await storage.getUrl(asset.storageKey) };
   }

@@ -36,7 +36,10 @@ import {
   Inbox,
   BarChart3,
   Database,
+  Gauge,
+  Upload,
   Users,
+  ShieldCheck,
   ScrollText,
   Settings,
 } from 'lucide-react';
@@ -116,7 +119,17 @@ export const NAVIGATION: NavSection[] = [
     items: [
       { key: 'memberships', label: 'Institutional Membership', href: ROUTES.memberships, icon: BadgeCheck },
       { key: 'enquiries', label: 'Enquiries', href: ROUTES.enquiries, icon: Inbox },
-      { key: 'dashboard-data', label: 'Dashboard Data', href: ROUTES.dashboardData, icon: BarChart3 },
+    ],
+  },
+  {
+    key: 'dashboard-data',
+    label: 'Dashboard Data',
+    items: [
+      { key: 'dashboard-reports', label: 'Dashboard Reports', href: ROUTES.dashboardReports, icon: BarChart3 },
+      { key: 'dashboard-datasets', label: 'Datasets', href: ROUTES.dashboardDatasets, icon: Database },
+      { key: 'dashboard-metrics', label: 'Metrics', href: ROUTES.dashboardMetrics, icon: Gauge },
+      // Excel import writes dashboard data — affordance gated by the manage-data grant.
+      { key: 'dashboard-import', label: 'Excel Import', href: ROUTES.dashboardImport, icon: Upload, permission: 'dashboard.manage_data' },
     ],
   },
   {
@@ -125,6 +138,7 @@ export const NAVIGATION: NavSection[] = [
     items: [
       { key: 'masters', label: 'Masters', href: ROUTES.masters, icon: Database },
       { key: 'users', label: 'Users', href: ROUTES.users, icon: Users, roles: [ROLE_KEYS.superAdmin] },
+      { key: 'roles', label: 'Roles & Permissions', href: ROUTES.roles, icon: ShieldCheck, roles: [ROLE_KEYS.superAdmin] },
       { key: 'audit-log', label: 'Audit Log', href: ROUTES.auditLog, icon: ScrollText, roles: [ROLE_KEYS.superAdmin] },
       { key: 'settings', label: 'Settings', href: ROUTES.settings, icon: Settings, roles: [ROLE_KEYS.superAdmin] },
     ],

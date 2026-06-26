@@ -3,7 +3,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 const { repo, storage } = vi.hoisted(() => ({
   repo: { findById: vi.fn(), isPubliclyLinked: vi.fn() },
-  storage: { servesThroughApp: true, createReadStream: undefined, get: vi.fn(), getUrl: vi.fn() },
+  storage: { servesThroughApp: true, createReadStream: undefined, get: vi.fn(), getUrl: vi.fn(), stat: vi.fn() },
 }));
 
 vi.mock('./media.repository', () => ({ mediaRepository: repo }));
@@ -18,6 +18,8 @@ const asset = { id: 'm1', archivedAt: null, mimeType: 'application/pdf', fileNam
 beforeEach(() => {
   vi.clearAllMocks();
   storage.get.mockResolvedValue(Buffer.from('x'));
+  // Object exists in storage by default; the missing-object case overrides this per-test.
+  storage.stat.mockResolvedValue({ key: 'k', size: 1 });
 });
 
 describe('mediaService.openFile visibility gate', () => {
@@ -38,5 +40,13 @@ describe('mediaService.openFile visibility gate', () => {
     repo.findById.mockResolvedValue({ ...asset, archivedAt: new Date() });
     await expect(mediaService.openFile('m1')).rejects.toBeInstanceOf(NotFoundError);
     expect(repo.isPubliclyLinked).not.toHaveBeenCalled();
+  });
+
+  it('404s (controlled) when the DB row exists but the storage object is missing (round-2 Issue 2)', async () => {
+    repo.findById.mockResolvedValue(asset);
+    repo.isPubliclyLinked.mockResolvedValue(true);
+    storage.stat.mockResolvedValue(null); // object absent from the backing store
+    await expect(mediaService.openFile('m1')).rejects.toBeInstanceOf(NotFoundError);
+    expect(storage.get).not.toHaveBeenCalled(); // never attempts to read a missing object
   });
 });

@@ -16,6 +16,7 @@ import {
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { storageConfig } from '@/config';
 import { logger } from '@/shared/logger';
+import { NotFoundError } from '@/shared/errors';
 import type {
   ObjectMetadata,
   PutObjectInput,
@@ -25,6 +26,17 @@ import type {
 } from './storage.types';
 
 const storeLog = logger.child({ component: 'storage', driver: 's3' });
+
+/** True when an S3 error denotes a missing object (NoSuchKey / NotFound / HTTP 404). */
+function isMissingObjectError(err: unknown): boolean {
+  const e = err as { name?: string; Code?: string; $metadata?: { httpStatusCode?: number } } | null;
+  return (
+    e?.name === 'NoSuchKey' ||
+    e?.name === 'NotFound' ||
+    e?.Code === 'NoSuchKey' ||
+    e?.$metadata?.httpStatusCode === 404
+  );
+}
 
 export class S3StorageService implements StorageService {
   readonly provider = 's3' as const;
@@ -69,10 +81,16 @@ export class S3StorageService implements StorageService {
   }
 
   async get(key: string): Promise<Buffer> {
-    const res = await this.client.send(new GetObjectCommand({ Bucket: this.bucket, Key: key }));
-    const bytes = await res.Body?.transformToByteArray();
-    if (!bytes) throw new Error(`Empty object body for key ${key}`);
-    return Buffer.from(bytes);
+    try {
+      const res = await this.client.send(new GetObjectCommand({ Bucket: this.bucket, Key: key }));
+      const bytes = await res.Body?.transformToByteArray();
+      if (!bytes) throw new NotFoundError('Storage object not found.');
+      return Buffer.from(bytes);
+    } catch (err) {
+      // A missing object (NoSuchKey / 404) is a controlled 404, never a leaked 500 (round-2 Issue 2).
+      if (isMissingObjectError(err)) throw new NotFoundError('Storage object not found.');
+      throw err;
+    }
   }
 
   async delete(key: string): Promise<void> {

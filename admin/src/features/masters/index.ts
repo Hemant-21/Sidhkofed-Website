@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 /**
  * Masters feature (Administration). Generic reference-data manager — selector, list, create/edit,
  * activate/deactivate — built on the shared DataTable/dialog infrastructure and the `/admin/masters`
@@ -6,3 +7,8 @@
 export { MastersPage } from './masters-page';
 export { MASTER_PERMS } from './api';
 export * from './types';
+=======
+export { MastersPage } from './masters-page';
+export type { MasterRecord, MasterPayload, MasterTypeConfig } from './types';
+export { MASTER_TYPES, MASTER_GROUPS, findMasterType } from './types';
+>>>>>>> d476bcebf175f0a60e2572959456e7339f1461f3
