@@ -165,14 +165,14 @@ export function permissionsByModule(): Array<{ module: string; permissions: Rbac
     (byModule.get(perm.module) ?? byModule.set(perm.module, []).get(perm.module)!).push(perm);
   }
   const ordered: Array<{ module: string; permissions: RbacPermission[] }> = [];
-  for (const module of RBAC_MODULE_ORDER) {
-    const permissions = byModule.get(module);
-    if (permissions) ordered.push({ module, permissions });
+  for (const mod of RBAC_MODULE_ORDER) {
+    const permissions = byModule.get(mod);
+    if (permissions) ordered.push({ module: mod, permissions });
   }
   // Any module not in the explicit order (future-proof) appended alphabetically.
-  for (const [module, permissions] of [...byModule.entries()].sort(([a], [b]) => a.localeCompare(b))) {
-    if (!RBAC_MODULE_ORDER.includes(module as (typeof RBAC_MODULE_ORDER)[number])) {
-      ordered.push({ module, permissions });
+  for (const [mod, permissions] of [...byModule.entries()].sort(([a], [b]) => a.localeCompare(b))) {
+    if (!RBAC_MODULE_ORDER.includes(mod as (typeof RBAC_MODULE_ORDER)[number])) {
+      ordered.push({ module: mod, permissions });
     }
   }
   return ordered;
