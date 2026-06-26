@@ -11,6 +11,11 @@
  */
 export { useMasterOptions, type OptionsResult } from './use-options';
 export {
+  useFinancialYearOptions,
+  useReportingPeriodOptions,
+  periodTypeLabel,
+} from './period-pickers';
+export {
   useRelationSearch,
   relationLabel,
   RELATION_PAGE_SIZE,

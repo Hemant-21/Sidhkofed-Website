@@ -21,6 +21,14 @@ export const ROUTES = {
   // documents resource; it is not a separate backend entity.
   knowledgeCentre: '/knowledge-centre',
 
+  // Dashboard Data (Phase 15.8) — the FIXED dashboard reports + their metrics/datasets +
+  // Excel import. Reports are a fixed, code-referenced set (no builder); these surfaces read and
+  // manage backend data only. They live under the dashboard route group.
+  dashboardReports: '/dashboard/reports',
+  dashboardDatasets: '/dashboard/datasets',
+  dashboardMetrics: '/dashboard/metrics',
+  dashboardImport: '/dashboard/import',
+
   // Error / status routes. Runtime errors are caught by error.tsx / global-error.tsx;
   // these are addressable status pages (e.g. for a reverse-proxy `error_page` map).
   // NOTE: avoid the reserved `/500` segment — it collides with Next's generated
@@ -54,8 +62,10 @@ export const ROUTES = {
   dashboardData: '/dashboard-data',
   masters: '/masters',
   users: '/users',
+  roles: '/roles',
   auditLog: '/audit-log',
   settings: '/settings',
+  profile: '/profile',
 } as const;
 
 export type RouteKey = keyof typeof ROUTES;
