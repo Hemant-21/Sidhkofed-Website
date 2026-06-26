@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { cn } from '@/utils/cn';
 
-/** Groups related fields under a heading with a responsive 1/2-column grid. */
+/** Groups related fields under a heading with a responsive 1/2/3-column grid. */
 export function FormSection({
   title,
   description,
@@ -11,7 +11,7 @@ export function FormSection({
 }: {
   title?: ReactNode;
   description?: ReactNode;
-  columns?: 1 | 2;
+  columns?: 1 | 2 | 3;
   children: ReactNode;
   className?: string;
 }) {
@@ -23,7 +23,15 @@ export function FormSection({
           {description ? <p className="mt-0.5 text-sm text-muted-foreground">{description}</p> : null}
         </div>
       )}
-      <div className={cn('grid gap-4', columns === 2 && 'sm:grid-cols-2')}>{children}</div>
+      <div
+        className={cn(
+          'grid gap-4',
+          columns === 2 && 'sm:grid-cols-2',
+          columns === 3 && 'sm:grid-cols-3',
+        )}
+      >
+        {children}
+      </div>
     </section>
   );
 }

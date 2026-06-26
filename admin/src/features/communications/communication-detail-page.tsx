@@ -90,9 +90,9 @@ export function CommunicationDetailPage({ id }: { id: string }) {
             </CardContent>
           </Card>
 
-          {communication.short_description_en || communication.short_description_hi ? (
+          {communication.summary_en || communication.summary_hi ? (
             <Card>
-              <CardHeader title="Description" />
+              <CardHeader title="Summary" />
               <CardContent>
                 <Tabs defaultValue="en">
                   <TabsList>
@@ -100,10 +100,30 @@ export function CommunicationDetailPage({ id }: { id: string }) {
                     <TabsTrigger value="hi">हिन्दी</TabsTrigger>
                   </TabsList>
                   <TabsContent value="en">
-                    <Block body={communication.short_description_en} />
+                    <Block body={communication.summary_en} />
                   </TabsContent>
                   <TabsContent value="hi">
-                    <Block body={communication.short_description_hi} />
+                    <Block body={communication.summary_hi} />
+                  </TabsContent>
+                </Tabs>
+              </CardContent>
+            </Card>
+          ) : null}
+
+          {communication.body_en || communication.body_hi ? (
+            <Card>
+              <CardHeader title="Body" />
+              <CardContent>
+                <Tabs defaultValue="en">
+                  <TabsList>
+                    <TabsTrigger value="en">English</TabsTrigger>
+                    <TabsTrigger value="hi">हिन्दी</TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="en">
+                    <Block body={communication.body_en} />
+                  </TabsContent>
+                  <TabsContent value="hi">
+                    <Block body={communication.body_hi} />
                   </TabsContent>
                 </Tabs>
               </CardContent>

@@ -24,9 +24,13 @@ export function UserMenu() {
     <Dropdown
       align="end"
       trigger={
-        <span className="flex items-center gap-2 rounded-full p-0.5 hover:bg-muted">
+        <button
+          type="button"
+          aria-label="Account menu"
+          className="flex items-center gap-2 rounded-full p-0.5 hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
           <Avatar name={user.full_name} size="sm" />
-        </span>
+        </button>
       }
       items={[
         { label: <UserHeader name={user.full_name} email={user.email} />, disabled: true },

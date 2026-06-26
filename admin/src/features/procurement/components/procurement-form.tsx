@@ -21,7 +21,7 @@ import { useZodForm } from '@/components/form/use-zod-form';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useMasterOptions, RelationPicker, type RelationOption } from '@/components/relationships';
+import { useMasterOptions, RelationPicker, toRelationValue, type RelationOption } from '@/components/relationships';
 import { HIGHLIGHT_LABEL } from '@/constants/status';
 import { ROUTES } from '@/constants/routes';
 import { useCrudCreate, useCrudUpdate } from '@/hooks/crud';
@@ -39,18 +39,26 @@ const schema = z
     title_en: z.string().trim().min(1, 'English title is required.').max(255),
     title_hi: z.string().max(255),
     procurement_update_type_id: z.string().min(1, 'Update type is required.'),
-    commodity_id: z.string().nullable(),
+    commodity_id: z.string(),
+    district_id: z.string(),
+    block_id: z.string(),
     programme_scheme_id: z.string().nullable(),
-    district_id: z.string().nullable(),
-    block_id: z.string().nullable(),
     location_text: z.string().max(255),
-    rate: z.string().max(50),
+    rate: z
+      .string()
+      .max(50)
+      .refine(
+        (v) => v.trim() === '' || (Number.isFinite(Number(v)) && Number(v) >= 0),
+        'Rate must be a non-negative number.',
+      ),
     unit: z.string().max(50),
     effective_date: z.string(),
     period_start: z.string(),
     period_end: z.string(),
-    short_description_en: z.string(),
-    short_description_hi: z.string(),
+    summary_en: z.string(),
+    summary_hi: z.string(),
+    description_en: z.string(),
+    description_hi: z.string(),
     status: z.string(),
     document_id: z.string().nullable(),
     public_visibility: z.boolean(),
@@ -100,34 +108,26 @@ export function ProcurementForm({ procurement }: ProcurementFormProps) {
   });
 
   const highlightType = form.watch('highlight_type');
+  const districtId = form.watch('district_id');
   const procTypes = useMasterOptions('procurement-update-types');
   const procTypeOptions = [{ value: '', label: 'Select update type…' }, ...procTypes.options];
 
-  const commodityInitial = useMemo<RelationOption[]>(
-    () =>
-      procurement?.commodity
-        ? [{ value: procurement.commodity.id, label: procurement.commodity.name_en }]
-        : [],
-    [procurement],
-  );
+  // Master data (commodity/district/block) comes from the Masters API — bounded reference lists
+  // loaded eagerly as dropdowns (Phase 15.3 — NOT the server-side content RelationPicker). Blocks
+  // are filtered to the selected district.
+  const commodities = useMasterOptions('commodities');
+  const districts = useMasterOptions('districts');
+  const blocks = useMasterOptions('blocks', { districtId: districtId || null });
+
+  const commodityOptions = [{ value: '', label: 'None' }, ...commodities.options];
+  const districtOptions = [{ value: '', label: 'None' }, ...districts.options];
+  const blockOptions = [{ value: '', label: 'None' }, ...blocks.options];
+
+  // Programme/scheme and document are CONTENT records — they keep the server-side RelationPicker.
   const programmeInitial = useMemo<RelationOption[]>(
     () =>
       procurement?.programme
-        ? [{ value: procurement.programme.id, label: procurement.programme.name_en }]
-        : [],
-    [procurement],
-  );
-  const districtInitial = useMemo<RelationOption[]>(
-    () =>
-      procurement?.district
-        ? [{ value: procurement.district.id, label: procurement.district.name_en }]
-        : [],
-    [procurement],
-  );
-  const blockInitial = useMemo<RelationOption[]>(
-    () =>
-      procurement?.block
-        ? [{ value: procurement.block.id, label: procurement.block.name_en }]
+        ? [{ value: procurement.programme.id, label: procurement.programme.title_en }]
         : [],
     [procurement],
   );
@@ -183,19 +183,31 @@ export function ProcurementForm({ procurement }: ProcurementFormProps) {
       <FormSection title="Content" description="English is required; Hindi is optional (codex §10).">
         <BilingualTabs
           english={
-            <TextareaField<ProcurementFormValues>
-              name="short_description_en"
-              label="Description (English)"
-              rows={4}
-            />
+            <>
+              <TextareaField<ProcurementFormValues>
+                name="summary_en"
+                label="Summary (English)"
+                rows={2}
+              />
+              <TextareaField<ProcurementFormValues>
+                name="description_en"
+                label="Description (English)"
+                rows={5}
+              />
+            </>
           }
           hindi={
             <>
               <TextField<ProcurementFormValues> name="title_hi" label="शीर्षक (Hindi)" />
               <TextareaField<ProcurementFormValues>
-                name="short_description_hi"
+                name="summary_hi"
+                label="सारांश (Hindi)"
+                rows={2}
+              />
+              <TextareaField<ProcurementFormValues>
+                name="description_hi"
                 label="विवरण (Hindi)"
-                rows={4}
+                rows={5}
               />
             </>
           }
@@ -231,21 +243,11 @@ export function ProcurementForm({ procurement }: ProcurementFormProps) {
       </FormSection>
 
       <FormSection title="Relationships" columns={2}>
-        <FormField<ProcurementFormValues>
+        <SelectField<ProcurementFormValues>
           name="commodity_id"
           label="Commodity"
-          render={({ field, invalid }) => (
-            <RelationPicker
-              resource="commodities"
-              multiple={false}
-              value={field.value ? [field.value] : []}
-              onChange={(v) => field.onChange(v[0] ?? null)}
-              initialOptions={commodityInitial}
-              placeholder="Link a commodity…"
-              searchPlaceholder="Search commodities…"
-              invalid={invalid}
-            />
-          )}
+          placeholder="None"
+          options={commodityOptions}
         />
         <FormField<ProcurementFormValues>
           name="programme_scheme_id"
@@ -254,7 +256,7 @@ export function ProcurementForm({ procurement }: ProcurementFormProps) {
             <RelationPicker
               resource="programmes"
               multiple={false}
-              value={field.value ? [field.value] : []}
+              value={toRelationValue(field.value)}
               onChange={(v) => field.onChange(v[0] ?? null)}
               initialOptions={programmeInitial}
               placeholder="Link a programme…"
@@ -263,37 +265,17 @@ export function ProcurementForm({ procurement }: ProcurementFormProps) {
             />
           )}
         />
-        <FormField<ProcurementFormValues>
+        <SelectField<ProcurementFormValues>
           name="district_id"
           label="District"
-          render={({ field, invalid }) => (
-            <RelationPicker
-              resource="districts"
-              multiple={false}
-              value={field.value ? [field.value] : []}
-              onChange={(v) => field.onChange(v[0] ?? null)}
-              initialOptions={districtInitial}
-              placeholder="Link a district…"
-              searchPlaceholder="Search districts…"
-              invalid={invalid}
-            />
-          )}
+          placeholder="None"
+          options={districtOptions}
         />
-        <FormField<ProcurementFormValues>
+        <SelectField<ProcurementFormValues>
           name="block_id"
           label="Block"
-          render={({ field, invalid }) => (
-            <RelationPicker
-              resource="blocks"
-              multiple={false}
-              value={field.value ? [field.value] : []}
-              onChange={(v) => field.onChange(v[0] ?? null)}
-              initialOptions={blockInitial}
-              placeholder="Link a block…"
-              searchPlaceholder="Search blocks…"
-              invalid={invalid}
-            />
-          )}
+          placeholder="None"
+          options={blockOptions}
         />
         <TextField<ProcurementFormValues>
           name="location_text"
@@ -311,7 +293,7 @@ export function ProcurementForm({ procurement }: ProcurementFormProps) {
             <RelationPicker
               resource="documents"
               multiple={false}
-              value={field.value ? [field.value] : []}
+              value={toRelationValue(field.value)}
               onChange={(v) => field.onChange(v[0] ?? null)}
               initialOptions={documentInitial}
               placeholder="Search documents…"

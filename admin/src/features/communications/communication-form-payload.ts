@@ -17,8 +17,10 @@ export interface CommunicationFormValues {
   effective_date: string;
   expiry_date: string;
   issuing_authority: string;
-  short_description_en: string;
-  short_description_hi: string;
+  summary_en: string;
+  summary_hi: string;
+  body_en: string;
+  body_hi: string;
   document_id: string | null;
   // workflow
   public_visibility: boolean;
@@ -44,8 +46,10 @@ export function emptyCommunicationForm(): CommunicationFormValues {
     effective_date: '',
     expiry_date: '',
     issuing_authority: '',
-    short_description_en: '',
-    short_description_hi: '',
+    summary_en: '',
+    summary_hi: '',
+    body_en: '',
+    body_hi: '',
     document_id: null,
     public_visibility: false,
     show_on_homepage: false,
@@ -67,8 +71,10 @@ export function communicationToForm(c: CommunicationDetail): CommunicationFormVa
     effective_date: c.effective_date ? c.effective_date.slice(0, 10) : '',
     expiry_date: c.expiry_date ? c.expiry_date.slice(0, 10) : '',
     issuing_authority: c.issuing_authority ?? '',
-    short_description_en: c.short_description_en ?? '',
-    short_description_hi: c.short_description_hi ?? '',
+    summary_en: c.summary_en ?? '',
+    summary_hi: c.summary_hi ?? '',
+    body_en: c.body_en ?? '',
+    body_hi: c.body_hi ?? '',
     document_id: c.document?.id ?? null,
     public_visibility: c.public_visibility,
     show_on_homepage: c.show_on_homepage,
@@ -91,8 +97,10 @@ export function buildCommunicationPayload(v: CommunicationFormValues): Communica
     effective_date: dateOnly(v.effective_date),
     expiry_date: dateOnly(v.expiry_date),
     issuing_authority: blank(v.issuing_authority),
-    short_description_en: blank(v.short_description_en),
-    short_description_hi: blank(v.short_description_hi),
+    summary_en: blank(v.summary_en),
+    summary_hi: blank(v.summary_hi),
+    body_en: blank(v.body_en),
+    body_hi: blank(v.body_hi),
     document_id: v.document_id ?? null,
     public_visibility: v.public_visibility,
     show_on_homepage: v.show_on_homepage,

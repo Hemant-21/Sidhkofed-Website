@@ -19,6 +19,17 @@ import type { PublicationState } from '@/types/common';
 import { RelationPicker } from './relation-picker';
 import type { RelationOption } from './relation-search';
 
+/**
+ * Adapt a single-select RHF field value to the picker's `string[]` contract.
+ *
+ * `<FormField>`'s render prop types `field.value` as the union of every form field's value (it is
+ * keyed by the whole `Path<TValues>` union), so a single-select id field surfaces as `string | …`.
+ * This narrows it safely to an id array — no casts — for `<RelationPicker value={…}>`.
+ */
+export function toRelationValue(value: unknown): string[] {
+  return typeof value === 'string' && value !== '' ? [value] : [];
+}
+
 interface RelationFieldProps<T extends FieldValues> {
   name: Path<T>;
   resource: string;

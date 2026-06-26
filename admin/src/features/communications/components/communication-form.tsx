@@ -21,7 +21,7 @@ import { useZodForm } from '@/components/form/use-zod-form';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useMasterOptions, RelationPicker, type RelationOption } from '@/components/relationships';
+import { useMasterOptions, RelationPicker, toRelationValue, type RelationOption } from '@/components/relationships';
 import { HIGHLIGHT_LABEL } from '@/constants/status';
 import { ROUTES } from '@/constants/routes';
 import { useCrudCreate, useCrudUpdate } from '@/hooks/crud';
@@ -44,8 +44,10 @@ const schema = z
     effective_date: z.string(),
     expiry_date: z.string(),
     issuing_authority: z.string().max(255),
-    short_description_en: z.string(),
-    short_description_hi: z.string(),
+    summary_en: z.string(),
+    summary_hi: z.string(),
+    body_en: z.string(),
+    body_hi: z.string(),
     document_id: z.string().nullable(),
     public_visibility: z.boolean(),
     show_on_homepage: z.boolean(),
@@ -153,19 +155,31 @@ export function CommunicationForm({ communication }: CommunicationFormProps) {
       <FormSection title="Content" description="English is required; Hindi is optional (codex §10).">
         <BilingualTabs
           english={
-            <TextareaField<CommunicationFormValues>
-              name="short_description_en"
-              label="Description (English)"
-              rows={4}
-            />
+            <>
+              <TextareaField<CommunicationFormValues>
+                name="summary_en"
+                label="Summary (English)"
+                rows={2}
+              />
+              <TextareaField<CommunicationFormValues>
+                name="body_en"
+                label="Body (English)"
+                rows={6}
+              />
+            </>
           }
           hindi={
             <>
               <TextField<CommunicationFormValues> name="title_hi" label="शीर्षक (Hindi)" />
               <TextareaField<CommunicationFormValues>
-                name="short_description_hi"
+                name="summary_hi"
+                label="सारांश (Hindi)"
+                rows={2}
+              />
+              <TextareaField<CommunicationFormValues>
+                name="body_hi"
                 label="विवरण (Hindi)"
-                rows={4}
+                rows={6}
               />
             </>
           }
@@ -196,7 +210,7 @@ export function CommunicationForm({ communication }: CommunicationFormProps) {
             <RelationPicker
               resource="documents"
               multiple={false}
-              value={field.value ? [field.value] : []}
+              value={toRelationValue(field.value)}
               onChange={(v) => field.onChange(v[0] ?? null)}
               initialOptions={documentInitial}
               placeholder="Search documents…"

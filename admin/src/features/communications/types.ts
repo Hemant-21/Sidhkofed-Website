@@ -16,6 +16,7 @@ export interface CommunicationSummary {
   slug: string;
   title_en: string;
   title_hi: string | null;
+  summary_en: string | null;
   communication_type: MasterRef | null;
   reference_number: string | null;
   issue_date: string | null;
@@ -35,8 +36,9 @@ export interface CommunicationSummary {
 
 /** Admin detail — all fields plus linked document. */
 export interface CommunicationDetail extends CommunicationSummary {
-  short_description_en: string | null;
-  short_description_hi: string | null;
+  summary_hi: string | null;
+  body_en: string | null;
+  body_hi: string | null;
   document: DocumentRef | null;
   highlight_start_at: string | null;
   highlight_end_at: string | null;
@@ -59,8 +61,10 @@ export interface CommunicationWriteInput {
   effective_date?: string | null;
   expiry_date?: string | null;
   issuing_authority?: string | null;
-  short_description_en?: string | null;
-  short_description_hi?: string | null;
+  summary_en?: string | null;
+  summary_hi?: string | null;
+  body_en?: string | null;
+  body_hi?: string | null;
   document_id?: string | null;
   // workflow
   public_visibility?: boolean;

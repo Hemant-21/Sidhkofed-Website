@@ -24,11 +24,8 @@ export function ColumnVisibility<TRow>({
     <Dropdown
       align="end"
       trigger={
-        <Button asChild variant="outline" size="sm">
-          <span>
-            <Columns3 className="h-4 w-4" aria-hidden="true" />
-            Columns
-          </span>
+        <Button variant="outline" size="sm" leftIcon={<Columns3 className="h-4 w-4" aria-hidden="true" />}>
+          Columns
         </Button>
       }
       items={toggleable.map((col) => ({

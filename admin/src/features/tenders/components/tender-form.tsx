@@ -42,14 +42,12 @@ const schema = z
     submission_deadline: z.string(),
     opening_date: z.string(),
     tender_status: z.string(),
-    issuing_authority: z.string().max(255),
-    short_description_en: z.string(),
-    short_description_hi: z.string(),
+    summary_en: z.string(),
+    summary_hi: z.string(),
     gem_url: z.string().refine(
       (v) => v.trim() === '' || GEM_URL_REGEX.test(v.trim()),
       'GeM URL must start with https://',
     ),
-    related_category_or_department: z.string().max(255),
     public_visibility: z.boolean(),
     show_on_homepage: z.boolean(),
     highlight_type: z.string(),
@@ -141,20 +139,14 @@ export function TenderForm({ tender }: TenderFormProps) {
           label="Tender number"
           placeholder="e.g. SIDHKOFED/TENDER/2026/01"
         />
-        <TextField<TenderFormValues>
-          name="issuing_authority"
-          label="Issuing authority"
-          className="sm:col-span-2"
-          placeholder="e.g. Managing Director, SIDHKOFED"
-        />
       </FormSection>
 
       <FormSection title="Content" description="English is required; Hindi is optional (codex §10).">
         <BilingualTabs
           english={
             <TextareaField<TenderFormValues>
-              name="short_description_en"
-              label="Description (English)"
+              name="summary_en"
+              label="Summary (English)"
               rows={4}
             />
           }
@@ -162,8 +154,8 @@ export function TenderForm({ tender }: TenderFormProps) {
             <>
               <TextField<TenderFormValues> name="title_hi" label="शीर्षक (Hindi)" />
               <TextareaField<TenderFormValues>
-                name="short_description_hi"
-                label="विवरण (Hindi)"
+                name="summary_hi"
+                label="सारांश (Hindi)"
                 rows={4}
               />
             </>
@@ -181,15 +173,11 @@ export function TenderForm({ tender }: TenderFormProps) {
         />
       </FormSection>
 
-      <FormSection title="Status & classification" columns={2}>
+      <FormSection title="Status">
         <SelectField<TenderFormValues>
           name="tender_status"
           label="Tender status"
           options={TENDER_STATUS_OPTIONS}
-        />
-        <TextField<TenderFormValues>
-          name="related_category_or_department"
-          label="Related category / department"
         />
       </FormSection>
 

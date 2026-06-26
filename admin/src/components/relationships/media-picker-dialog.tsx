@@ -36,7 +36,9 @@ export function MediaPickerDialog({ open, onClose, onSelect, title = 'Select ima
   const debounced = useDebounce(search, 300);
   const [uploading, setUploading] = useState(false);
   const toast = useToast();
-  const list = useMediaList({ search: debounced || undefined, enabled: open });
+  // Image picker: cover / icon / thumbnail / gallery image selections must never show non-image
+  // assets (PDF/DOC). The list is filtered to `image/*` so no broken thumbnails appear either.
+  const list = useMediaList({ search: debounced || undefined, enabled: open, imageOnly: true });
 
   const handleUpload = async (file: File | null) => {
     if (!file) return;

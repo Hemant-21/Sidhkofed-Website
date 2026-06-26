@@ -68,12 +68,6 @@ export function tenderColumns(
       cell: (t) => <StatusBadge state={t.publication_state} />,
     },
     {
-      id: 'issuing_authority',
-      header: 'Authority',
-      defaultHidden: true,
-      cell: (t) => <span className="text-muted-foreground">{t.issuing_authority ?? '—'}</span>,
-    },
-    {
       id: 'highlight',
       header: 'Highlight',
       align: 'center',

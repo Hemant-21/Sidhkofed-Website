@@ -1,7 +1,8 @@
 /**
  * Pure form ↔ API mapping for the tender form (unit-testable; no React).
- * GeM URL is passed as-is (validated by backend). Opening date may not precede publish date;
- * submission deadline is a date (backend may store as timestamp).
+ * GeM URL is passed as-is (validated by backend). Opening date may not precede publish date.
+ * `publish_date` is a calendar date (YYYY-MM-DD); `submission_deadline` and `opening_date` are
+ * ISO-8601 timestamps in the backend validator, so a date-only input is widened to UTC midnight.
  */
 
 import type { HighlightType } from '@/types/common';
@@ -16,11 +17,9 @@ export interface TenderFormValues {
   submission_deadline: string;
   opening_date: string;
   tender_status: string;
-  issuing_authority: string;
-  short_description_en: string;
-  short_description_hi: string;
+  summary_en: string;
+  summary_hi: string;
   gem_url: string;
-  related_category_or_department: string;
   // workflow
   public_visibility: boolean;
   show_on_homepage: boolean;
@@ -45,11 +44,9 @@ export function emptyTenderForm(): TenderFormValues {
     submission_deadline: '',
     opening_date: '',
     tender_status: 'open',
-    issuing_authority: '',
-    short_description_en: '',
-    short_description_hi: '',
+    summary_en: '',
+    summary_hi: '',
     gem_url: '',
-    related_category_or_department: '',
     public_visibility: false,
     show_on_homepage: false,
     highlight_type: '',
@@ -70,11 +67,9 @@ export function tenderToForm(t: TenderDetail): TenderFormValues {
     submission_deadline: t.submission_deadline ? t.submission_deadline.slice(0, 10) : '',
     opening_date: t.opening_date ? t.opening_date.slice(0, 10) : '',
     tender_status: t.tender_status ?? 'open',
-    issuing_authority: t.issuing_authority ?? '',
-    short_description_en: t.short_description_en ?? '',
-    short_description_hi: t.short_description_hi ?? '',
+    summary_en: t.summary_en ?? '',
+    summary_hi: t.summary_hi ?? '',
     gem_url: t.gem_url ?? '',
-    related_category_or_department: t.related_category_or_department ?? '',
     public_visibility: t.public_visibility,
     show_on_homepage: t.show_on_homepage,
     highlight_type: t.highlight_type ?? '',
@@ -93,14 +88,12 @@ export function buildTenderPayload(v: TenderFormValues): TenderWriteInput {
     tender_type_id: v.tender_type_id,
     tender_number: blank(v.tender_number),
     publish_date: dateOnly(v.publish_date),
-    submission_deadline: dateOnly(v.submission_deadline),
-    opening_date: dateOnly(v.opening_date),
+    submission_deadline: dateToIso(v.submission_deadline),
+    opening_date: dateToIso(v.opening_date),
     tender_status: (blank(v.tender_status) as TenderStatus | null) ?? null,
-    issuing_authority: blank(v.issuing_authority),
-    short_description_en: blank(v.short_description_en),
-    short_description_hi: blank(v.short_description_hi),
+    summary_en: blank(v.summary_en),
+    summary_hi: blank(v.summary_hi),
     gem_url: blank(v.gem_url),
-    related_category_or_department: blank(v.related_category_or_department),
     public_visibility: v.public_visibility,
     show_on_homepage: v.show_on_homepage,
     highlight_type: highlight,

@@ -21,6 +21,7 @@ export { RelationPicker, type RelationPickerProps } from './relation-picker';
 export {
   RelationMultiSelectField,
   RelationSelect,
+  toRelationValue,
   type RelationSelectProps,
 } from './relation-fields';
 export { useMediaList, uploadMedia, type MediaItem } from './media-api';

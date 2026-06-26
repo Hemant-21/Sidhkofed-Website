@@ -7,18 +7,26 @@
 
 import type { MasterRef, DocumentRef, HighlightType, PublicationState } from '@/types/common';
 
+/** Compact programme/scheme reference (content record — title-based; backend ProgrammeRef). */
+export interface ProgrammeRef {
+  id: string;
+  slug: string;
+  title_en: string;
+  title_hi: string | null;
+}
+
 /** Procurement update types as defined by backend master data. */
 export interface ProcurementSummary {
   id: string;
   slug: string;
   title_en: string;
   title_hi: string | null;
+  summary_en: string | null;
   procurement_update_type: MasterRef | null;
   commodity: MasterRef | null;
-  programme: MasterRef | null;
   district: MasterRef | null;
   block: MasterRef | null;
-  rate: string | null;
+  rate: number | null;
   unit: string | null;
   effective_date: string | null;
   period_start: string | null;
@@ -37,8 +45,10 @@ export interface ProcurementSummary {
 
 export interface ProcurementDetail extends ProcurementSummary {
   location_text: string | null;
-  short_description_en: string | null;
-  short_description_hi: string | null;
+  summary_hi: string | null;
+  description_en: string | null;
+  description_hi: string | null;
+  programme: ProgrammeRef | null;
   document: DocumentRef | null;
   highlight_start_at: string | null;
   highlight_end_at: string | null;
@@ -49,8 +59,9 @@ export interface ProcurementDetail extends ProcurementSummary {
 }
 
 /**
- * Write payload. Rate and unit are strings (Decimal in DB, transported as string).
- * Frontend NEVER calculates rates — it only passes what the user enters.
+ * Write payload. `rate` is a JSON number (DECIMAL(14,2) in the DB — the backend validator
+ * accepts a number, not a string). Frontend NEVER calculates rates — it only passes what the
+ * user enters, parsed to a number.
  */
 export interface ProcurementWriteInput {
   title_en?: string;
@@ -61,13 +72,15 @@ export interface ProcurementWriteInput {
   district_id?: string | null;
   block_id?: string | null;
   location_text?: string | null;
-  rate?: string | null;
+  rate?: number | null;
   unit?: string | null;
   effective_date?: string | null;
   period_start?: string | null;
   period_end?: string | null;
-  short_description_en?: string | null;
-  short_description_hi?: string | null;
+  summary_en?: string | null;
+  summary_hi?: string | null;
+  description_en?: string | null;
+  description_hi?: string | null;
   status?: string | null;
   document_id?: string | null;
   // workflow

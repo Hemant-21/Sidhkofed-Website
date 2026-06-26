@@ -53,6 +53,7 @@ export function ToolkitItemsManager({ toolkit }: { toolkit: ToolkitDetail }) {
     if (target < 0 || target >= items.length) return;
     const a = items[index];
     const b = items[target];
+    if (!a || !b) return;
     const [newA, newB] = a.display_order === b.display_order ? [target, index] : [b.display_order, a.display_order];
     await update.mutateAsync({ toolkitId: toolkit.id, itemId: a.id, body: { display_order: newA } });
     await update.mutateAsync({ toolkitId: toolkit.id, itemId: b.id, body: { display_order: newB } });

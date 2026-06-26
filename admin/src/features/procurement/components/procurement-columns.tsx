@@ -55,14 +55,6 @@ export function procurementColumns(
       ),
     },
     {
-      id: 'programme',
-      header: 'Programme',
-      defaultHidden: true,
-      cell: (p) => (
-        <span className="text-muted-foreground">{p.programme?.name_en ?? '—'}</span>
-      ),
-    },
-    {
       id: 'district',
       header: 'District',
       defaultHidden: true,

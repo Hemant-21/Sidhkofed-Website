@@ -28,6 +28,7 @@ import {
   FileStack,
   Menu as MenuIcon,
   Images,
+  GalleryHorizontalEnd,
   Video,
   BadgeCheck,
   HelpCircle,
@@ -104,7 +105,8 @@ export const NAVIGATION: NavSection[] = [
     key: 'media',
     label: 'Media',
     items: [
-      { key: 'media-library', label: 'Media & Galleries', href: ROUTES.media, icon: Images },
+      { key: 'media-library', label: 'Media Library', href: ROUTES.media, icon: Images },
+      { key: 'galleries', label: 'Galleries', href: ROUTES.galleries, icon: GalleryHorizontalEnd },
       { key: 'videos', label: 'Videos', href: ROUTES.videos, icon: Video },
     ],
   },

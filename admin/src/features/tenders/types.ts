@@ -19,13 +19,13 @@ export interface TenderSummary {
   slug: string;
   title_en: string;
   title_hi: string | null;
+  summary_en: string | null;
   tender_type: MasterRef | null;
   tender_number: string | null;
   publish_date: string | null;
   submission_deadline: string | null;
   opening_date: string | null;
   tender_status: TenderStatus | null;
-  issuing_authority: string | null;
   gem_url: string | null;
   publication_state: PublicationState;
   public_visibility: boolean;
@@ -40,9 +40,7 @@ export interface TenderSummary {
 
 /** Admin detail. */
 export interface TenderDetail extends TenderSummary {
-  short_description_en: string | null;
-  short_description_hi: string | null;
-  related_category_or_department: string | null;
+  summary_hi: string | null;
   highlight_start_at: string | null;
   highlight_end_at: string | null;
   publish_start_at: string | null;
@@ -64,11 +62,9 @@ export interface TenderWriteInput {
   submission_deadline?: string | null;
   opening_date?: string | null;
   tender_status?: TenderStatus | null;
-  issuing_authority?: string | null;
-  short_description_en?: string | null;
-  short_description_hi?: string | null;
+  summary_en?: string | null;
+  summary_hi?: string | null;
   gem_url?: string | null;
-  related_category_or_department?: string | null;
   // workflow
   public_visibility?: boolean;
   publish_start_at?: string | null;

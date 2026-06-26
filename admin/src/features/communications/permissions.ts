@@ -1,9 +1,11 @@
 /**
- * Permission keys for Official Communications. The backend seeds `communications.*` keys
- * and grants them to Content Editor (view/create/update) and Publisher (view/update + lifecycle).
- * These only mirror the backend seed; the backend remains the security boundary.
+ * Permission keys for Official Communications.
+ *
+ * The backend authorizes this module with the SHARED `content.*` permission set
+ * (official-communications.routes.ts: create = content.create/update, update = content.update,
+ * publish/unpublish/archive/restore = content.*) — NOT `official-communications.*` keys, which
+ * are never seeded. We therefore reuse the shared {@link CONTENT_PERMS} catalog so <Can> checks
+ * resolve against the keys the backend actually grants. The backend remains the security boundary.
  */
 
-import { modulePermissions } from '@/constants/permissions';
-
-export const COMMUNICATION_PERMS = modulePermissions('official-communications');
+export { CONTENT_PERMS as COMMUNICATION_PERMS } from '@/features/events/permissions';

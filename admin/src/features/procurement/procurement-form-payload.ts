@@ -1,7 +1,8 @@
 /**
  * Pure form ↔ API mapping for the procurement form (unit-testable; no React).
- * Rate/unit are strings throughout — never calculated or modified by the frontend.
- * Period end cannot precede start; block/district consistency validated server-side.
+ * `rate` is entered as a string but sent to the backend as a JSON number (its validator accepts a
+ * number, not a string); the frontend never calculates it. Period end cannot precede start;
+ * block/district consistency is validated server-side.
  */
 
 import type { HighlightType } from '@/types/common';
@@ -11,18 +12,22 @@ export interface ProcurementFormValues {
   title_en: string;
   title_hi: string;
   procurement_update_type_id: string;
-  commodity_id: string | null;
+  // Master-data ids (bounded dropdowns) — empty string means "none".
+  commodity_id: string;
+  district_id: string;
+  block_id: string;
+  // Content relation (server-side picker) — null means "none".
   programme_scheme_id: string | null;
-  district_id: string | null;
-  block_id: string | null;
   location_text: string;
   rate: string;
   unit: string;
   effective_date: string;
   period_start: string;
   period_end: string;
-  short_description_en: string;
-  short_description_hi: string;
+  summary_en: string;
+  summary_hi: string;
+  description_en: string;
+  description_hi: string;
   status: string;
   document_id: string | null;
   // workflow
@@ -38,24 +43,33 @@ export interface ProcurementFormValues {
 const blank = (v: string): string | null => (v.trim() === '' ? null : v.trim());
 const dateOnly = (v: string): string | null => (v ? v : null);
 const dateToIso = (v: string): string | null => (v ? `${v}T00:00:00.000Z` : null);
+/** Parse the rate text into a JSON number; empty or non-numeric → null (backend validates range). */
+const toRate = (v: string): number | null => {
+  const t = v.trim();
+  if (t === '') return null;
+  const n = Number(t);
+  return Number.isFinite(n) ? n : null;
+};
 
 export function emptyProcurementForm(): ProcurementFormValues {
   return {
     title_en: '',
     title_hi: '',
     procurement_update_type_id: '',
-    commodity_id: null,
+    commodity_id: '',
+    district_id: '',
+    block_id: '',
     programme_scheme_id: null,
-    district_id: null,
-    block_id: null,
     location_text: '',
     rate: '',
     unit: '',
     effective_date: '',
     period_start: '',
     period_end: '',
-    short_description_en: '',
-    short_description_hi: '',
+    summary_en: '',
+    summary_hi: '',
+    description_en: '',
+    description_hi: '',
     status: '',
     document_id: null,
     public_visibility: false,
@@ -73,18 +87,20 @@ export function procurementToForm(p: ProcurementDetail): ProcurementFormValues {
     title_en: p.title_en,
     title_hi: p.title_hi ?? '',
     procurement_update_type_id: p.procurement_update_type?.id ?? '',
-    commodity_id: p.commodity?.id ?? null,
+    commodity_id: p.commodity?.id ?? '',
+    district_id: p.district?.id ?? '',
+    block_id: p.block?.id ?? '',
     programme_scheme_id: p.programme?.id ?? null,
-    district_id: p.district?.id ?? null,
-    block_id: p.block?.id ?? null,
     location_text: p.location_text ?? '',
-    rate: p.rate ?? '',
+    rate: p.rate != null ? String(p.rate) : '',
     unit: p.unit ?? '',
     effective_date: p.effective_date ? p.effective_date.slice(0, 10) : '',
     period_start: p.period_start ? p.period_start.slice(0, 10) : '',
     period_end: p.period_end ? p.period_end.slice(0, 10) : '',
-    short_description_en: p.short_description_en ?? '',
-    short_description_hi: p.short_description_hi ?? '',
+    summary_en: p.summary_en ?? '',
+    summary_hi: p.summary_hi ?? '',
+    description_en: p.description_en ?? '',
+    description_hi: p.description_hi ?? '',
     status: p.status ?? '',
     document_id: p.document?.id ?? null,
     public_visibility: p.public_visibility,
@@ -103,18 +119,20 @@ export function buildProcurementPayload(v: ProcurementFormValues): ProcurementWr
     title_en: v.title_en.trim(),
     title_hi: blank(v.title_hi),
     procurement_update_type_id: v.procurement_update_type_id,
-    commodity_id: v.commodity_id ?? null,
+    commodity_id: blank(v.commodity_id),
+    district_id: blank(v.district_id),
+    block_id: blank(v.block_id),
     programme_scheme_id: v.programme_scheme_id ?? null,
-    district_id: v.district_id ?? null,
-    block_id: v.block_id ?? null,
     location_text: blank(v.location_text),
-    rate: blank(v.rate),
+    rate: toRate(v.rate),
     unit: blank(v.unit),
     effective_date: dateOnly(v.effective_date),
     period_start: dateOnly(v.period_start),
     period_end: dateOnly(v.period_end),
-    short_description_en: blank(v.short_description_en),
-    short_description_hi: blank(v.short_description_hi),
+    summary_en: blank(v.summary_en),
+    summary_hi: blank(v.summary_hi),
+    description_en: blank(v.description_en),
+    description_hi: blank(v.description_hi),
     status: blank(v.status),
     document_id: v.document_id ?? null,
     public_visibility: v.public_visibility,

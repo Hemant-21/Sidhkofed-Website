@@ -1,20 +1,26 @@
 'use client';
 
 /**
- * Accessible dropdown menu. Toggle button + menu with keyboard support (Escape
- * closes, arrow-free simple list), outside-click dismiss, and ARIA wiring
- * (aria-haspopup/expanded, role=menu/menuitem). Composed by the Topbar user menu,
- * row action menus in DataTable, etc.
+ * Accessible dropdown menu. The trigger element itself becomes the toggle — its menu ARIA
+ * (aria-haspopup/expanded/controls) and click handler are merged onto it via {@link Slot},
+ * so there is NO wrapper <button> around the trigger (avoids nested interactive elements).
+ * Keyboard support (Escape closes), outside-click dismiss, and role=menu/menuitem are kept.
+ * Composed by the Topbar user menu, row action menus in DataTable, etc.
+ *
+ * The `trigger` must therefore be a single FOCUSABLE element (e.g. a <Button> or <button>) so
+ * keyboard users can open the menu.
  */
 
 import {
   useId,
   useRef,
   useState,
+  type ReactElement,
   type ReactNode,
 } from 'react';
 import { cn } from '@/utils/cn';
 import { useClickOutside } from '@/hooks/use-click-outside';
+import { Slot } from './slot';
 
 export interface DropdownItem {
   /** Optional — omitted for `separator` items. */
@@ -29,7 +35,8 @@ export interface DropdownItem {
 }
 
 export interface DropdownProps {
-  trigger: ReactNode;
+  /** A single focusable element (e.g. a <Button>); the toggle ARIA + onClick are merged onto it. */
+  trigger: ReactElement;
   items: DropdownItem[];
   align?: 'start' | 'end';
   className?: string;
@@ -49,16 +56,14 @@ export function Dropdown({ trigger, items, align = 'end', className }: DropdownP
         if (e.key === 'Escape') setOpen(false);
       }}
     >
-      <button
-        type="button"
+      <Slot
         aria-haspopup="menu"
         aria-expanded={open}
         aria-controls={open ? menuId : undefined}
         onClick={() => setOpen((v) => !v)}
-        className="inline-flex items-center rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
         {trigger}
-      </button>
+      </Slot>
       {open ? (
         <div
           role="menu"

@@ -26,17 +26,35 @@ export interface MediaItem {
 const ADMIN_MEDIA = '/admin/media';
 
 /** Recent, non-archived images for the picker grid. Server-side search by filename/title. */
-export function useMediaList(opts: { search?: string; enabled?: boolean } = {}) {
-  const { search, enabled = true } = opts;
+/**
+ * Keep only image assets (mime_type `image/*`). The backend `mime_type` filter is an EXACT match
+ * (media.repository.ts), so it cannot express "any image" across jpeg/png/webp/…; per the Phase 15.7
+ * remediation contract we apply the documented client-side fallback instead. This prevents PDFs/DOCs
+ * and other non-image assets from appearing in image-selection dialogs (and broken thumbnails).
+ */
+export function keepImagesOnly(items: MediaItem[]): MediaItem[] {
+  return items.filter((m) => typeof m.mime_type === 'string' && m.mime_type.startsWith('image/'));
+}
+
+/**
+ * Recent, non-archived media for the picker grid. Server-side search by filename/title.
+ * `imageOnly` (default false) restricts results to image assets — the shared image picker passes it
+ * so cover/icon/thumbnail/gallery selections never surface non-image assets.
+ */
+export function useMediaList(opts: { search?: string; enabled?: boolean; imageOnly?: boolean } = {}) {
+  const { search, enabled = true, imageOnly = false } = opts;
   return useQuery({
-    queryKey: ['media', 'picker', { search: search ?? '' }],
-    // The list endpoint filters `archived`; search matches filename/title server-side.
-    queryFn: () =>
-      getList<MediaItem>(ADMIN_MEDIA, {
-        page_size: 40,
+    queryKey: ['media', 'picker', { search: search ?? '', imageOnly }],
+    // The list endpoint filters `archived`; search matches filename/title server-side. When
+    // imageOnly, fetch a slightly larger page then keep only images so the grid stays well-filled.
+    queryFn: async () => {
+      const res = await getList<MediaItem>(ADMIN_MEDIA, {
+        page_size: imageOnly ? 60 : 40,
         archived: false,
         ...(search ? { search } : {}),
-      }),
+      });
+      return imageOnly ? { ...res, items: keepImagesOnly(res.items) } : res;
+    },
     enabled,
     staleTime: 30_000,
   });

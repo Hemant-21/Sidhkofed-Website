@@ -11,8 +11,10 @@ import { useRelationSearch, relationLabel, RELATION_PAGE_SIZE } from './relation
 
 function wrapper() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  return ({ children }: { children: ReactNode }) =>
+  const Wrapper = ({ children }: { children: ReactNode }) =>
     createElement(QueryClientProvider, { client }, children);
+  Wrapper.displayName = 'TestQueryWrapper';
+  return Wrapper;
 }
 
 const page = (items: unknown[], p = 1, totalPages = 1) => ({

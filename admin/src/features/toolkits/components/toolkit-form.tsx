@@ -23,7 +23,7 @@ import { useZodForm } from '@/components/form/use-zod-form';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { CoverMediaField, RelationPicker, useMasterOptions, type RelationOption } from '@/components/relationships';
+import { CoverMediaField, RelationPicker, toRelationValue, useMasterOptions, type RelationOption } from '@/components/relationships';
 import { HIGHLIGHT_LABEL } from '@/constants/status';
 import { ROUTES } from '@/constants/routes';
 import { useCrudCreate, useCrudUpdate } from '@/hooks/crud';
@@ -119,7 +119,7 @@ export function ToolkitForm({ toolkit }: ToolkitFormProps) {
             <RelationPicker
               resource="programmes"
               multiple={false}
-              value={field.value ? [field.value] : []}
+              value={toRelationValue(field.value)}
               onChange={(v) => field.onChange(v[0] ?? '')}
               initialOptions={programmeInitial}
               placeholder="Link a programme…"

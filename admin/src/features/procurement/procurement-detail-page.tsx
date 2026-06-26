@@ -89,7 +89,7 @@ export function ProcurementDetailPage({ id }: { id: string }) {
                   {procurement.procurement_update_type?.name_en ?? '—'}
                 </Item>
                 <Item label="Commodity">{procurement.commodity?.name_en ?? '—'}</Item>
-                <Item label="Programme">{procurement.programme?.name_en ?? '—'}</Item>
+                <Item label="Programme">{procurement.programme?.title_en ?? '—'}</Item>
                 <Item label="District">{procurement.district?.name_en ?? '—'}</Item>
                 <Item label="Block">{procurement.block?.name_en ?? '—'}</Item>
                 <Item label="Location">{procurement.location_text ?? '—'}</Item>
@@ -99,7 +99,7 @@ export function ProcurementDetailPage({ id }: { id: string }) {
                     ? `${formatDate(procurement.period_start)} – ${formatDate(procurement.period_end)}`
                     : '—'}
                 </Item>
-                {procurement.rate ? (
+                {procurement.rate != null ? (
                   <Item label="Rate (informational)">
                     {procurement.rate}
                     {procurement.unit ? ` ${procurement.unit}` : ''}
@@ -110,7 +110,27 @@ export function ProcurementDetailPage({ id }: { id: string }) {
             </CardContent>
           </Card>
 
-          {procurement.short_description_en || procurement.short_description_hi ? (
+          {procurement.summary_en || procurement.summary_hi ? (
+            <Card>
+              <CardHeader title="Summary" />
+              <CardContent>
+                <Tabs defaultValue="en">
+                  <TabsList>
+                    <TabsTrigger value="en">English</TabsTrigger>
+                    <TabsTrigger value="hi">हिन्दी</TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="en">
+                    <Block body={procurement.summary_en} />
+                  </TabsContent>
+                  <TabsContent value="hi">
+                    <Block body={procurement.summary_hi} />
+                  </TabsContent>
+                </Tabs>
+              </CardContent>
+            </Card>
+          ) : null}
+
+          {procurement.description_en || procurement.description_hi ? (
             <Card>
               <CardHeader title="Description" />
               <CardContent>
@@ -120,10 +140,10 @@ export function ProcurementDetailPage({ id }: { id: string }) {
                     <TabsTrigger value="hi">हिन्दी</TabsTrigger>
                   </TabsList>
                   <TabsContent value="en">
-                    <Block body={procurement.short_description_en} />
+                    <Block body={procurement.description_en} />
                   </TabsContent>
                   <TabsContent value="hi">
-                    <Block body={procurement.short_description_hi} />
+                    <Block body={procurement.description_hi} />
                   </TabsContent>
                 </Tabs>
               </CardContent>

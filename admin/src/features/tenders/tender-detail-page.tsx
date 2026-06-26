@@ -74,20 +74,17 @@ export function TenderDetailPage({ id }: { id: string }) {
             <CardContent>
               <dl className="grid gap-4 sm:grid-cols-2">
                 <Item label="Tender number">{tender.tender_number ?? '—'}</Item>
-                <Item label="Issuing authority">{tender.issuing_authority ?? '—'}</Item>
+                <Item label="Type">{tender.tender_type?.name_en ?? '—'}</Item>
                 <Item label="Publish date">{formatDate(tender.publish_date)}</Item>
                 <Item label="Submission deadline">{formatDate(tender.submission_deadline)}</Item>
                 <Item label="Opening date">{formatDate(tender.opening_date)}</Item>
-                <Item label="Related category / dept">
-                  {tender.related_category_or_department ?? '—'}
-                </Item>
               </dl>
             </CardContent>
           </Card>
 
-          {tender.short_description_en || tender.short_description_hi ? (
+          {tender.summary_en || tender.summary_hi ? (
             <Card>
-              <CardHeader title="Description" />
+              <CardHeader title="Summary" />
               <CardContent>
                 <Tabs defaultValue="en">
                   <TabsList>
@@ -95,10 +92,10 @@ export function TenderDetailPage({ id }: { id: string }) {
                     <TabsTrigger value="hi">हिन्दी</TabsTrigger>
                   </TabsList>
                   <TabsContent value="en">
-                    <Block body={tender.short_description_en} />
+                    <Block body={tender.summary_en} />
                   </TabsContent>
                   <TabsContent value="hi">
-                    <Block body={tender.short_description_hi} />
+                    <Block body={tender.summary_hi} />
                   </TabsContent>
                 </Tabs>
               </CardContent>
