@@ -1,16 +1,6 @@
 'use client';
 
 /**
-<<<<<<< HEAD
- * Membership list page. Composes the shared DataTable + filter framework + pagination + bulk
- * actions. Server pagination, search, filters, sorting, and loading/empty/error states from shared
- * infrastructure. No client-side filtering.
- */
-
-import { useMemo } from 'react';
-import Link from 'next/link';
-import { Plus, BadgeCheck } from 'lucide-react';
-=======
  * Institutional Membership list page. Composes the shared DataTable + filter framework + pagination
  * + bulk actions. Server pagination, server search, server filters, sorting, column selection, and
  * loading/empty/error states all come from the shared infrastructure — there is no client-side
@@ -20,15 +10,10 @@ import { Plus, BadgeCheck } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { Plus, BadgeCheck, Upload } from 'lucide-react';
->>>>>>> d476bcebf175f0a60e2572959456e7339f1461f3
 import { PageHeader } from '@/components/layout/page-header';
 import { Toolbar } from '@/components/layout/toolbar';
 import { Card } from '@/components/layout/card';
 import { Button } from '@/components/ui/button';
-<<<<<<< HEAD
-import { SearchInput } from '@/components/ui/search-input';
-=======
->>>>>>> d476bcebf175f0a60e2572959456e7339f1461f3
 import { Pagination } from '@/components/ui/pagination';
 import { DataTable, ColumnVisibility, BulkActions, useDataTable } from '@/components/data-table';
 import { EmptyState } from '@/components/feedback/empty-state';
@@ -40,20 +25,12 @@ import { MEMBERSHIPS_RESOURCE, MEMBERSHIP_PERMS } from './api';
 import type { MembershipSummary } from './types';
 import { membershipColumns } from './components/membership-columns';
 import { MembershipFilters, MEMBERSHIP_FILTER_KEYS } from './components/membership-filters';
-<<<<<<< HEAD
-=======
 import { MembershipBulkUploadDialog } from './components/membership-bulk-upload-dialog';
->>>>>>> d476bcebf175f0a60e2572959456e7339f1461f3
 
 export function MembershipListPage() {
   const filters = useFilters({ keys: MEMBERSHIP_FILTER_KEYS });
   const table = useDataTable();
   const confirm = useConfirmDialog();
-<<<<<<< HEAD
-
-  const query = useMemo(
-    () => ({ ...filters.query, page: filters.page, ordering: table.ordering ?? filters.query.ordering }),
-=======
   const [bulkOpen, setBulkOpen] = useState(false);
 
   const query = useMemo(
@@ -62,7 +39,6 @@ export function MembershipListPage() {
       page: filters.page,
       ordering: table.ordering ?? filters.query.ordering,
     }),
->>>>>>> d476bcebf175f0a60e2572959456e7339f1461f3
     [filters.query, filters.page, table.ordering],
   );
 
@@ -90,22 +66,6 @@ export function MembershipListPage() {
     <div className="space-y-6">
       <PageHeader
         title="Institutional Membership"
-<<<<<<< HEAD
-        description="Member institutions, their level/type, and directory visibility."
-        actions={
-          <Can permission={MEMBERSHIP_PERMS.create}>
-            <Button asChild leftIcon={<Plus className="h-4 w-4" />}>
-              <Link href={`${ROUTES.memberships}/new`}>New membership</Link>
-            </Button>
-          </Can>
-        }
-      />
-
-      <SearchInput value={filters.search} onValueChange={filters.setSearch} placeholder="Search members…" className="sm:max-w-xs" />
-      <MembershipFilters filters={filters} />
-
-      <Toolbar end={<ColumnVisibility columns={columns} hidden={table.hiddenColumns} onChange={table.setHiddenColumns} />} />
-=======
         description="Institution-wise membership records — SIDHKOFED / District Union × Primary / Nominal."
         actions={
           <div className="flex flex-wrap items-center gap-2">
@@ -138,7 +98,6 @@ export function MembershipListPage() {
           />
         }
       />
->>>>>>> d476bcebf175f0a60e2572959456e7339f1461f3
 
       {selected.length > 0 ? (
         <BulkActions count={selected.length} onClear={table.clearSelection}>
@@ -198,15 +157,11 @@ export function MembershipListPage() {
             <EmptyState
               icon={BadgeCheck}
               title={filters.isActive ? 'No memberships match your filters' : 'No memberships yet'}
-<<<<<<< HEAD
-              description={filters.isActive ? 'Try adjusting or clearing the filters.' : 'Create the first membership record.'}
-=======
               description={
                 filters.isActive
                   ? 'Try adjusting or clearing the filters.'
                   : 'Add the first institutional membership, or bulk-import a batch.'
               }
->>>>>>> d476bcebf175f0a60e2572959456e7339f1461f3
               action={
                 filters.isActive ? (
                   <Button variant="outline" size="sm" onClick={filters.reset}>
@@ -234,11 +189,8 @@ export function MembershipListPage() {
           onPageChange={filters.setPage}
         />
       ) : null}
-<<<<<<< HEAD
-=======
 
       <MembershipBulkUploadDialog open={bulkOpen} onClose={() => setBulkOpen(false)} />
->>>>>>> d476bcebf175f0a60e2572959456e7339f1461f3
     </div>
   );
 }

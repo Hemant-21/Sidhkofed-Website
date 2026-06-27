@@ -1,16 +1,6 @@
 'use client';
 
 /**
-<<<<<<< HEAD
- * Memberships data layer. Standard list/detail/create/update/lifecycle use the shared CRUD hooks
- * against the `memberships` resource (the standard admin "P" pattern). No module-specific actions
- * beyond the shared publishing lifecycle.
- */
-
-import { adminResource } from '@/constants/api-endpoints';
-import { get } from '@/lib/api/http';
-import type { MembershipDetail } from './types';
-=======
  * Institutional Membership data layer. Standard list/detail/create/update/lifecycle use the shared
  * CRUD hooks against the `memberships` resource — no bespoke fetch logic. This module adds the one
  * membership-SPECIFIC sub-route that is not part of the generic "P" pattern: the transactional
@@ -24,16 +14,12 @@ import { invalidateResource } from '@/lib/query';
 import { errorMessage } from '@/lib/api/server-errors';
 import { useToast } from '@/hooks/use-toast';
 import type { MembershipDetail, MembershipBulkRow, MembershipBulkUploadResult } from './types';
->>>>>>> d476bcebf175f0a60e2572959456e7339f1461f3
 
 export const MEMBERSHIPS_RESOURCE = 'memberships';
 
 export { MEMBERSHIP_PERMS } from './permissions';
 
 /** Typed detail fetch for callers outside the CRUD hook. */
-<<<<<<< HEAD
-export const fetchMembership = (id: string) => get<MembershipDetail>(adminResource(MEMBERSHIPS_RESOURCE).detail(id));
-=======
 export const fetchMembership = (id: string) =>
   get<MembershipDetail>(adminResource(MEMBERSHIPS_RESOURCE).detail(id));
 
@@ -65,4 +51,3 @@ export function useMembershipBulkUpload() {
     onError: (error) => toast.error(errorMessage(error)),
   });
 }
->>>>>>> d476bcebf175f0a60e2572959456e7339f1461f3

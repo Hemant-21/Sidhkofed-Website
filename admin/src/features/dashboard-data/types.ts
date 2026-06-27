@@ -1,26 +1,4 @@
 /**
-<<<<<<< HEAD
- * Dashboard Data module types — mirror of the backend dashboard DTOs (dashboard.dto.ts) for the
- * data-management surface: a report's datasets (imports) and resolved metrics. The report catalog
- * type is reused from `@/types/dashboard`.
- */
-
-export interface FinancialYearRef {
-  id: string;
-  label: string;
-}
-
-export interface ReportingPeriodRef {
-  id: string;
-  label: string;
-}
-
-export interface Dataset {
-  id: string;
-  report_id: string;
-  source: string;
-  status: string;
-=======
  * Dashboard Data module types — a faithful mirror of the backend dashboard DTOs (dashboard.dto.ts)
  * and request validators (dashboard.validators.ts). The frontend consumes these contracts exactly;
  * it never invents a shape, computes a metric, or aggregates client-side (codex §13 / build-context
@@ -163,7 +141,6 @@ export interface Dataset {
   report_id: string;
   source: DatasetSource;
   status: DatasetStatus;
->>>>>>> d476bcebf175f0a60e2572959456e7339f1461f3
   row_count: number;
   financial_year: FinancialYearRef | null;
   reporting_period: ReportingPeriodRef | null;
@@ -174,22 +151,6 @@ export interface Dataset {
   updated_at: string;
 }
 
-<<<<<<< HEAD
-export interface Metric {
-  id: string;
-  report_id: string;
-  metric_key: string;
-  label_en: string;
-  label_hi: string | null;
-  value: number | null;
-  value_text: string | null;
-  unit: string | null;
-  source: string;
-  dataset_id: string | null;
-  display_order: number;
-  created_at: string;
-  updated_at: string;
-=======
 /** One row of a dataset import (dashboard.validators.ts → datasetRowShape). */
 export interface DatasetRowInput {
   metric_key: string;
@@ -237,5 +198,4 @@ export type DatasetResult = DatasetPreviewResult | DatasetImportResult;
 /** Narrow a dataset result to the preview shape. */
 export function isDatasetPreview(r: DatasetResult): r is DatasetPreviewResult {
   return 'preview' in r;
->>>>>>> d476bcebf175f0a60e2572959456e7339f1461f3
 }

@@ -1,13 +1,8 @@
 'use client';
 
 /**
-<<<<<<< HEAD
- * Membership lifecycle actions. Reuses the shared publishing hooks and confirmation dialogs.
- * Permission-aware via <Can> against the shared `content.*` keys. Backend enforces RBAC.
-=======
  * Institutional Membership lifecycle actions. Reuses the shared publishing hooks and confirmation
  * dialogs. Permission-aware via <Can> against the shared `content.*` keys. The backend enforces RBAC.
->>>>>>> d476bcebf175f0a60e2572959456e7339f1461f3
  */
 
 import { Pencil } from 'lucide-react';
@@ -21,12 +16,8 @@ import type { MembershipDetail } from '../types';
 
 export function MembershipLifecycleActions({ membership }: { membership: MembershipDetail }) {
   const confirm = useConfirmDialog();
-<<<<<<< HEAD
-  const { publish, unpublish, archive, restore } = useLifecycleActions<MembershipDetail>(MEMBERSHIPS_RESOURCE);
-=======
   const { publish, unpublish, archive, restore } =
     useLifecycleActions<MembershipDetail>(MEMBERSHIPS_RESOURCE);
->>>>>>> d476bcebf175f0a60e2572959456e7339f1461f3
 
   const state = membership.publication_state;
   const subject = 'this membership';

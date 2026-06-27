@@ -35,7 +35,7 @@ describe('user form payload', () => {
   });
 
   it('builds an update payload WITHOUT the password', () => {
-    const payload = buildUpdatePayload(userToForm(user)) as Record<string, unknown>;
+    const payload = buildUpdatePayload(userToForm(user)) as unknown as Record<string, unknown>;
     expect(payload.password).toBeUndefined();
     expect(payload.full_name).toBe('Jane Admin');
   });

@@ -110,7 +110,7 @@ function DatasetsPanel({ reportId }: { reportId: string }) {
         cell: (d) => <Badge tone={d.status === 'processed' ? 'success' : d.status === 'failed' ? 'danger' : 'warning'}>{d.status}</Badge>,
       },
       { id: 'row_count', header: 'Rows', align: 'center', cell: (d) => <span className="text-muted-foreground">{d.row_count}</span> },
-      { id: 'period', header: 'Period', cell: (d) => <span className="text-muted-foreground">{d.reporting_period?.label ?? d.financial_year?.label ?? '—'}</span> },
+      { id: 'period', header: 'Period', cell: (d) => <span className="text-muted-foreground">{d.reporting_period?.name_en ?? d.financial_year?.label ?? '—'}</span> },
       { id: 'file', header: 'File', cell: (d) => (d.source_file ? <span className="text-muted-foreground">{d.source_file.file_name}</span> : <span className="text-muted-foreground">—</span>) },
       { id: 'created_at', header: 'Imported', cell: (d) => <span className="text-muted-foreground" title={d.created_at}>{formatDateTime(d.created_at)}</span> },
     ],

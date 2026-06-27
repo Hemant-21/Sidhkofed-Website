@@ -1,29 +1,13 @@
 import Link from 'next/link';
-<<<<<<< HEAD
-import type { ColumnDef } from '@/types/table';
-import { StatusBadge } from '@/components/ui/status-badge';
-import { Badge } from '@/components/ui/badge';
-import { formatRelative } from '@/utils/date';
-=======
 import { Home } from 'lucide-react';
 import type { ColumnDef } from '@/types/table';
 import { Badge } from '@/components/ui/badge';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { formatDate, formatRelative } from '@/utils/date';
->>>>>>> d476bcebf175f0a60e2572959456e7339f1461f3
 import { ROUTES } from '@/constants/routes';
 import {
   MEMBERSHIP_LEVEL_LABEL,
   MEMBERSHIP_TYPE_LABEL,
-<<<<<<< HEAD
-  type MembershipSummary,
-  type MembershipLevel,
-  type MembershipType,
-} from '../types';
-
-/** Membership list columns. Sortable fields map to the backend allow-list (memberships.types.ts). */
-export function membershipColumns(actions?: (row: MembershipSummary) => React.ReactNode): ColumnDef<MembershipSummary>[] {
-=======
   MEMBERSHIP_STATUS_LABEL,
   type MembershipSummary,
 } from '../types';
@@ -37,19 +21,12 @@ export function membershipColumns(actions?: (row: MembershipSummary) => React.Re
 export function membershipColumns(
   actions?: (row: MembershipSummary) => React.ReactNode,
 ): ColumnDef<MembershipSummary>[] {
->>>>>>> d476bcebf175f0a60e2572959456e7339f1461f3
   const cols: ColumnDef<MembershipSummary>[] = [
     {
       id: 'institution',
       header: 'Institution',
       cell: (m) => (
         <div className="min-w-0">
-<<<<<<< HEAD
-          <Link href={`${ROUTES.memberships}/${m.id}`} className="font-medium text-foreground hover:text-primary hover:underline">
-            {m.institution?.name_en ?? '—'}
-          </Link>
-          {m.membership_number ? <p className="truncate text-xs text-muted-foreground">#{m.membership_number}</p> : null}
-=======
           <Link
             href={`${ROUTES.memberships}/${m.id}`}
             className="font-medium text-foreground hover:text-primary hover:underline"
@@ -59,27 +36,14 @@ export function membershipColumns(
           {m.membership_number ? (
             <p className="truncate text-xs text-muted-foreground">No. {m.membership_number}</p>
           ) : null}
->>>>>>> d476bcebf175f0a60e2572959456e7339f1461f3
         </div>
       ),
     },
     {
-<<<<<<< HEAD
-      id: 'level',
-      header: 'Level',
-      cell: (m) => <span className="text-muted-foreground">{MEMBERSHIP_LEVEL_LABEL[m.membership_level as MembershipLevel] ?? m.membership_level}</span>,
-    },
-    {
-      id: 'type',
-      header: 'Type',
-      defaultHidden: true,
-      cell: (m) => <span className="text-muted-foreground">{MEMBERSHIP_TYPE_LABEL[m.membership_type as MembershipType] ?? m.membership_type}</span>,
-=======
       id: 'membership_number',
       header: 'Membership No.',
       defaultHidden: true,
       cell: (m) => <span className="text-muted-foreground">{m.membership_number ?? '—'}</span>,
->>>>>>> d476bcebf175f0a60e2572959456e7339f1461f3
     },
     {
       id: 'district',
@@ -87,12 +51,6 @@ export function membershipColumns(
       cell: (m) => <span className="text-muted-foreground">{m.district?.name_en ?? '—'}</span>,
     },
     {
-<<<<<<< HEAD
-      id: 'status',
-      header: 'Member status',
-      align: 'center',
-      cell: (m) => <Badge tone={m.status === 'active' ? 'success' : 'muted'}>{m.status}</Badge>,
-=======
       id: 'membership_type',
       header: 'Type',
       align: 'center',
@@ -131,7 +89,6 @@ export function membershipColumns(
       sortField: 'join_date',
       defaultHidden: true,
       cell: (m) => formatDate(m.join_date),
->>>>>>> d476bcebf175f0a60e2572959456e7339f1461f3
     },
     {
       id: 'publication_state',
@@ -139,8 +96,6 @@ export function membershipColumns(
       cell: (m) => <StatusBadge state={m.publication_state} />,
     },
     {
-<<<<<<< HEAD
-=======
       id: 'show_on_homepage',
       header: 'Home',
       align: 'center',
@@ -153,7 +108,6 @@ export function membershipColumns(
         ),
     },
     {
->>>>>>> d476bcebf175f0a60e2572959456e7339f1461f3
       id: 'updated_at',
       header: 'Updated',
       sortField: 'created_at',

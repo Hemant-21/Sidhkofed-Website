@@ -3,11 +3,6 @@ import { Skeleton } from '@/components/feedback/skeleton';
 export default function MastersLoading() {
   return (
     <div className="space-y-6">
-<<<<<<< HEAD
-      <Skeleton className="h-9 w-48" />
-      <Skeleton className="h-10 w-64" />
-      <Skeleton className="h-64 w-full" />
-=======
       <Skeleton className="h-9 w-64" />
       <div className="flex gap-6">
         <Skeleton className="h-96 w-56 shrink-0" />
@@ -17,7 +12,6 @@ export default function MastersLoading() {
           <Skeleton className="h-64 w-full" />
         </div>
       </div>
->>>>>>> d476bcebf175f0a60e2572959456e7339f1461f3
     </div>
   );
 }

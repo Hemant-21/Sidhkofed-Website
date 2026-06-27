@@ -30,7 +30,7 @@ import AuditLogRoute from '@/app/(admin)/audit-log/page';
 import SettingsRoute from '@/app/(admin)/settings/page';
 
 describe('navigation reachability', () => {
-  const routeValues = new Set(Object.values(ROUTES));
+  const routeValues = new Set<string>(Object.values(ROUTES));
 
   it('every navigation href is a declared route (no dangling menu items)', () => {
     for (const section of NAVIGATION) {

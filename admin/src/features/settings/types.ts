@@ -1,13 +1,4 @@
 /**
-<<<<<<< HEAD
- * Settings module types — mirror of the backend settings contract (settings.controller.ts).
- * `GET /admin/settings` returns settings grouped by category; each entry carries a key, its
- * resolved value, and a human description. `PUT /admin/settings/:key` accepts `{ value }`.
- * The frontend infers the input control from the value's runtime type (boolean → switch,
- * number → number input, string/array → text) — the backend validates against its typed catalog.
- */
-
-=======
  * System Settings module types — mirror the backend Settings API (src/modules/settings/*).
  *
  * `GET /admin/settings` returns settings grouped by category:
@@ -23,19 +14,12 @@
  */
 
 /** One setting as returned inside a group by `GET /admin/settings`. */
->>>>>>> d476bcebf175f0a60e2572959456e7339f1461f3
 export interface SettingItem {
   key: string;
   value: unknown;
   description: string;
 }
 
-<<<<<<< HEAD
-/** `GET /admin/settings` → `{ groups: { [group]: SettingItem[] } }`. */
-export interface SettingsResponse {
-  groups: Record<string, SettingItem[]>;
-}
-=======
 /** `GET /admin/settings` response payload. */
 export interface SettingsGroupsResponse {
   groups: Record<string, SettingItem[]>;
@@ -108,4 +92,3 @@ export function settingLabel(key: string): string {
     .replace(/\bKpis?\b/i, 'KPIs')
     .replace(/\bId\b/, 'ID');
 }
->>>>>>> d476bcebf175f0a60e2572959456e7339f1461f3

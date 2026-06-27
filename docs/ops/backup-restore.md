@@ -56,8 +56,10 @@ Files are uploaded with `STANDARD_IA` storage class to reduce cost.
 
 ## Automated daily backup
 
+### Linux / WSL2 (recommended)
+
 ```bash
-# Run at 02:00 AM daily
+# Run at 02:00 AM daily (inside WSL2 Ubuntu terminal on Windows Server)
 crontab -e
 # Add:
 0 2 * * * /opt/sidhkofed/scripts/backup.sh >> /var/log/sidhkofed-backup.log 2>&1
@@ -66,11 +68,29 @@ crontab -e
 0 6 * * * /opt/sidhkofed/scripts/backup.sh --verify >> /var/log/sidhkofed-backup.log 2>&1
 ```
 
+### Windows Server (PowerShell / Task Scheduler)
+
+If running from Windows PowerShell without WSL2, use the PowerShell script and Windows Task Scheduler:
+
+```powershell
+# Create a daily scheduled task at 02:00 AM
+$action  = New-ScheduledTaskAction -Execute 'powershell.exe' `
+           -Argument '-NonInteractive -File "C:\sidhkofed\scripts\backup.ps1" >> C:\sidhkofed\logs\backup.log 2>&1'
+$trigger = New-ScheduledTaskTrigger -Daily -At '02:00'
+$principal = New-ScheduledTaskPrincipal -UserId 'SYSTEM' -LogonType ServiceAccount -RunLevel Highest
+Register-ScheduledTask -TaskName 'SIDHKOFED-Backup' -Action $action -Trigger $trigger -Principal $principal
+
+# Verify manually
+.\scripts\backup.ps1 -Verify
+```
+
+See `docs/ops/windows-server-deployment.md` for the full Windows Server setup guide.
+
 ---
 
 ## Restore procedure
 
-Location: [scripts/restore.sh](../../scripts/restore.sh)
+Location: [scripts/restore.sh](../../scripts/restore.sh) · [scripts/restore.ps1](../../scripts/restore.ps1) (Windows)
 
 > **Warning**: restoring the database overwrites all current data. This is irreversible.
 
