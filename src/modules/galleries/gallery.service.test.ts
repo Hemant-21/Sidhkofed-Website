@@ -2,20 +2,22 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import type { GalleryRow } from './gallery.repository';
 
-const { repo, media, usage, audit } = vi.hoisted(() => ({
+const { repo, media, usage, audit, cache } = vi.hoisted(() => ({
   repo: {
-    slugExists: vi.fn(), create: vi.fn(), findById: vi.fn(), list: vi.fn(), update: vi.fn(),
+    slugExists: vi.fn(), create: vi.fn(), findById: vi.fn(), list: vi.fn(), publicList: vi.fn(), findPublicBySlug: vi.fn(), update: vi.fn(),
     transaction: vi.fn(), addImage: vi.fn(), findImage: vi.fn(), updateImage: vi.fn(), deleteImage: vi.fn(), nextImageOrder: vi.fn(),
   },
   media: { getById: vi.fn() },
   usage: { registerUsage: vi.fn(), removeUsage: vi.fn() },
   audit: { create: vi.fn(), update: vi.fn(), log: vi.fn() },
+  cache: { delByPrefix: vi.fn(), getJson: vi.fn(), setJson: vi.fn() },
 }));
 
 vi.mock('./gallery.repository', () => ({ galleryRepository: repo }));
 vi.mock('@/modules/media/media.service', () => ({ mediaService: media }));
 vi.mock('@/modules/media/media-usage.service', () => ({ mediaUsageService: usage }));
 vi.mock('@/modules/audit/audit.service', () => ({ auditService: audit }));
+vi.mock('@/services/cache', () => ({ cacheService: cache }));
 
 import { galleryService } from './gallery.service';
 import { ValidationError } from '@/shared/errors';

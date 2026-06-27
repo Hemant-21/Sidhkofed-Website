@@ -14,8 +14,9 @@ import { authRouter } from '@/modules/auth/auth.routes';
 import { settingsRouter } from '@/modules/settings/settings.routes';
 import { auditRouter } from '@/modules/audit/audit.routes';
 import { mediaRouter, mediaPublicRouter } from '@/modules/media/media.routes';
-import { galleryRouter } from '@/modules/galleries/gallery.routes';
-import { videoRouter } from '@/modules/videos/video.routes';
+import { galleryRouter, galleryPublicRouter } from '@/modules/galleries/gallery.routes';
+import { videoRouter, videoPublicRouter } from '@/modules/videos/video.routes';
+import { homePublicRouter } from '@/modules/home/home.routes';
 import { mastersAdminRouter, mastersPublicRouter } from '@/modules/masters/masters.routes';
 import {
   documentAdminRouter,
@@ -112,7 +113,10 @@ apiRouter.use('/public/media', mediaPublicRouter);
 apiRouter.use('/public/documents', documentPublicRouter);
 apiRouter.use('/public/knowledge-centre', knowledgeCentreRouter);
 apiRouter.use('/public/institutions', institutionPublicRouter);
+// `/public/home/partners` MUST be registered before `/public/home` so the specific
+// partners sub-route is matched first and not shadowed by the home aggregate.
 apiRouter.use('/public/home/partners', homePartnersRouter);
+apiRouter.use('/public/home', homePublicRouter);
 apiRouter.use('/public/programmes', programmePublicRouter);
 apiRouter.use('/public/toolkits', toolkitPublicRouter);
 apiRouter.use('/public/events', eventPublicRouter);
@@ -124,6 +128,8 @@ apiRouter.use('/public/pages', pagePublicRouter);
 apiRouter.use('/public/menus', menuPublicRouter);
 apiRouter.use('/public/faqs', faqPublicRouter);
 apiRouter.use('/public/digital-services', digitalServicePublicRouter);
+apiRouter.use('/public/galleries', galleryPublicRouter);
+apiRouter.use('/public/videos', videoPublicRouter);
 apiRouter.use('/public/memberships', membershipPublicRouter);
 apiRouter.use('/public/dashboard', dashboardPublicRouter);
 apiRouter.use('/public/search', searchPublicRouter);

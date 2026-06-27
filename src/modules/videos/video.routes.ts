@@ -8,6 +8,7 @@ import { authorize, authorizePermissions, authorizeAnyPermission } from '@/middl
 import { uuidParam } from '@/middleware/validate-params';
 import { ROLE_KEYS } from '@/modules/auth/auth.permissions';
 import { videoController } from './video.controller';
+import { videoPublicController } from './video.public.controller';
 
 // Writes/lifecycle permission-checked against the generic `content.*` set (remediation Issue 5);
 // reads (+ the stateless validate-url helper) stay role-based (no `content.view` permission).
@@ -29,3 +30,8 @@ videoRouter.post('/:id/publish', authorizePermissions(['content.publish']), vide
 videoRouter.post('/:id/unpublish', authorizePermissions(['content.unpublish']), videoController.unpublish);
 videoRouter.post('/:id/archive', authorizePermissions(['content.archive']), videoController.archive);
 videoRouter.post('/:id/restore', authorizePermissions(['content.restore']), videoController.restore);
+
+// ── Public (`/api/v1/public/videos/*`) — unauthenticated; published only (API spec §5). ──
+export const videoPublicRouter = Router();
+videoPublicRouter.get('/', videoPublicController.list);
+videoPublicRouter.get('/:slug', videoPublicController.detail);

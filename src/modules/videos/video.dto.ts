@@ -24,6 +24,41 @@ export interface VideoDto {
   updated_at: string;
 }
 
+// ── Public DTO (API spec §1.3 / §5) ──────────────────────────────────────────────
+// Public responses expose only the YouTube reference + safe presentation fields — never
+// publication_state, public_visibility, archived_at, or audit fields. Never a hosted video file.
+const videoPublicUrl = (slug: string): string => `/videos/${slug}`;
+
+export interface PublicVideoDto {
+  id: string;
+  slug: string;
+  title_en: string;
+  title_hi: string | null;
+  description_en: string | null;
+  description_hi: string | null;
+  youtube_id: string;
+  youtube_url: string;
+  thumbnail_url: string;
+  display_order: number | null;
+  public_url: string;
+}
+
+export function toPublicVideoDto(v: Video): PublicVideoDto {
+  return {
+    id: v.id,
+    slug: v.slug,
+    title_en: v.titleEn,
+    title_hi: v.titleHi,
+    description_en: v.descriptionEn,
+    description_hi: v.descriptionHi,
+    youtube_id: v.youtubeId,
+    youtube_url: v.youtubeUrl,
+    thumbnail_url: `https://i.ytimg.com/vi/${v.youtubeId}/hqdefault.jpg`,
+    display_order: v.displayOrder,
+    public_url: videoPublicUrl(v.slug),
+  };
+}
+
 export function toVideoDto(v: Video): VideoDto {
   return {
     id: v.id,

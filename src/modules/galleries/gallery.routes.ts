@@ -9,6 +9,7 @@ import { authorize, authorizePermissions, authorizeAnyPermission } from '@/middl
 import { uuidParam } from '@/middleware/validate-params';
 import { ROLE_KEYS } from '@/modules/auth/auth.permissions';
 import { galleryController } from './gallery.controller';
+import { galleryPublicController } from './gallery.public.controller';
 
 // Writes/lifecycle permission-checked against the generic `content.*` set (remediation Issue 5);
 // reads stay role-based (no `content.view` permission). Super Admin bypasses. Create =
@@ -36,3 +37,8 @@ galleryRouter.post('/:id/images', authorizeAnyPermission(createWrite), galleryCo
 galleryRouter.post('/:id/images/reorder', authorizeAnyPermission(createWrite), galleryController.reorder);
 galleryRouter.patch('/:id/images/:imageId', authorizePermissions(['content.update']), galleryController.updateImage);
 galleryRouter.delete('/:id/images/:imageId', authorizePermissions(['content.update']), galleryController.removeImage);
+
+// ── Public (`/api/v1/public/galleries/*`) — unauthenticated; published only (API spec §5). ──
+export const galleryPublicRouter = Router();
+galleryPublicRouter.get('/', galleryPublicController.list);
+galleryPublicRouter.get('/:slug', galleryPublicController.detail);

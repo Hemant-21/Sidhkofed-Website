@@ -7,13 +7,33 @@ import { NotFoundError, ValidationError, ConflictError } from '@/shared/errors';
 import { uniqueSlug } from '@/utils/slug';
 import { applyLifecycle, lifecycleEvent, type LifecycleAction } from '@/shared/publishing';
 import { auditService, type AuditContext } from '@/modules/audit/audit.service';
+import { cacheService } from '@/services/cache';
 import { mediaService } from '@/modules/media/media.service';
 import { mediaUsageService } from '@/modules/media/media-usage.service';
-import { galleryRepository, type GalleryRow } from './gallery.repository';
-import { toGalleryDto, toGalleryListItemDto, type GalleryDto } from './gallery.dto';
+import {
+  galleryRepository,
+  type GalleryRow,
+  type GalleryOrderingField,
+  type GalleryPublicListFilters,
+} from './gallery.repository';
+import {
+  toGalleryDto,
+  toGalleryListItemDto,
+  toPublicGallerySummaryDto,
+  toPublicGalleryDetailDto,
+  type GalleryDto,
+  type PublicGallerySummaryDto,
+  type PublicGalleryDetailDto,
+} from './gallery.dto';
 import type { GalleryCreateInput, GalleryUpdateInput, GalleryImageInput, GalleryImageUpdateInput, ReorderInput } from './gallery.validators';
 
 const ENTITY = 'gallery';
+const PUBLIC_CACHE_PREFIX = 'galleries:public';
+
+/** Invalidate every cached public gallery response after any admin write. */
+async function invalidatePublicCache(): Promise<void> {
+  await cacheService.delByPrefix(`${PUBLIC_CACHE_PREFIX}:`);
+}
 
 /** Ensure a media asset exists and is not archived before linking it. */
 async function assertLinkableMedia(mediaId: string): Promise<void> {
@@ -62,6 +82,7 @@ export async function create(input: GalleryCreateInput, ctx: AuditContext): Prom
   });
 
   await auditService.create(ctx, ENTITY, gallery.id, { title_en: gallery.titleEn, slug: gallery.slug });
+  await invalidatePublicCache();
   return toGalleryDto(gallery);
 }
 
@@ -111,6 +132,7 @@ export async function update(id: string, input: GalleryUpdateInput, ctx: AuditCo
   });
 
   await auditService.update(ctx, ENTITY, id, undefined, { title_en: updated.titleEn });
+  await invalidatePublicCache();
   return toGalleryDto(updated);
 }
 
@@ -127,6 +149,7 @@ export async function lifecycle(id: string, action: LifecycleAction, ctx: AuditC
     previousState: existing.publicationState,
     newState: change.publicationState,
   });
+  await invalidatePublicCache();
   return toGalleryDto(updated);
 }
 
@@ -152,6 +175,7 @@ export async function addImage(galleryId: string, input: GalleryImageInput, ctx:
     throw err;
   }
   await auditService.update(ctx, ENTITY, galleryId, undefined, { added_image: input.media_id });
+  await invalidatePublicCache();
   return getById(galleryId);
 }
 
@@ -165,6 +189,7 @@ export async function updateImage(galleryId: string, imageId: string, input: Gal
     captionHi: input.caption_hi,
   });
   await auditService.update(ctx, ENTITY, galleryId, undefined, { updated_image: imageId });
+  await invalidatePublicCache();
   return getById(galleryId);
 }
 
@@ -178,6 +203,7 @@ export async function removeImage(galleryId: string, imageId: string, ctx: Audit
     await mediaUsageService.removeUsage({ mediaId: image.mediaId, entityType: ENTITY, entityId: galleryId, field: 'image' }, tx);
   });
   await auditService.update(ctx, ENTITY, galleryId, { removed_image: image.mediaId }, undefined);
+  await invalidatePublicCache();
   return getById(galleryId);
 }
 
@@ -191,13 +217,47 @@ export async function reorderImages(galleryId: string, input: ReorderInput, ctx:
     }
   });
   await auditService.update(ctx, ENTITY, galleryId, undefined, { reordered: input.order.length });
+  await invalidatePublicCache();
   return getById(galleryId);
+}
+
+// ── Public reads (visibility predicate + Redis cache) ──────────────────────────
+export interface PublicListResult<T> {
+  items: T[];
+  total: number;
+}
+
+export async function publicList(
+  filters: GalleryPublicListFilters,
+  ordering: { field: GalleryOrderingField; direction: 'asc' | 'desc' },
+  page: { skip: number; take: number },
+  cacheKey: string,
+): Promise<PublicListResult<PublicGallerySummaryDto>> {
+  const cached = await cacheService.getJson<PublicListResult<PublicGallerySummaryDto>>(cacheKey);
+  if (cached) return cached;
+  const { rows, total } = await galleryRepository.publicList(filters, page.skip, page.take, ordering);
+  const result = { items: rows.map(toPublicGallerySummaryDto), total };
+  await cacheService.setJson(cacheKey, result);
+  return result;
+}
+
+export async function publicDetailBySlug(slug: string): Promise<PublicGalleryDetailDto> {
+  const cacheKey = `${PUBLIC_CACHE_PREFIX}:slug:${slug}`;
+  const cached = await cacheService.getJson<PublicGalleryDetailDto>(cacheKey);
+  if (cached) return cached;
+  const row = await galleryRepository.findPublicBySlug(slug);
+  if (!row) throw new NotFoundError('Gallery not found.');
+  const dto = toPublicGalleryDetailDto(row);
+  await cacheService.setJson(cacheKey, dto);
+  return dto;
 }
 
 export const galleryService = {
   create,
   list,
   getById,
+  publicList,
+  publicDetailBySlug,
   update,
   lifecycle,
   addImage,

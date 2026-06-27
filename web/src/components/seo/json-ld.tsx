@@ -5,12 +5,34 @@ import { env } from '@/config/env';
  * Components. Only data that maps cleanly to schema.org types is emitted; values
  * come from backend content, never fabricated.
  */
+
+/**
+ * Serialize JSON-LD safely for inline injection. Values originate from CMS content,
+ * so a title/answer could contain `</script>` (or the U+2028/U+2029 line separators)
+ * and break out of the <script> block. Escaping `<`, `>`, `&` and those separators to
+ * their unicode escapes keeps the payload valid JSON while making script-tag breakout
+ * impossible. (U+2028/U+2029 are referenced via charCode so the source carries no raw
+ * line-separator characters.)
+ */
+const LINE_SEP = String.fromCharCode(0x2028);
+const PARA_SEP = String.fromCharCode(0x2029);
+
+function serializeJsonLd(data: Record<string, unknown>): string {
+  return JSON.stringify(data)
+    .replace(/</g, '\\u003c')
+    .replace(/>/g, '\\u003e')
+    .replace(/&/g, '\\u0026')
+    .split(LINE_SEP)
+    .join('\\u2028')
+    .split(PARA_SEP)
+    .join('\\u2029');
+}
+
 function JsonLd({ data }: { data: Record<string, unknown> }) {
   return (
     <script
       type="application/ld+json"
-      // JSON.stringify output is safe (no closing-tag injection for our data shapes).
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(data) }}
+      dangerouslySetInnerHTML={{ __html: serializeJsonLd(data) }}
     />
   );
 }

@@ -51,14 +51,35 @@ export function createApp(): Express {
   // 2. Structured request logging.
   app.use(requestLogger);
 
-  // 3. Security headers.
+  // 3. Security headers (Phase 17.1 hardening). Helmet supplies HSTS,
+  // X-Content-Type-Options, X-Frame-Options and Referrer-Policy; we additionally
+  // pin a strict API CSP and a Permissions-Policy. The CMS API serves JSON (and
+  // media redirects/streams) only — never first-party HTML — so `default-src 'none'`
+  // is the safest possible policy and breaks nothing.
   app.use(
     helmet({
-      // The CMS API is JSON-only; CSP is enforced by the frontend app, not here.
-      contentSecurityPolicy: false,
+      contentSecurityPolicy: {
+        useDefaults: false,
+        directives: {
+          'default-src': ["'none'"],
+          'frame-ancestors': ["'none'"],
+          'base-uri': ["'none'"],
+          'form-action': ["'none'"],
+        },
+      },
       crossOriginResourcePolicy: { policy: 'cross-origin' },
+      hsts: { maxAge: 63072000, includeSubDomains: true, preload: true },
+      referrerPolicy: { policy: 'no-referrer' },
+      frameguard: { action: 'deny' }, // API is never framed (matches CSP frame-ancestors 'none')
     }),
   );
+
+  // Permissions-Policy is not set by Helmet; disable powerful features the API
+  // never uses.
+  app.use((_req, res, next) => {
+    res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), interest-cohort=()');
+    next();
+  });
 
   // 4. CORS (credentialed, allow-listed origins).
   app.use(cors(buildCorsOptions()));

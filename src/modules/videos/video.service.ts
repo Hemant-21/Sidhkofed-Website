@@ -7,15 +7,26 @@ import { NotFoundError, ValidationError, ConflictError } from '@/shared/errors';
 import { uniqueSlug } from '@/utils/slug';
 import { applyLifecycle, lifecycleEvent, type LifecycleAction } from '@/shared/publishing';
 import { auditService, type AuditContext } from '@/modules/audit/audit.service';
+import { cacheService } from '@/services/cache';
 import { settingsService } from '@/modules/settings/settings.service';
 import { mediaService } from '@/modules/media/media.service';
 import { mediaUsageService } from '@/modules/media/media-usage.service';
-import { videoRepository } from './video.repository';
+import {
+  videoRepository,
+  type VideoOrderingField,
+  type VideoPublicListFilters,
+} from './video.repository';
 import { parseYouTubeUrl } from './youtube';
-import { toVideoDto, type VideoDto } from './video.dto';
+import { toVideoDto, toPublicVideoDto, type VideoDto, type PublicVideoDto } from './video.dto';
 import type { VideoCreateInput, VideoUpdateInput } from './video.validators';
 
 const ENTITY = 'video';
+const PUBLIC_CACHE_PREFIX = 'videos:public';
+
+/** Invalidate every cached public video response after any admin write. */
+async function invalidatePublicCache(): Promise<void> {
+  await cacheService.delByPrefix(`${PUBLIC_CACHE_PREFIX}:`);
+}
 
 async function assertLinkableMedia(mediaId: string): Promise<void> {
   const media = await mediaService.getById(mediaId);
@@ -73,6 +84,7 @@ export async function create(input: VideoCreateInput, ctx: AuditContext): Promis
   });
 
   await auditService.create(ctx, ENTITY, video.id, { title_en: video.titleEn, youtube_id: youtubeId });
+  await invalidatePublicCache();
   return toVideoDto(video);
 }
 
@@ -132,6 +144,7 @@ export async function update(id: string, input: VideoUpdateInput, ctx: AuditCont
     return row;
   });
   await auditService.update(ctx, ENTITY, id, undefined, { title_en: updated.titleEn });
+  await invalidatePublicCache();
   return toVideoDto(updated);
 }
 
@@ -153,7 +166,39 @@ export async function lifecycle(id: string, action: LifecycleAction, ctx: AuditC
     previousState: existing.publicationState,
     newState: change.publicationState,
   });
+  await invalidatePublicCache();
   return toVideoDto(updated);
 }
 
-export const videoService = { create, list, getById, update, lifecycle };
+// ── Public reads (visibility predicate + Redis cache) ──────────────────────────
+export interface PublicListResult<T> {
+  items: T[];
+  total: number;
+}
+
+export async function publicList(
+  filters: VideoPublicListFilters,
+  ordering: { field: VideoOrderingField; direction: 'asc' | 'desc' },
+  page: { skip: number; take: number },
+  cacheKey: string,
+): Promise<PublicListResult<PublicVideoDto>> {
+  const cached = await cacheService.getJson<PublicListResult<PublicVideoDto>>(cacheKey);
+  if (cached) return cached;
+  const { rows, total } = await videoRepository.publicList(filters, page.skip, page.take, ordering);
+  const result = { items: rows.map(toPublicVideoDto), total };
+  await cacheService.setJson(cacheKey, result);
+  return result;
+}
+
+export async function publicDetailBySlug(slug: string): Promise<PublicVideoDto> {
+  const cacheKey = `${PUBLIC_CACHE_PREFIX}:slug:${slug}`;
+  const cached = await cacheService.getJson<PublicVideoDto>(cacheKey);
+  if (cached) return cached;
+  const row = await videoRepository.findPublicBySlug(slug);
+  if (!row) throw new NotFoundError('Video not found.');
+  const dto = toPublicVideoDto(row);
+  await cacheService.setJson(cacheKey, dto);
+  return dto;
+}
+
+export const videoService = { create, list, getById, update, lifecycle, publicList, publicDetailBySlug };

@@ -4,8 +4,19 @@
  */
 import type { Prisma, PrismaClient } from '@prisma/client';
 import { prisma } from '@/db/prisma';
+import { publicVisibilityWhere } from '@/shared/visibility';
 
 type Db = PrismaClient | Prisma.TransactionClient;
+
+/** Allowed public ordering fields (API spec §5 galleries: `display_order,-published_at`). */
+export const GALLERY_ORDERING_FIELDS = ['display_order', 'published_at', 'created_at'] as const;
+export type GalleryOrderingField = (typeof GALLERY_ORDERING_FIELDS)[number];
+
+const GALLERY_ORDER_COLUMN: Record<GalleryOrderingField, keyof Prisma.GalleryOrderByWithRelationInput> = {
+  display_order: 'displayOrder',
+  published_at: 'publishedAt',
+  created_at: 'createdAt',
+};
 
 const galleryInclude = {
   coverMedia: true,
@@ -56,6 +67,42 @@ export async function update(id: string, data: Prisma.GalleryUncheckedUpdateInpu
   return db.gallery.update({ where: { id }, data, include: galleryInclude });
 }
 
+// ── Public reads (visibility predicate) ─────────────────────────────────────────
+export interface GalleryPublicListFilters {
+  showOnHomepage?: boolean;
+}
+
+/**
+ * Public summary list — applies the single public-visibility predicate (published, visible,
+ * non-archived, due) so drafts/archived/future/hidden galleries never leak. Returns the lightweight
+ * cover + image-count shape, never the full image rows.
+ */
+export async function publicList(
+  f: GalleryPublicListFilters,
+  skip: number,
+  take: number,
+  ordering: { field: GalleryOrderingField; direction: 'asc' | 'desc' },
+) {
+  const where: Prisma.GalleryWhereInput = { ...(publicVisibilityWhere() as Prisma.GalleryWhereInput) };
+  if (f.showOnHomepage !== undefined) where.showOnHomepage = f.showOnHomepage;
+  const orderBy: Prisma.GalleryOrderByWithRelationInput = {
+    [GALLERY_ORDER_COLUMN[ordering.field]]: ordering.direction,
+  };
+  const [rows, total] = await Promise.all([
+    prisma.gallery.findMany({ where, include: gallerySummaryInclude, orderBy, skip, take }),
+    prisma.gallery.count({ where }),
+  ]);
+  return { rows, total };
+}
+
+/** Public detail by slug — same visibility predicate, with the full ordered image collection. */
+export async function findPublicBySlug(slug: string): Promise<GalleryRow | null> {
+  return prisma.gallery.findFirst({
+    where: { ...(publicVisibilityWhere() as Prisma.GalleryWhereInput), slug },
+    include: galleryInclude,
+  });
+}
+
 /** Run a function inside a transaction (service orchestrates image link/usage writes). */
 export function transaction<T>(fn: (tx: Prisma.TransactionClient) => Promise<T>): Promise<T> {
   return prisma.$transaction(fn);
@@ -96,6 +143,8 @@ export const galleryRepository = {
   create,
   findById,
   list,
+  publicList,
+  findPublicBySlug,
   update,
   transaction,
   addImage,

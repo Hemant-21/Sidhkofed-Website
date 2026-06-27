@@ -76,6 +76,66 @@ export function toGalleryListItemDto(g: GallerySummaryRow): GalleryListItemDto {
   };
 }
 
+// ── Public DTOs (API spec §1.3 / §5) ────────────────────────────────────────────
+// Public responses expose only safe presentation fields — never publication_state,
+// public_visibility, archived_at, audit fields, or created/updated_by.
+const galleryPublicUrl = (slug: string): string => `/galleries/${slug}`;
+
+export interface PublicGallerySummaryDto {
+  id: string;
+  slug: string;
+  title_en: string;
+  title_hi: string | null;
+  description_en: string | null;
+  description_hi: string | null;
+  cover_media: ReturnType<typeof toMediaDto> | null;
+  image_count: number;
+  display_order: number | null;
+  public_url: string;
+}
+
+export interface PublicGalleryDetailDto extends Omit<PublicGallerySummaryDto, 'image_count'> {
+  images: GalleryImageDto[];
+  image_count: number;
+}
+
+export function toPublicGallerySummaryDto(g: GallerySummaryRow): PublicGallerySummaryDto {
+  return {
+    id: g.id,
+    slug: g.slug,
+    title_en: g.titleEn,
+    title_hi: g.titleHi,
+    description_en: g.descriptionEn,
+    description_hi: g.descriptionHi,
+    cover_media: g.coverMedia ? toMediaDto(g.coverMedia) : null,
+    image_count: g._count.images,
+    display_order: g.displayOrder,
+    public_url: galleryPublicUrl(g.slug),
+  };
+}
+
+export function toPublicGalleryDetailDto(g: GalleryRow): PublicGalleryDetailDto {
+  return {
+    id: g.id,
+    slug: g.slug,
+    title_en: g.titleEn,
+    title_hi: g.titleHi,
+    description_en: g.descriptionEn,
+    description_hi: g.descriptionHi,
+    cover_media: g.coverMedia ? toMediaDto(g.coverMedia) : null,
+    image_count: g.images.length,
+    images: g.images.map((img) => ({
+      id: img.id,
+      media: toMediaDto(img.media),
+      display_order: img.displayOrder,
+      caption_en: img.captionEn,
+      caption_hi: img.captionHi,
+    })),
+    display_order: g.displayOrder,
+    public_url: galleryPublicUrl(g.slug),
+  };
+}
+
 export function toGalleryDto(g: GalleryRow): GalleryDto {
   return {
     id: g.id,

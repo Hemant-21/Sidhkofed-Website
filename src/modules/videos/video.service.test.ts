@@ -2,12 +2,13 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import type { Video } from '@prisma/client';
 
-const { repo, audit, settings, media, usage } = vi.hoisted(() => ({
-  repo: { slugExists: vi.fn(), create: vi.fn(), findById: vi.fn(), update: vi.fn(), countPublicHomepage: vi.fn(), list: vi.fn(), transaction: vi.fn() },
+const { repo, audit, settings, media, usage, cache } = vi.hoisted(() => ({
+  repo: { slugExists: vi.fn(), create: vi.fn(), findById: vi.fn(), update: vi.fn(), countPublicHomepage: vi.fn(), list: vi.fn(), publicList: vi.fn(), findPublicBySlug: vi.fn(), transaction: vi.fn() },
   audit: { create: vi.fn(), update: vi.fn(), log: vi.fn() },
   settings: { getVideoHomepageLimit: vi.fn() },
   media: { getById: vi.fn() },
   usage: { registerUsage: vi.fn(), removeUsage: vi.fn() },
+  cache: { delByPrefix: vi.fn(), getJson: vi.fn(), setJson: vi.fn() },
 }));
 
 vi.mock('./video.repository', () => ({ videoRepository: repo }));
@@ -15,6 +16,7 @@ vi.mock('@/modules/audit/audit.service', () => ({ auditService: audit }));
 vi.mock('@/modules/settings/settings.service', () => ({ settingsService: settings }));
 vi.mock('@/modules/media/media.service', () => ({ mediaService: media }));
 vi.mock('@/modules/media/media-usage.service', () => ({ mediaUsageService: usage }));
+vi.mock('@/services/cache', () => ({ cacheService: cache }));
 
 import { videoService } from './video.service';
 import { ValidationError, ConflictError } from '@/shared/errors';
