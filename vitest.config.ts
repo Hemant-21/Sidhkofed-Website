@@ -23,6 +23,51 @@ export default defineConfig({
   test: {
     environment: 'node',
     include: ['src/**/*.test.ts', 'tests/**/*.test.ts'],
+    coverage: {
+      provider: 'v8',
+      include: ['src/**/*.ts'],
+      exclude: [
+        // Test files themselves.
+        'src/**/*.test.ts',
+        'src/**/*.d.ts',
+        // Infrastructure entry points — only exercised by the running server.
+        'src/server.ts',
+        'src/prisma.ts',
+        'src/config/env.ts',
+        // HTTP controllers, routes, and Prisma repositories are tested via
+        // integration tests (tests/**) against a real database, not unit tests.
+        // Excluding them here keeps unit-coverage thresholds meaningful and
+        // avoids penalising code that is thoroughly tested at a higher level.
+        'src/**/*.controller.ts',
+        'src/**/*.routes.ts',
+        'src/**/*.repository.ts',
+        // App bootstrap wiring (no business logic).
+        'src/app.ts',
+        'src/db/**',
+        'src/jobs/scheduler/scheduler.runner.ts',
+        // Infrastructure clients that require live external services (Redis, S3).
+        // These can only be meaningfully exercised via integration tests.
+        'src/services/redis.ts',
+        'src/services/cache.ts',
+        'src/services/storage/s3.storage.ts',
+        'src/routes/health.routes.ts',
+      ],
+      reporter: ['text', 'html', 'json-summary'],
+      reportsDirectory: './coverage',
+      // Thresholds reflect the unit-testable layer after Phase 17.3.
+      // Controllers, routes, repositories and infrastructure clients are excluded above;
+      // they are tested via integration suites (RUN_INTEGRATION=1 against a live DB).
+      //
+      // The remaining gap (~37% statements) lives in pre-existing content-management
+      // services (programmes, toolkits, home, galleries) that have no service tests yet.
+      // These are candidates for Phase 17.4+ service-test expansion.
+      thresholds: {
+        statements: 60,
+        branches: 50,
+        functions: 60,
+        lines: 65,
+      },
+    },
     // Integration `beforeAll` hooks seed users and log in, each running multiple bcrypt
     // operations; with all suites starting in parallel this is CPU-bound, not I/O-bound.
     // 30s gives headroom over the default 10s so a busy machine doesn't abort mid-seed
