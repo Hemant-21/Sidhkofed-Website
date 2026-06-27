@@ -57,6 +57,7 @@ import { membershipAdminRouter, membershipPublicRouter } from '@/modules/members
 import { dashboardAdminRouter, dashboardPublicRouter } from '@/modules/dashboard/dashboard.routes';
 import { searchAdminRouter, searchPublicRouter } from '@/modules/search/search.routes';
 import { userAdminRouter, profileRouter } from '@/modules/users/users.routes';
+import { enquiryAdminRouter, enquiryPublicRouter } from '@/modules/enquiries/enquiries.routes';
 
 export const apiRouter = Router();
 
@@ -106,6 +107,7 @@ apiRouter.use('/admin/digital-services', digitalServiceAdminRouter);
 apiRouter.use('/admin/memberships', membershipAdminRouter);
 apiRouter.use('/admin/dashboard', dashboardAdminRouter);
 apiRouter.use('/admin/search', searchAdminRouter);
+apiRouter.use('/admin/enquiries', enquiryAdminRouter);
 
 // Public namespace (no auth; active + visible records only).
 apiRouter.use('/public/masters', mastersPublicRouter);
@@ -133,3 +135,4 @@ apiRouter.use('/public/videos', videoPublicRouter);
 apiRouter.use('/public/memberships', membershipPublicRouter);
 apiRouter.use('/public/dashboard', dashboardPublicRouter);
 apiRouter.use('/public/search', searchPublicRouter);
+apiRouter.use('/public/enquiries', enquiryPublicRouter);

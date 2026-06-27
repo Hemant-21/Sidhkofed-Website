@@ -328,6 +328,7 @@ model Commodity {
   procurementUpdates ProcurementUpdate[]
   programmeLinks     ProgrammeCommodity[]
   toolkits           Toolkit[]
+  enquiries          Enquiry[]
 
   @@map("commodities")
 }
@@ -470,16 +471,46 @@ model FaqCategory {
 }
 
 model EnquiryType {
-  id           String   @id @default(uuid()) @db.Uuid
-  nameEn       String   @unique @map("name_en")
-  nameHi       String?  @map("name_hi")
-  slug         String   @unique
-  isActive     Boolean  @default(true) @map("is_active")
-  displayOrder Int?     @map("display_order")
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
+  id           String    @id @default(uuid()) @db.Uuid
+  nameEn       String    @unique @map("name_en")
+  nameHi       String?   @map("name_hi")
+  slug         String    @unique
+  isActive     Boolean   @default(true) @map("is_active")
+  displayOrder Int?      @map("display_order")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+  enquiries    Enquiry[]
 
   @@map("enquiry_types")
+}
+
+model Enquiry {
+  id                String          @id @default(uuid()) @db.Uuid
+  enquiryTypeId     String          @map("enquiry_type_id") @db.Uuid
+  name              String          @db.VarChar(150)
+  mobile            String          @db.VarChar(20)
+  email             String          @db.VarChar(255)
+  subject           String          @db.VarChar(255)
+  message           String          @db.Text
+  organization      String?         @db.VarChar(255)
+  commodityId       String?         @map("commodity_id") @db.Uuid
+  programmeSchemeId String?         @map("programme_scheme_id") @db.Uuid
+  submittedAt       DateTime        @default(now()) @map("submitted_at")
+  sourceIpHash      String?         @map("source_ip_hash") @db.VarChar(128)
+  spamState         SpamState       @default(clean) @map("spam_state")
+  internalNotes     String?         @map("internal_notes") @db.Text
+  archivedAt        DateTime?       @map("archived_at")
+  createdAt         DateTime        @default(now()) @map("created_at")
+  updatedAt         DateTime        @updatedAt @map("updated_at")
+  enquiryType       EnquiryType     @relation(fields: [enquiryTypeId], references: [id], onDelete: Restrict)
+  commodity         Commodity?      @relation(fields: [commodityId], references: [id])
+  programmeScheme   ProgrammeScheme? @relation(fields: [programmeSchemeId], references: [id])
+
+  @@index([enquiryTypeId])
+  @@index([submittedAt(sort: Desc)])
+  @@index([spamState])
+  @@index([archivedAt])
+  @@map("enquiries")
 }
 
 model FinancialYear {
@@ -890,6 +921,7 @@ model ProgrammeScheme {
   createdBy              User?                            @relation("ProgrammeCreatedBy", fields: [createdById], references: [id])
   updatedBy              User?                            @relation("ProgrammeUpdatedBy", fields: [updatedById], references: [id])
   toolkits               Toolkit[]
+  enquiries              Enquiry[]
 
   @@index([publicationState, publicVisibility, archivedAt, publishedAt])
   @@index([showOnHomepage, displayOrder])
@@ -1569,4 +1601,10 @@ enum DatasetSource {
   cms_derived
   manual
   excel
+}
+
+enum SpamState {
+  clean
+  suspected
+  spam
 }

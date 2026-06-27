@@ -85,3 +85,14 @@ export const loginRateLimit = rateLimit({ scope: 'auth:login', ...rateLimitConfi
 export const refreshRateLimit = rateLimit({ scope: 'auth:refresh', ...rateLimitConfig.refresh });
 export const logoutRateLimit = rateLimit({ scope: 'auth:logout', ...rateLimitConfig.refresh });
 export const uploadRateLimit = rateLimit({ scope: 'media:upload', ...rateLimitConfig.upload });
+
+/**
+ * Enquiry submission rate limiter — by hashed IP (CMS requirements §4.12).
+ * Window: 1 hour; max configurable via ENQUIRY_RATELIMIT_PER_IP_HOUR (default 5).
+ * A separate per-contact limiter is enforced inside the service via deduplication fingerprint.
+ */
+export const enquiryRateLimit = rateLimit({
+  scope: 'enquiry:submit',
+  max: abuseConfig.enquiryRateLimitPerIpHour,
+  windowSec: 3600,
+});
