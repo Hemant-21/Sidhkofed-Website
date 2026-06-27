@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import Link from 'next/link';
 import { Search } from 'lucide-react';
 import type { MenuItem } from '@/lib/types/content';
@@ -47,12 +48,14 @@ export function SiteHeader({
       {/* Main bar */}
       <Container className="flex h-16 items-center justify-between gap-4">
         <Link href="/" className="flex items-center gap-3" aria-label={t('site.name')}>
-          <span
-            className="flex h-10 w-10 items-center justify-center rounded-md bg-primary text-base font-extrabold text-primary-foreground"
-            aria-hidden="true"
-          >
-            SK
-          </span>
+          <Image
+            src="/logo-sidhkofed.png"
+            alt="SIDHKOFED"
+            width={40}
+            height={40}
+            className="shrink-0"
+            priority
+          />
           <span className="flex flex-col leading-tight">
             <span className="text-base font-bold text-foreground" lang={language}>
               {t('site.name')}
@@ -73,6 +76,13 @@ export function SiteHeader({
             <Search className="h-5 w-5" aria-hidden="true" />
           </Link>
           <MobileNav items={headerMenu} />
+          <Image
+            src="/logo-jharkhand.png"
+            alt="Government of Jharkhand"
+            width={40}
+            height={40}
+            className="ml-2 hidden shrink-0 sm:block"
+          />
         </div>
       </Container>
     </header>

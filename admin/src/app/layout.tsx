@@ -10,6 +10,7 @@ export const metadata: Metadata = {
   title: { default: `${APP.name} — Admin`, template: `%s · ${APP.shortName} CMS` },
   description: 'SIDHKOFED CMS administration console.',
   robots: { index: false, follow: false }, // admin app — never indexed
+  icons: { icon: '/favicon.png', apple: '/favicon.png' },
 };
 
 export const viewport: Viewport = {

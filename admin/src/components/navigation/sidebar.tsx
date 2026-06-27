@@ -9,7 +9,7 @@ export function Sidebar({ collapsed }: { collapsed: boolean }) {
   return (
     <aside
       className={cn(
-        'hidden shrink-0 flex-col border-r border-border bg-surface transition-[width] duration-200 lg:flex',
+        'hidden h-screen sticky top-0 shrink-0 flex-col overflow-hidden border-r border-border bg-surface transition-[width] duration-200 lg:flex',
         collapsed ? 'w-[4.5rem]' : 'w-64',
       )}
       aria-label="Sidebar"

@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import Link from 'next/link';
 import { MapPin, Mail, Phone } from 'lucide-react';
 import type { MenuItem } from '@/lib/types/content';
@@ -24,12 +25,13 @@ export function SiteFooter({ footerMenu }: { footerMenu: MenuItem[] }) {
           {/* Identity */}
           <div>
             <div className="flex items-center gap-3">
-              <span
-                className="flex h-10 w-10 items-center justify-center rounded-md bg-primary text-base font-extrabold text-primary-foreground"
-                aria-hidden="true"
-              >
-                SK
-              </span>
+              <Image
+                src="/logo-sidhkofed.png"
+                alt="SIDHKOFED"
+                width={40}
+                height={40}
+                className="shrink-0"
+              />
               <span className="text-lg font-bold" lang={language}>
                 {t('site.name')}
               </span>

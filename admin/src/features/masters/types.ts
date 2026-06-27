@@ -39,6 +39,10 @@ export interface MasterTypeConfig {
   description: string;
   /** Whether the Super Admin can create/edit/deactivate records. */
   editMode: MasterEditMode;
+  /** Whether this master supports display_order. Defaults to true. */
+  hasDisplayOrder?: boolean;
+  /** Default sort field sent to the API. Defaults to 'display_order'. */
+  defaultSort?: string;
 }
 
 /** All 18 master types defined in the CMS requirements (codex §6). */
@@ -132,12 +136,16 @@ export const MASTER_TYPES: MasterTypeConfig[] = [
     label: 'Financial Years',
     description: 'Financial year periods used for reporting and document classification.',
     editMode: 'full',
+    hasDisplayOrder: false,
+    defaultSort: 'label',
   },
   {
     key: 'reporting-periods',
     label: 'Reporting Periods',
     description: 'Month, financial-year, calendar-year, and cumulative periods for dashboard data.',
     editMode: 'full',
+    hasDisplayOrder: false,
+    defaultSort: 'start_date',
   },
 ];
 

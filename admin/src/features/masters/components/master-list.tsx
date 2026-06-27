@@ -25,12 +25,13 @@ export function MasterList({ config }: MasterListProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editRecord, setEditRecord] = useState<MasterRecord | undefined>();
 
+  const defaultSort = config.defaultSort ?? 'display_order';
   const filters = useFilters({ keys: [] });
-  const table = useDataTable({ initialSort: { field: 'display_order', direction: 'asc' } });
+  const table = useDataTable({ initialSort: { field: defaultSort, direction: 'asc' } });
 
   const query = useMemo(
-    () => ({ ...filters.query, ordering: table.ordering ?? 'display_order' }),
-    [filters.query, table.ordering],
+    () => ({ ...filters.query, ordering: table.ordering ?? defaultSort }),
+    [filters.query, table.ordering, defaultSort],
   );
 
   const list = useMasterList(config.key, query);
@@ -59,12 +60,12 @@ export function MasterList({ config }: MasterListProps) {
         defaultHidden: true,
         cell: (r) => <code className="text-xs text-muted-foreground">{r.slug}</code>,
       },
-      {
+      ...(config.hasDisplayOrder !== false ? [{
         id: 'display_order',
         header: 'Order',
         sortField: 'display_order',
-        cell: (r) => <span className="text-sm text-muted-foreground">{r.display_order ?? '—'}</span>,
-      },
+        cell: (r: MasterRecord) => <span className="text-sm text-muted-foreground">{r.display_order ?? '—'}</span>,
+      }] : []),
       {
         id: 'is_active',
         header: 'Status',

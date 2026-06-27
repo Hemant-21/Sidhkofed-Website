@@ -50,7 +50,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
 
         <div className="flex min-w-0 flex-1 flex-col">
           <Topbar onMenuClick={drawer.setTrue} onCollapseToggle={toggleCollapse} collapsed={collapsed} />
-          <main id="main-content" className="flex-1 focus:outline-none" tabIndex={-1}>
+          <main id="main-content" className="flex-1 p-6 focus:outline-none" tabIndex={-1}>
             {children}
           </main>
         </div>
