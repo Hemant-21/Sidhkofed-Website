@@ -21,7 +21,7 @@ const STATIC_ROUTES = [
   '/knowledge-centre',
   '/toolkits',
   '/institutions',
-  '/communications',
+  '/official-communications',
   '/tenders',
   '/procurement-updates',
   '/dashboard',
@@ -39,7 +39,7 @@ const DYNAMIC_SOURCES: Array<{ endpoint: string; prefix: string }> = [
   { endpoint: PUBLIC_ENDPOINTS.documents, prefix: '/documents' },
   { endpoint: PUBLIC_ENDPOINTS.toolkits, prefix: '/toolkits' },
   { endpoint: PUBLIC_ENDPOINTS.institutions, prefix: '/institutions' },
-  { endpoint: PUBLIC_ENDPOINTS.communications, prefix: '/communications' },
+  { endpoint: PUBLIC_ENDPOINTS.communications, prefix: '/official-communications' },
   { endpoint: PUBLIC_ENDPOINTS.tenders, prefix: '/tenders' },
   { endpoint: PUBLIC_ENDPOINTS.procurement, prefix: '/procurement-updates' },
 ];

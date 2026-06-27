@@ -98,7 +98,7 @@ export default async function HomePage() {
 
         <div className="bg-muted/40 py-14">
           <Container className="grid grid-cols-1 gap-10 lg:grid-cols-2">
-            <HomeSection titleKey="home.section.communications" viewAllHref="/communications" show={communications.items.length > 0} bare>
+            <HomeSection titleKey="home.section.communications" viewAllHref="/official-communications" show={communications.items.length > 0} bare>
               <div className="space-y-4">
                 {communications.items.map((c) => (
                   <CommunicationCard key={c.id} item={c} />

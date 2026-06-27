@@ -215,6 +215,21 @@ export interface ToolkitDetail extends ToolkitSummary {
   description_hi: string | null;
   items: ToolkitItem[];
 }
+export interface ToolkitDistributionSummaryItem {
+  id: string;
+  name_en: string;
+  name_hi?: string | null;
+  unit: string | null;
+  distribution_basis: string;
+  total_quantity: number | null;
+}
+export interface ToolkitDistributionSummary {
+  toolkit: ProgrammeRef | { slug: string; title_en: string; title_hi: string | null };
+  distribution_model_breakdown: Record<string, number>;
+  total_participants_covered: number | null;
+  items: ToolkitDistributionSummaryItem[];
+  total_quantity: number | null;
+}
 
 // ── Institutions ─────────────────────────────────────────────────────────────
 export interface InstitutionSummary {

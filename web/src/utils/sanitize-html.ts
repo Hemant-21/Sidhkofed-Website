@@ -22,3 +22,15 @@ export function sanitizeHtml(html: string | null | undefined): string {
     .replace(EVENT_HANDLERS, '')
     .replace(JS_URI, '$1=$2#$2');
 }
+
+/**
+ * Strip all tags to plain text (collapsed whitespace). Used where HTML is not
+ * allowed — e.g. JSON-LD structured data and meta descriptions.
+ */
+export function stripTags(html: string | null | undefined): string {
+  if (!html) return '';
+  return sanitizeHtml(html)
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}

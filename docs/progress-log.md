@@ -423,3 +423,43 @@ No backend files modified (`prisma/schema.prisma` change predates this work and 
 untouched; `package-lock.json` changed only because admin deps were installed to run the build).
 
 Commit/push status: not committed (left for review).
+
+## Session — Phase 16: Public Website (web/)
+
+Scope: ONLY the public website under `web/` (Next.js 14 App Router). Consumes the
+existing `/api/v1/public/*` backend contracts exclusively. No backend change, no admin
+features, no CMS editing, no duplicated business logic. Built on the pre-existing `web/`
+foundation (UI/cards/layout/providers/API client/SEO/homepage); this session added all
+content route pages + supporting components.
+
+Routes added (under `web/src/app/`): `/events` (+`[slug]`), `/news` (+`[slug]`),
+`/programmes` (+`[slug]`), `/toolkits` (+`[slug]`), `/documents` (+`[slug]`),
+`/knowledge-centre`, `/institutions` (+`[slug]`), `/official-communications` (+`[slug]`),
+`/tenders` (+`[slug]`), `/procurement-updates` (+`[slug]`), `/memberships`, `/dashboard`
+(+`[report]`), `/faqs`, `/digital-services`, `/search`, `/contact`, `/pages/[slug]`.
+
+Shared infra added: `components/listing/*` (ListingLayout, FilterBar, PaginationNav,
+ResultsSummary, LocalizedHeading), `components/content/*` (DetailLayout/DetailSection,
+bilingual primitives, MetaList, Chips, DocumentLinks), `components/details/*` (one bilingual
+view per content type), `components/dashboard/{metrics-grid,report-block}`, `components/search/*`,
+`cards/toolkit-card`, `lib/seo.ts`, `lib/listing.ts`, dictionary keys (filters/pages/detail,
+en + hi), `utils/sanitize-html.stripTags`.
+
+Design fidelity: listings are SSR + URL-driven filters (shareable/back-button), unknown filter
+keys are safely ignored by the API; detail pages are SSR (generateMetadata + JSON-LD +
+breadcrumb) with bilingual client islands so the language toggle switches content without a
+refetch; navigation/homepage/dashboard/search all backend-driven; only published+visible
+records render (public namespace). Detail routes match backend `public_url` exactly — note the
+backend emits `/official-communications/<slug>` (homepage "view all" + sitemap updated to match).
+No standalone gallery/video public route exists in the mounted API, so event galleries render as
+inline thumbnails (not linked). Contact has no public settings endpoint → renders the `contact`
+CMS Page when present + an honest prototype-enquiry notice (no fake submitting form).
+
+Config: added `root: true` to `web/.eslintrc.json` and added `web/vitest.config.ts` +
+`web/vitest.setup.ts` to isolate the web workspace from the backend root eslint/vitest configs.
+
+Verified (in `web/`): `tsc --noEmit` ✓, `next lint` ✓ (no warnings/errors), `vitest` 28 passed
+(7 files, all new), `next build` ✓ (22 routes + robots + sitemap compile). No backend files
+modified. `web/package-lock.json` unchanged; `web/node_modules` installed locally to build.
+
+Commit/push status: not committed (left for review).
