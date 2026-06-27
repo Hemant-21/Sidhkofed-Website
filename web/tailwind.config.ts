@@ -4,11 +4,11 @@ import type { Config } from 'tailwindcss';
  * Public-website design tokens. Colors are HSL CSS variables (see globals.css) —
  * the same semantic tokens used by the admin app, so the two surfaces stay
  * visually consistent. Never hardcode hex values in components; consume tokens.
- * The public site ships the light theme only (codex: light theme; dark mode is a
- * CMS concern not required for the Phase 1 public portal).
+ * Dark mode uses class strategy: 'dark' class on <html> toggles the dark palette.
  */
 const config: Config = {
   content: ['./src/**/*.{ts,tsx}'],
+  darkMode: ['class'],
   theme: {
     extend: {
       colors: {
@@ -79,7 +79,7 @@ const config: Config = {
       },
     },
   },
-  plugins: [],
+  plugins: [require('@tailwindcss/typography')],
 };
 
 export default config;

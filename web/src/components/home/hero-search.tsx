@@ -51,7 +51,7 @@ export function HeroSearch() {
       </form>
 
       <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
-        <Link href="/dashboard" className={buttonClasses('secondary', 'md')}>
+        <Link href="/impact/dashboard" className={buttonClasses('secondary', 'md')}>
           <LayoutDashboard className="h-4 w-4" aria-hidden="true" />
           {t('home.hero.cta.dashboard')}
         </Link>

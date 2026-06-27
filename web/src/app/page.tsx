@@ -98,7 +98,7 @@ export default async function HomePage() {
 
         <div className="bg-muted/40 py-14">
           <Container className="grid grid-cols-1 gap-10 lg:grid-cols-2">
-            <HomeSection titleKey="home.section.communications" viewAllHref="/official-communications" show={communications.items.length > 0} bare>
+            <HomeSection titleKey="home.section.communications" viewAllHref="/notifications/notices" show={communications.items.length > 0} bare>
               <div className="space-y-4">
                 {communications.items.map((c) => (
                   <CommunicationCard key={c.id} item={c} />
@@ -106,7 +106,7 @@ export default async function HomePage() {
               </div>
             </HomeSection>
 
-            <HomeSection titleKey="home.section.tenders" viewAllHref="/tenders" show={tenders.items.length > 0} bare>
+            <HomeSection titleKey="home.section.tenders" viewAllHref="/notifications/tenders" show={tenders.items.length > 0} bare>
               <div className="space-y-4">
                 {tenders.items.map((tdr) => (
                   <TenderCard key={tdr.id} tender={tdr} />
@@ -116,7 +116,7 @@ export default async function HomePage() {
           </Container>
         </div>
 
-        <HomeSection titleKey="home.section.documents" viewAllHref="/knowledge-centre" show={documents.items.length > 0}>
+        <HomeSection titleKey="home.section.documents" viewAllHref="/publications" show={documents.items.length > 0}>
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
             {documents.items.map((d) => (
               <DocumentCard key={d.id} document={d} />

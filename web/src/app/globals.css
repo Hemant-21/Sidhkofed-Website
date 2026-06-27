@@ -53,6 +53,42 @@
     --font-size-scale: 1;
   }
 
+  html.dark {
+    --background: 222 22% 10%;
+    --foreground: 210 20% 93%;
+
+    --surface: 222 22% 13%;
+    --surface-foreground: 210 20% 90%;
+
+    --muted: 222 15% 18%;
+    --muted-foreground: 215 15% 58%;
+
+    --border: 222 15% 22%;
+    --input: 222 15% 20%;
+    --ring: 158 55% 45%;
+
+    --primary: 158 55% 42%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 222 15% 18%;
+    --secondary-foreground: 210 20% 88%;
+
+    --accent: 28 75% 55%;
+    --accent-foreground: 0 0% 100%;
+
+    --success: 150 50% 42%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 35 85% 50%;
+    --warning-foreground: 0 0% 100%;
+
+    --danger: 0 65% 55%;
+    --danger-foreground: 0 0% 100%;
+
+    --info: 211 70% 52%;
+    --info-foreground: 0 0% 100%;
+  }
+
   html {
     /* Accessibility text resizing scales the base font for the whole document. */
     font-size: calc(100% * var(--font-size-scale));

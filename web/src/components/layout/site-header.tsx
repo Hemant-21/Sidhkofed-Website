@@ -3,27 +3,16 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { Search } from 'lucide-react';
-import type { MenuItem } from '@/lib/types/content';
 import { useLanguage } from '@/providers/language-provider';
 import { pickText } from '@/utils/bilingual';
 import { Container } from '@/components/ui/container';
+import { PRIMARY_NAV } from '@/config/navigation';
 import { DesktopNav } from './desktop-nav';
 import { MobileNav } from './mobile-nav';
-import { MenuLink } from './menu-link';
 import { LanguageToggle, TextSizeControls } from './accessibility-controls';
+import { ThemeToggle } from './theme-toggle';
 
-/**
- * Sticky site header. Backend-driven: header + utility menus come from
- * `/public/menus`. Utility bar carries language/text-size + utility links;
- * main bar carries the identity, primary nav, and search.
- */
-export function SiteHeader({
-  headerMenu,
-  utilityMenu,
-}: {
-  headerMenu: MenuItem[];
-  utilityMenu: MenuItem[];
-}) {
+export function SiteHeader() {
   const { t, language } = useLanguage();
 
   return (
@@ -31,16 +20,13 @@ export function SiteHeader({
       {/* Utility bar */}
       <div className="border-b border-border bg-primary text-primary-foreground">
         <Container className="flex h-10 items-center justify-between">
-          <ul className="hidden items-center gap-4 text-xs sm:flex">
-            {utilityMenu.map((item) => (
-              <li key={item.id}>
-                <MenuLink item={item} lang={language} className="hover:underline" activeClassName="underline" />
-              </li>
-            ))}
-          </ul>
-          <div className="flex items-center gap-3">
-            <TextSizeControls className="hidden sm:flex" />
+          <span className="hidden text-xs text-primary-foreground/80 sm:block">
+            {pickText('Official portal of SIDHKOFED, Govt. of Jharkhand', 'SIDHKOFED, झारखंड सरकार का आधिकारिक पोर्टल', language)}
+          </span>
+          <div className="ml-auto flex items-center gap-2">
+            <TextSizeControls className="hidden text-primary-foreground sm:flex" />
             <LanguageToggle />
+            <ThemeToggle className="text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground" />
           </div>
         </Container>
       </div>
@@ -67,7 +53,7 @@ export function SiteHeader({
         </Link>
 
         <div className="flex items-center gap-1">
-          <DesktopNav items={headerMenu} />
+          <DesktopNav items={PRIMARY_NAV} />
           <Link
             href="/search"
             aria-label={t('nav.search')}
@@ -75,7 +61,14 @@ export function SiteHeader({
           >
             <Search className="h-5 w-5" aria-hidden="true" />
           </Link>
-          <MobileNav items={headerMenu} />
+          {/* Contact Us CTA — desktop only, per nav context §1 */}
+          <Link
+            href="/contact"
+            className="ml-2 hidden rounded-md bg-accent px-4 py-2 text-sm font-semibold text-accent-foreground hover:bg-accent/90 lg:inline-flex"
+          >
+            {t('nav.contactUs')}
+          </Link>
+          <MobileNav items={PRIMARY_NAV} />
           <Image
             src="/logo-jharkhand.png"
             alt="Government of Jharkhand"
@@ -87,9 +80,4 @@ export function SiteHeader({
       </Container>
     </header>
   );
-}
-
-/** Header menu item resolver re-export for convenience. */
-export function headerLabel(item: MenuItem, lang: 'en' | 'hi'): string {
-  return pickText(item.label_en, item.label_hi, lang);
 }

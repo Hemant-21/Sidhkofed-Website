@@ -57,6 +57,16 @@ const nextConfig = {
   // backend CORS allow-list. Server Components fetch the backend directly via an
   // absolute origin (see src/lib/api/server.ts). In production the reverse proxy
   // performs the same /api rewrite.
+  async redirects() {
+    return [
+      { source: '/dashboard/:path*', destination: '/impact/dashboard/:path*', permanent: false },
+      { source: '/tenders/:path*', destination: '/notifications/tenders/:path*', permanent: false },
+      { source: '/official-communications/:path*', destination: '/notifications/notices/:path*', permanent: false },
+      { source: '/knowledge-centre/:path*', destination: '/publications/:path*', permanent: false },
+      { source: '/memberships/:path*', destination: '/membership/:path*', permanent: false },
+      { source: '/procurement-updates/:path*', destination: '/procurement/announcements/:path*', permanent: false },
+    ];
+  },
   async rewrites() {
     const backend = process.env.BACKEND_ORIGIN || 'http://localhost:4000';
     return [

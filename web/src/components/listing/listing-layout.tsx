@@ -13,6 +13,7 @@ export function ListingLayout({
   titleKey,
   subtitleKey,
   crumb,
+  parentCrumbs,
   filters,
   summary,
   children,
@@ -20,16 +21,18 @@ export function ListingLayout({
 }: {
   titleKey: string;
   subtitleKey?: string;
-  /** Breadcrumb label for the current page (navigation chrome). */
   crumb: string;
+  /** Optional parent breadcrumbs that precede the current crumb. */
+  parentCrumbs?: { label: string; href?: string }[];
   filters?: ReactNode;
   summary?: ReactNode;
   children: ReactNode;
   pagination?: ReactNode;
 }) {
+  const breadcrumbItems = [...(parentCrumbs ?? []), { label: crumb }];
   return (
     <>
-      <Breadcrumbs items={[{ label: crumb }]} />
+      <Breadcrumbs items={breadcrumbItems} />
       <Container className="py-8">
         <header className="mb-6">
           <LocalizedHeading titleKey={titleKey} as="h1" />

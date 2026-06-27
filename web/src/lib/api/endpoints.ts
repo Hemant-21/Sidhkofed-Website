@@ -6,8 +6,6 @@
  */
 
 export const PUBLIC_ENDPOINTS = {
-  // Navigation / chrome
-  menus: '/public/menus', // ?location=header|footer|utility
   homePartners: '/public/home/partners',
 
   // Content listings + details ({slug})
@@ -22,7 +20,6 @@ export const PUBLIC_ENDPOINTS = {
   tenders: '/public/tenders',
   procurement: '/public/procurement-updates',
   memberships: '/public/memberships',
-  pages: '/public/pages',
   faqs: '/public/faqs',
   digitalServices: '/public/digital-services',
 

@@ -5,7 +5,6 @@ import { env } from '@/config/env';
 import { AppProviders } from '@/providers/app-providers';
 import { SiteHeader } from '@/components/layout/site-header';
 import { SiteFooter } from '@/components/layout/site-footer';
-import { getMenu } from '@/lib/api/menus';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans', display: 'swap' });
 const devanagari = Noto_Sans_Devanagari({
@@ -32,6 +31,7 @@ export const metadata: Metadata = {
   twitter: { card: 'summary_large_image' },
   robots: { index: true, follow: true },
   icons: { icon: '/favicon.png', apple: '/favicon.png' },
+  other: { google: 'on' },
 };
 
 export const viewport: Viewport = {
@@ -40,27 +40,27 @@ export const viewport: Viewport = {
   themeColor: '#0f5132',
 };
 
-export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  // Navigation is fully backend-driven (codex §4.11). Fetched once per request and
-  // cached (ISR). Failures degrade to empty menus rather than breaking the page.
-  const [headerMenu, footerMenu, utilityMenu] = await Promise.all([
-    getMenu('header'),
-    getMenu('footer'),
-    getMenu('utility'),
-  ]);
-
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${inter.variable} ${devanagari.variable}`}>
+    <html lang="en" suppressHydrationWarning className={`${inter.variable} ${devanagari.variable}`}>
+      <head>
+        {/* Prevent dark-mode flash before React hydrates */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `try{var t=localStorage.getItem('sidhkofed.theme');if(t==='dark'||(t===null&&window.matchMedia('(prefers-color-scheme: dark)').matches)){document.documentElement.classList.add('dark')}}catch(e){}`,
+          }}
+        />
+      </head>
       <body className="flex min-h-screen flex-col font-sans antialiased">
         <AppProviders>
           <a href="#main-content" className="skip-link">
             Skip to main content
           </a>
-          <SiteHeader headerMenu={headerMenu} utilityMenu={utilityMenu} />
+          <SiteHeader />
           <main id="main-content" className="flex-1">
             {children}
           </main>
-          <SiteFooter footerMenu={footerMenu} />
+          <SiteFooter />
         </AppProviders>
       </body>
     </html>

@@ -11,7 +11,6 @@ import type {
   ProgrammeLinkRef,
   InstitutionLinkRef,
   GalleryLinkRef,
-  PageRef,
 } from './api';
 
 export interface FinancialYearRef {
@@ -368,22 +367,6 @@ export interface DigitalService {
   opens_new_tab: boolean;
 }
 
-// ── Pages ────────────────────────────────────────────────────────────────────
-export interface PageDetail {
-  id: string;
-  slug: string;
-  title_en: string;
-  title_hi: string | null;
-  body_en: string | null;
-  body_hi: string | null;
-  meta_title_en: string | null;
-  meta_title_hi: string | null;
-  meta_description_en: string | null;
-  meta_description_hi: string | null;
-  highlight_type: string | null;
-  public_url: string;
-}
-
 // ── Dashboard ────────────────────────────────────────────────────────────────
 export interface DashboardMetric {
   metric_key: string;
@@ -439,14 +422,3 @@ export interface SearchResult {
   public_url: string;
 }
 
-// ── Menus ────────────────────────────────────────────────────────────────────
-export interface MenuItem {
-  id: string;
-  label_en: string;
-  label_hi: string | null;
-  url: string | null;
-  page: PageRef | null;
-  opens_new_tab: boolean;
-  display_order: number;
-  children: MenuItem[];
-}

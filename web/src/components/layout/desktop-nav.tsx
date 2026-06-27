@@ -1,34 +1,25 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { ChevronDown } from 'lucide-react';
 import { cn } from '@/utils/cn';
-import type { MenuItem } from '@/lib/types/content';
+import type { NavItem } from '@/config/navigation';
 import { useLanguage } from '@/providers/language-provider';
 import { pickText } from '@/utils/bilingual';
-import { MenuLink, menuHref } from './menu-link';
 
-/**
- * Desktop primary navigation built from the backend header menu. Top-level items
- * with children render an accessible dropdown (button + `aria-expanded`, list of
- * links). Hover and keyboard focus both open the submenu.
- */
-export function DesktopNav({ items }: { items: MenuItem[] }) {
+export function DesktopNav({ items }: { items: NavItem[] }) {
   const { language } = useLanguage();
   return (
     <nav aria-label="Primary" className="hidden lg:block">
       <ul className="flex items-center gap-1">
         {items.map((item) =>
-          item.children.length > 0 ? (
-            <DropdownItem key={item.id} item={item} lang={language} />
+          item.children && item.children.length > 0 ? (
+            <DropdownItem key={item.key} item={item} lang={language} />
           ) : (
-            <li key={item.id}>
-              <MenuLink
-                item={item}
-                lang={language}
-                className="inline-flex items-center rounded-md px-3 py-2 text-sm font-medium text-foreground hover:bg-muted"
-                activeClassName="bg-muted text-primary"
-              />
+            <li key={item.key}>
+              <NavLink item={item} lang={language} className="inline-flex items-center rounded-md px-3 py-2 text-sm font-medium text-foreground hover:bg-muted" activeClassName="bg-muted text-primary" />
             </li>
           ),
         )}
@@ -37,9 +28,9 @@ export function DesktopNav({ items }: { items: MenuItem[] }) {
   );
 }
 
-function DropdownItem({ item, lang }: { item: MenuItem; lang: 'en' | 'hi' }) {
+function DropdownItem({ item, lang }: { item: NavItem; lang: 'en' | 'hi' }) {
   const [open, setOpen] = useState(false);
-  const label = pickText(item.label_en, item.label_hi, lang);
+  const label = pickText(item.labelEn, item.labelHi, lang);
 
   return (
     <li
@@ -67,20 +58,9 @@ function DropdownItem({ item, lang }: { item: MenuItem; lang: 'en' | 'hi' }) {
           open ? 'block animate-fade-in' : 'hidden',
         )}
       >
-        {/* The parent itself is reachable as the first item if it resolves a route. */}
-        {menuHref(item) !== '#' && (
-          <li>
-            <MenuLink
-              item={item}
-              lang={lang}
-              onNavigate={() => setOpen(false)}
-              className="block rounded px-3 py-2 text-sm font-medium text-foreground hover:bg-muted"
-            />
-          </li>
-        )}
-        {item.children.map((child) => (
-          <li key={child.id}>
-            <MenuLink
+        {item.children!.map((child) => (
+          <li key={child.key}>
+            <NavLink
               item={child}
               lang={lang}
               onNavigate={() => setOpen(false)}
@@ -91,5 +71,43 @@ function DropdownItem({ item, lang }: { item: MenuItem; lang: 'en' | 'hi' }) {
         ))}
       </ul>
     </li>
+  );
+}
+
+function NavLink({
+  item,
+  lang,
+  className,
+  activeClassName = 'text-primary',
+  onNavigate,
+}: {
+  item: NavItem;
+  lang: 'en' | 'hi';
+  className?: string;
+  activeClassName?: string;
+  onNavigate?: () => void;
+}) {
+  const pathname = usePathname();
+  const label = pickText(item.labelEn, item.labelHi, lang);
+  const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(`${item.href}/`));
+
+  if (item.external) {
+    return (
+      <a href={item.href} target="_blank" rel="noopener noreferrer" className={className} onClick={onNavigate}>
+        {label}
+        <span className="sr-only"> (opens in a new tab)</span>
+      </a>
+    );
+  }
+
+  return (
+    <Link
+      href={item.href}
+      onClick={onNavigate}
+      aria-current={isActive ? 'page' : undefined}
+      className={cn(className, isActive && activeClassName)}
+    >
+      {label}
+    </Link>
   );
 }

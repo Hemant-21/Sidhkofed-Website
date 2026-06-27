@@ -7,11 +7,14 @@
 
 import { LanguageProvider } from './language-provider';
 import { QueryProvider } from './query-provider';
+import { ThemeProvider } from './theme-provider';
 
 export function AppProviders({ children }: { children: React.ReactNode }) {
   return (
     <QueryProvider>
-      <LanguageProvider>{children}</LanguageProvider>
+      <ThemeProvider>
+        <LanguageProvider>{children}</LanguageProvider>
+      </ThemeProvider>
     </QueryProvider>
   );
 }
