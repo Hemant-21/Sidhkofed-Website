@@ -48,6 +48,9 @@ const securityHeaders = [
 const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
+  // Enable standalone output for Docker — produces a self-contained server
+  // bundle under .next/standalone that does not require node_modules at runtime.
+  output: 'standalone',
   // The public website renders server-side (SSR/ISR) and also makes client-side
   // requests for filters/pagination. Browser requests go to `/api/v1/*` and are
   // proxied same-origin to the Express backend so they are never blocked by the

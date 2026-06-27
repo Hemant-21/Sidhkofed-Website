@@ -1,0 +1,226 @@
+# =============================================================================
+# SIDHKOFED CMS — Continuous Integration
+# =============================================================================
+# Runs on every push to main/v1 and on all pull requests.
+# Jobs:
+#   api-ci      — Backend: lint, typecheck, unit tests, coverage
+#   admin-ci    — Admin CMS: lint, typecheck, tests
+#   web-ci      — Public Website: lint, typecheck, tests
+#   prisma-validate — Ensure the Prisma schema is valid
+# =============================================================================
+
+name: CI
+
+on:
+  push:
+    branches: [main, v1]
+  pull_request:
+    branches: [main, v1]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: "20"
+
+jobs:
+
+  # ── Backend API ─────────────────────────────────────────────────────────────
+  api-ci:
+    name: Backend CI
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: sidhkofed
+          POSTGRES_PASSWORD: test_password
+          POSTGRES_DB: sidhkofed_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U sidhkofed -d sidhkofed_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql://sidhkofed:test_password@localhost:5432/sidhkofed_test?schema=public
+      REDIS_URL: redis://localhost:6379
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npx prisma generate
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Type check
+        run: npm run typecheck
+
+      - name: Validate Prisma schema
+        run: npx prisma validate
+
+      - name: Unit tests
+        run: npm test
+        env:
+          # Unit tests use vitest.config.ts injected env — no real DB needed.
+          # These override any process.env values that might leak in CI.
+          NODE_ENV: test
+          JWT_SECRET: ci-jwt-secret-at-least-32-characters-long-for-tests
+          PUBLIC_WEBSITE_URL: http://localhost:3002
+          STORAGE_PUBLIC_BASE_URL: http://localhost:4000/files
+          IP_HASH_SALT: ci-ip-hash-salt-value
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: api-coverage
+          path: coverage/
+          retention-days: 7
+
+  # ── Prisma Schema Validation ─────────────────────────────────────────────────
+  prisma-validate:
+    name: Prisma Schema Validate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci
+      - run: npx prisma validate
+      - run: npx prisma format --check
+
+  # ── Admin CMS ───────────────────────────────────────────────────────────────
+  admin-ci:
+    name: Admin CMS CI
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: admin
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: admin/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Type check
+        run: npm run typecheck
+
+      - name: Tests
+        run: npm test
+
+  # ── Public Website ──────────────────────────────────────────────────────────
+  web-ci:
+    name: Public Website CI
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Type check
+        run: npm run typecheck
+
+      - name: Tests
+        run: npm test
+
+  # ── Build verification (Docker dry-run) ─────────────────────────────────────
+  # Verifies all three Dockerfiles build successfully without pushing.
+  # Runs on PRs to catch Docker issues early.
+  docker-build-check:
+    name: Docker Build Check
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build API image (no push)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: false
+          tags: sidhkofed-api:pr-check
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build Admin image (no push)
+        uses: docker/build-push-action@v6
+        with:
+          context: ./admin
+          file: ./admin/Dockerfile
+          push: false
+          tags: sidhkofed-admin:pr-check
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build Web image (no push)
+        uses: docker/build-push-action@v6
+        with:
+          context: ./web
+          file: ./web/Dockerfile
+          push: false
+          tags: sidhkofed-web:pr-check
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

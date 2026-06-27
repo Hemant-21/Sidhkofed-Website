@@ -41,6 +41,9 @@ const securityHeaders = [
 const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
+  // Enable standalone output for Docker — produces a self-contained server
+  // bundle under .next/standalone that does not require node_modules at runtime.
+  output: 'standalone',
   // The admin app is a SPA-style CMS shell that talks to the Express backend
   // (/api/v1/*). In dev we proxy /api to the backend so the browser keeps the
   // refresh cookie same-origin. In production this is handled by the reverse proxy.

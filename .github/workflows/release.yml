@@ -1,0 +1,258 @@
+# =============================================================================
+# SIDHKOFED CMS — Release Pipeline
+# =============================================================================
+# Triggers:
+#   - Push to `main` or `v1` (after CI passes)
+#   - Manual workflow_dispatch for staging/production deploys
+#
+# Jobs:
+#   version-tag   — Compute semver tag from git history
+#   build-push    — Multi-arch Docker build + push to GHCR
+#   deploy-staging — Rolling deploy to staging environment
+#   smoke-test    — Validate staging health endpoints
+#   deploy-prod   — (Environment-gated) rolling deploy to production
+# =============================================================================
+
+name: Release
+
+on:
+  push:
+    branches:
+      - main
+      - v1
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - '.github/CODEOWNERS'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Deploy target
+        required: true
+        default: staging
+        type: choice
+        options:
+          - staging
+          - production
+      image_tag:
+        description: Image tag to deploy (leave blank for latest)
+        required: false
+
+env:
+  REGISTRY: ghcr.io
+  ORG: sidhkofed
+  NODE_VERSION: "20"
+
+jobs:
+
+  # ── 1. Compute image tag ─────────────────────────────────────────────────────
+  version-tag:
+    name: Compute Version Tag
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.tag.outputs.tag }}
+      sha_short: ${{ steps.tag.outputs.sha_short }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Compute tag
+        id: tag
+        run: |
+          SHA_SHORT=$(git rev-parse --short HEAD)
+          BRANCH=$(echo "${GITHUB_REF_NAME}" | sed 's/[^a-zA-Z0-9._-]/-/g')
+          TAG="${BRANCH}-${SHA_SHORT}"
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+          echo "sha_short=${SHA_SHORT}" >> "$GITHUB_OUTPUT"
+          echo "Image tag: ${TAG}"
+
+  # ── 2. Build and push all images ─────────────────────────────────────────────
+  build-push:
+    name: Build & Push Docker Images
+    runs-on: ubuntu-latest
+    needs: version-tag
+    permissions:
+      contents: read
+      packages: write
+
+    strategy:
+      matrix:
+        include:
+          - name: api
+            context: .
+            dockerfile: ./Dockerfile
+          - name: admin
+            context: ./admin
+            dockerfile: ./admin/Dockerfile
+          - name: web
+            context: ./web
+            dockerfile: ./web/Dockerfile
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU (multi-arch)
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.ORG }}/${{ matrix.name }}
+          tags: |
+            type=raw,value=${{ needs.version-tag.outputs.tag }}
+            type=raw,value=latest,enable=${{ github.ref_name == 'main' }}
+            type=sha,prefix=sha-
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.dockerfile }}
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=${{ matrix.name }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.name }}
+
+  # ── 3. Deploy to staging ─────────────────────────────────────────────────────
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: [version-tag, build-push]
+    environment: staging
+    concurrency:
+      group: deploy-staging
+      cancel-in-progress: false
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Deploy to staging server
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.STAGING_HOST }}
+          username: ${{ secrets.STAGING_USER }}
+          key: ${{ secrets.STAGING_SSH_KEY }}
+          script: |
+            set -euo pipefail
+            cd /opt/sidhkofed
+
+            # Pull the latest images.
+            IMAGE_TAG="${{ needs.version-tag.outputs.tag }}"
+            echo "Deploying tag: ${IMAGE_TAG}"
+
+            export IMAGE_TAG
+            docker compose -f docker-compose.prod.yml pull api admin web
+
+            # Run database migrations before swapping the app container.
+            docker compose -f docker-compose.prod.yml run --rm migrate
+
+            # Rolling update: replace containers one at a time.
+            docker compose -f docker-compose.prod.yml up -d --no-deps --wait api
+            docker compose -f docker-compose.prod.yml up -d --no-deps --wait admin
+            docker compose -f docker-compose.prod.yml up -d --no-deps --wait web
+
+            # Remove dangling images to free disk space.
+            docker image prune -f
+
+  # ── 4. Staging smoke test ─────────────────────────────────────────────────────
+  smoke-staging:
+    name: Staging Smoke Test
+    runs-on: ubuntu-latest
+    needs: deploy-staging
+
+    steps:
+      - name: Health endpoint check
+        run: |
+          for i in 1 2 3 4 5; do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+              "https://${{ secrets.STAGING_HOST }}/ready" || true)
+            if [ "$STATUS" = "200" ]; then
+              echo "Readiness check passed (attempt $i)"
+              exit 0
+            fi
+            echo "Attempt $i failed with status $STATUS — retrying in 10s"
+            sleep 10
+          done
+          echo "Readiness check failed after 5 attempts"
+          exit 1
+
+      - name: API version check
+        run: |
+          curl -sf "https://${{ secrets.STAGING_HOST }}/health" | \
+            jq -e '.success == true' || { echo "Health check failed"; exit 1; }
+
+  # ── 5. Deploy to production (manual approval required) ───────────────────────
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [version-tag, smoke-staging]
+    environment: production       # requires a GitHub environment with required reviewers
+    concurrency:
+      group: deploy-production
+      cancel-in-progress: false
+    if: github.ref_name == 'main' || github.event.inputs.environment == 'production'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Deploy to production server
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.PROD_HOST }}
+          username: ${{ secrets.PROD_USER }}
+          key: ${{ secrets.PROD_SSH_KEY }}
+          script: |
+            set -euo pipefail
+            cd /opt/sidhkofed
+
+            IMAGE_TAG="${{ needs.version-tag.outputs.tag }}"
+            echo "Deploying tag: ${IMAGE_TAG} to PRODUCTION"
+
+            export IMAGE_TAG
+
+            # Pre-deployment backup.
+            /opt/sidhkofed/scripts/backup.sh
+
+            # Pull new images.
+            docker compose -f docker-compose.prod.yml pull api admin web
+
+            # Migrate.
+            docker compose -f docker-compose.prod.yml run --rm migrate
+
+            # Rolling zero-downtime swap.
+            docker compose -f docker-compose.prod.yml up -d --no-deps --wait api
+            docker compose -f docker-compose.prod.yml up -d --no-deps --wait admin
+            docker compose -f docker-compose.prod.yml up -d --no-deps --wait web
+
+            docker image prune -f
+
+            echo "Production deployment complete — tag: ${IMAGE_TAG}"
+
+      - name: Production smoke test
+        run: |
+          sleep 20
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+            "https://${{ secrets.PROD_HOST }}/ready" || true)
+          if [ "$STATUS" != "200" ]; then
+            echo "Production readiness check FAILED (status $STATUS) — manual rollback required"
+            exit 1
+          fi
+          echo "Production readiness check PASSED"

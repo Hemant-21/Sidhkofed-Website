@@ -1,0 +1,185 @@
+# =============================================================================
+# SIDHKOFED CMS — Security Scanning
+# =============================================================================
+# Runs:
+#   - On push to main/v1
+#   - Weekly (Sunday 02:00 UTC) to catch newly-disclosed CVEs
+#   - Manually via workflow_dispatch
+#
+# Jobs:
+#   dependency-audit — npm audit for all three workspaces
+#   secret-scan      — TruffleHog OSS secret detection
+#   docker-scan      — Trivy image vulnerability scanner
+#   sast             — Semgrep static analysis
+# =============================================================================
+
+name: Security Scan
+
+on:
+  push:
+    branches: [main, v1]
+  schedule:
+    - cron: '0 2 * * 0'      # Weekly Sunday 02:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write    # Required for GitHub SARIF upload
+
+jobs:
+
+  # ── Dependency audit (all workspaces) ────────────────────────────────────────
+  dependency-audit:
+    name: Dependency Audit
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Audit backend
+        run: npm audit --audit-level=high
+        continue-on-error: false
+
+      - name: Audit admin
+        working-directory: admin
+        run: npm audit --audit-level=high
+        continue-on-error: false
+
+      - name: Audit web
+        working-directory: web
+        run: npm audit --audit-level=high
+        continue-on-error: false
+
+      - name: OWASP Dependency Check
+        uses: dependency-check/Dependency-Check_Action@main
+        with:
+          project: sidhkofed-cms
+          path: .
+          format: SARIF
+          args: >-
+            --enableRetired
+            --enableExperimental
+            --exclude "**/node_modules/**"
+
+      - name: Upload OWASP report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: owasp-dependency-check
+          path: reports/
+          retention-days: 30
+
+  # ── Secret detection ─────────────────────────────────────────────────────────
+  secret-scan:
+    name: Secret Detection
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout (full history for TruffleHog)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: TruffleHog secret scan
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: ${{ github.event.repository.default_branch }}
+          head: HEAD
+          extra_args: --only-verified
+
+  # ── Docker image scanning ─────────────────────────────────────────────────────
+  docker-scan:
+    name: Docker Image Scan (Trivy)
+    runs-on: ubuntu-latest
+    # Only scan on pushes (images must exist in the registry).
+    if: github.event_name == 'push' || github.event_name == 'schedule'
+
+    strategy:
+      matrix:
+        image:
+          - api
+          - admin
+          - web
+
+    steps:
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ghcr.io/sidhkofed/${{ matrix.image }}:latest
+          format: sarif
+          output: trivy-${{ matrix.image }}.sarif
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+        continue-on-error: true     # Don't block CI when registry is not yet populated
+
+      - name: Upload Trivy SARIF
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: trivy-${{ matrix.image }}.sarif
+          category: trivy-${{ matrix.image }}
+
+  # ── Static Application Security Testing (SAST) ───────────────────────────────
+  sast:
+    name: SAST (Semgrep)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Semgrep scan
+        uses: semgrep/semgrep-action@v1
+        with:
+          config: >-
+            p/typescript
+            p/nodejs
+            p/owasp-top-ten
+            p/jwt
+            p/sql-injection
+            p/secrets
+          generateSarif: "1"
+        env:
+          SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
+
+      - name: Upload Semgrep SARIF
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: semgrep.sarif
+          category: semgrep
+
+  # ── CodeQL (GitHub native SAST) ───────────────────────────────────────────────
+  codeql:
+    name: CodeQL Analysis
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [javascript-typescript]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+          queries: security-extended
+
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v3
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: /language:${{ matrix.language }}
