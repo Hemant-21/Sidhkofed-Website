@@ -17,11 +17,11 @@ const devanagari = Noto_Sans_Devanagari({
 export const metadata: Metadata = {
   metadataBase: new URL(env.siteUrl),
   title: {
-    default: 'SIDHKOFED — Jharkhand Cooperative Federation',
+    default: 'SIDHKOFED — Sidho-Kanho Agriculture and Forest State Cooperative Federation',
     template: '%s · SIDHKOFED',
   },
   description:
-    'Official public portal of SIDHKOFED, the Jharkhand cooperative federation — cooperative livelihoods, programmes, public documents, tenders, procurement updates and transparency.',
+    'Official public portal of SIDHKOFED, the Sidho-Kanho Agriculture and Forest State Cooperative Federation — cooperative livelihoods, programmes, public documents, tenders, procurement updates and transparency.',
   applicationName: 'SIDHKOFED',
   openGraph: {
     type: 'website',

@@ -20,6 +20,7 @@ import { EmptyState } from '@/components/feedback/empty-state';
 import { Can } from '@/components/auth';
 import { useFilters, useCrudList, useArchive, usePublish, useBulkAction } from '@/hooks/crud';
 import { useConfirmDialog } from '@/hooks/use-confirm-dialog';
+import { Alert } from '@/components/ui/alert';
 import { ROUTES } from '@/constants/routes';
 import { GALLERIES_RESOURCE, GALLERY_PERMS } from './api';
 import type { GallerySummary } from './types';
@@ -69,6 +70,13 @@ export function GalleryListPage() {
           </Can>
         }
       />
+
+      <Alert tone="info" title="Homepage hero carousel">
+        The public website homepage displays a CMS-powered image carousel when a gallery with the
+        exact slug <strong>hero-slides</strong> is published here. Create that gallery, add your
+        field-work and community photos to it, then publish — the carousel will activate
+        automatically. Until this gallery exists the homepage shows a static placeholder image.
+      </Alert>
 
       <GalleryFilters filters={filters} />
 

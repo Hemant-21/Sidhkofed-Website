@@ -341,6 +341,29 @@ export interface MembershipSummary {
   public_url: string;
 }
 
+// ── Galleries ────────────────────────────────────────────────────────────────
+export interface GalleryImage {
+  id: string;
+  media: MediaRef;
+  display_order: number;
+  caption_en: string | null;
+  caption_hi: string | null;
+}
+
+export interface GalleryDetail {
+  id: string;
+  slug: string;
+  title_en: string;
+  title_hi: string | null;
+  description_en: string | null;
+  description_hi: string | null;
+  cover_media: MediaRef | null;
+  image_count: number;
+  images: GalleryImage[];
+  display_order: number | null;
+  public_url: string;
+}
+
 // ── FAQs ─────────────────────────────────────────────────────────────────────
 export interface Faq {
   id: string;

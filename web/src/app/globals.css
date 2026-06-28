@@ -111,6 +111,19 @@
     line-height: 1.7;
   }
 
+  /* Announcement ticker — continuous horizontal scroll, seamless loop via 50% translate. */
+  @keyframes ticker-scroll {
+    from { transform: translateX(0); }
+    to   { transform: translateX(-50%); }
+  }
+  .ticker-track {
+    animation: ticker-scroll linear infinite;
+    will-change: transform;
+  }
+  .ticker-track:hover {
+    animation-play-state: paused;
+  }
+
   /* Visible keyboard focus everywhere (WCAG 2.4.7). */
   :focus-visible {
     outline: 2px solid hsl(var(--ring));

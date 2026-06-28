@@ -4,7 +4,6 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Search } from 'lucide-react';
 import { useLanguage } from '@/providers/language-provider';
-import { pickText } from '@/utils/bilingual';
 import { Container } from '@/components/ui/container';
 import { PRIMARY_NAV } from '@/config/navigation';
 import { DesktopNav } from './desktop-nav';
@@ -16,14 +15,14 @@ export function SiteHeader() {
   const { t, language } = useLanguage();
 
   return (
-    <header className="sticky top-0 z-40 border-b border-border bg-surface/95 shadow-sm backdrop-blur">
-      {/* Utility bar */}
+    <header className="sticky top-0 z-[60] border-b border-border bg-surface/95 shadow-sm backdrop-blur">
+      {/* Utility bar — full org name on the left, controls on the right */}
       <div className="border-b border-border bg-primary text-primary-foreground">
-        <Container className="flex h-10 items-center justify-between">
-          <span className="hidden text-xs text-primary-foreground/80 sm:block">
-            {pickText('Official portal of SIDHKOFED, Govt. of Jharkhand', 'SIDHKOFED, झारखंड सरकार का आधिकारिक पोर्टल', language)}
+        <Container className="flex h-10 items-center justify-between gap-4">
+          <span className="hidden min-w-0 truncate text-xs font-medium text-primary-foreground/85 sm:block" lang={language}>
+            {t('site.fullName')}
           </span>
-          <div className="ml-auto flex items-center gap-2">
+          <div className="ml-auto flex shrink-0 items-center gap-2">
             <TextSizeControls className="hidden text-primary-foreground sm:flex" />
             <LanguageToggle />
             <ThemeToggle className="text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground" />
@@ -33,26 +32,22 @@ export function SiteHeader() {
 
       {/* Main bar */}
       <Container className="flex h-16 items-center justify-between gap-4">
-        <Link href="/" className="flex items-center gap-3" aria-label={t('site.name')}>
+        {/* Brand — logo + abbreviation, never wraps or shrinks */}
+        <Link href="/" className="flex shrink-0 items-center gap-2.5" aria-label={t('site.name')}>
           <Image
             src="/logo-sidhkofed.png"
             alt="SIDHKOFED"
-            width={40}
-            height={40}
+            width={48}
+            height={48}
             className="shrink-0"
             priority
           />
-          <span className="flex flex-col leading-tight">
-            <span className="text-base font-bold text-foreground" lang={language}>
-              {t('site.name')}
-            </span>
-            <span className="hidden text-xs text-muted-foreground sm:block" lang={language}>
-              {t('site.fullName')}
-            </span>
+          <span className="text-base font-bold text-foreground" lang={language}>
+            {t('site.name')}
           </span>
         </Link>
 
-        <div className="flex items-center gap-1">
+        <div className="flex shrink-0 items-center gap-1">
           <DesktopNav items={PRIMARY_NAV} />
           <Link
             href="/search"
@@ -61,21 +56,14 @@ export function SiteHeader() {
           >
             <Search className="h-5 w-5" aria-hidden="true" />
           </Link>
-          {/* Contact Us CTA — desktop only, per nav context §1 */}
+          {/* Contact Us — enlarged, prominent */}
           <Link
             href="/contact"
-            className="ml-2 hidden rounded-md bg-accent px-4 py-2 text-sm font-semibold text-accent-foreground hover:bg-accent/90 lg:inline-flex"
+            className="ml-3 hidden items-center rounded-lg bg-accent px-5 py-2.5 text-sm font-bold text-accent-foreground shadow-sm transition-all hover:bg-accent/90 hover:shadow-md lg:inline-flex"
           >
             {t('nav.contactUs')}
           </Link>
           <MobileNav items={PRIMARY_NAV} />
-          <Image
-            src="/logo-jharkhand.png"
-            alt="Government of Jharkhand"
-            width={40}
-            height={40}
-            className="ml-2 hidden shrink-0 sm:block"
-          />
         </div>
       </Container>
     </header>

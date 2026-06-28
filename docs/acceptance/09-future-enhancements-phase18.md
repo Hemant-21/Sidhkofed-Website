@@ -12,6 +12,28 @@ Phase 18 builds on the stable v1.0.0 foundation. The architecture frozen in Phas
 
 ---
 
+## Content Setup Tasks (Required Before Go-Live)
+
+These are not code changes — they are CMS content operations that must be completed by the content team before the website is launched.
+
+### CS-1: Create the Hero Gallery (Homepage Carousel)
+
+**What:** The homepage hero section displays a crossfade image carousel when a gallery with slug **`hero-slides`** is published in the CMS. Until this gallery exists, the homepage shows a static placeholder image (`hero-cooperative.png`).
+
+**Action required:**
+1. In CMS Admin → Galleries → New gallery
+2. Set title: `Hero Slides`, slug: `hero-slides`
+3. Upload 4–8 landscape (16:9 or 4:3) field-work / community / cooperative activity photos
+4. Reorder images via drag-and-drop (the display order is respected)
+5. Set optional captions (shown as overlay text on each slide)
+6. Publish the gallery
+
+**How the website uses it:** `GET /public/galleries/hero-slides` is called at ISR build time (every 5 minutes). The response `images[]` array is passed to the hero carousel component. Adding, removing, or reordering images takes effect within 5 minutes of save + publish.
+
+**Admin hint:** An informational banner in the CMS Galleries list page reminds admins about this setup step.
+
+---
+
 ## Priority 1 — Production Hardening (Carry-forward from v1.0.0 Known Limitations)
 
 ### P1-1: Image Processing Pipeline

@@ -105,7 +105,7 @@ export function buildDocumentPayload(v: DocumentFormValues): DocumentWriteInput 
     document_type_id: v.document_type_id,
     file_asset_id: v.file_asset_id,
     language: v.language,
-    publication_date: dateToIso(v.publication_date),
+    publication_date: blank(v.publication_date),
     is_public: v.is_public,
     show_in_knowledge_centre: inKnowledgeCentre,
     // Category is only meaningful (and required) when the doc is in the Knowledge Centre.

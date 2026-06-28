@@ -20,6 +20,7 @@ export const PUBLIC_ENDPOINTS = {
   tenders: '/public/tenders',
   procurement: '/public/procurement-updates',
   memberships: '/public/memberships',
+  galleries: '/public/galleries',
   faqs: '/public/faqs',
   digitalServices: '/public/digital-services',
 

@@ -17,7 +17,7 @@ type Dict = Record<string, string>;
 
 const en: Dict = {
   'site.name': 'SIDHKOFED',
-  'site.fullName': 'Sidho Kanho Federation, Jharkhand',
+  'site.fullName': 'Sidho-Kanho Agriculture and Forest Produce State Cooperative Federation',
   'site.tagline': 'Jharkhand Cooperative Federation — cooperative livelihoods, transparency and public services',
   'skip.toContent': 'Skip to main content',
 
@@ -76,6 +76,9 @@ const en: Dict = {
 
   'home.hero.cta.services': 'Digital services',
   'home.hero.cta.dashboard': 'Public dashboard',
+  'home.hero.cta.activities': 'Explore activities',
+  'home.hero.cta.trainings': 'View trainings',
+  'home.hero.cta.procurement': 'Procurement & trade',
   'home.section.news': 'Latest news',
   'home.section.events': 'Featured events',
   'home.section.programmes': 'Programmes & schemes',
@@ -127,8 +130,6 @@ const en: Dict = {
   'page.institutions.subtitle': 'Government departments, agencies, universities and cooperative partners.',
   'page.communications.title': 'Official communications',
   'page.communications.subtitle': 'Notices, circulars, office orders, notifications and advisories.',
-  'page.procurement.title': 'Procurement updates',
-  'page.procurement.subtitle': 'Procurement rates, announcements, schedules and trade opportunities.',
   'page.memberships.title': 'Institutional membership',
   'page.memberships.subtitle': 'Directory of SIDHKOFED and District Union member institutions.',
   'page.dashboard.title': 'Public dashboard',
@@ -255,8 +256,8 @@ const en: Dict = {
 };
 
 const hi: Dict = {
-  'site.name': 'सिधकोफेड',
-  'site.fullName': 'सिधो कान्हो फेडरेशन, झारखंड',
+  'site.name': 'सिद्धकोफेड',
+  'site.fullName': 'सिद्धो-कान्हो कृषि एवं वनोपज राज्य सहकारी संघ',
   'site.tagline': 'झारखंड सहकारी फेडरेशन — सहकारी आजीविका, पारदर्शिता और जनसेवाएँ',
   'skip.toContent': 'मुख्य सामग्री पर जाएँ',
 
@@ -315,6 +316,9 @@ const hi: Dict = {
 
   'home.hero.cta.services': 'डिजिटल सेवाएँ',
   'home.hero.cta.dashboard': 'सार्वजनिक डैशबोर्ड',
+  'home.hero.cta.activities': 'गतिविधियाँ देखें',
+  'home.hero.cta.trainings': 'प्रशिक्षण देखें',
+  'home.hero.cta.procurement': 'खरीद एवं व्यापार',
   'home.section.news': 'ताज़ा समाचार',
   'home.section.events': 'विशेष कार्यक्रम',
   'home.section.programmes': 'कार्यक्रम एवं योजनाएँ',
@@ -333,7 +337,7 @@ const hi: Dict = {
   'contact.formUnavailable': 'यह पूछताछ फ़ॉर्म एक प्रोटोटाइप है और अभी सक्रिय नहीं है। फ़िलहाल जमा करना उपलब्ध नहीं है।',
   'footer.importantLinks': 'महत्वपूर्ण लिंक',
   'footer.about': 'परिचय',
-  'footer.copyright': 'सिधकोफेड। सर्वाधिकार सुरक्षित।',
+  'footer.copyright': 'सिद्धकोफेड। सर्वाधिकार सुरक्षित।',
   'footer.prototypeNotice': 'प्रातिनिधिक प्रोटोटाइप सामग्री — आधिकारिक डेटा अनुमोदन हेतु लंबित।',
 
   // Filters (keys not listed fall back to English automatically)
@@ -365,18 +369,16 @@ const hi: Dict = {
   'page.institutions.subtitle': 'सरकारी विभाग, एजेंसियाँ, विश्वविद्यालय और सहकारी साझेदार।',
   'page.communications.title': 'आधिकारिक सूचनाएँ',
   'page.communications.subtitle': 'नोटिस, परिपत्र, कार्यालय आदेश, अधिसूचनाएँ और परामर्श।',
-  'page.procurement.title': 'खरीद अद्यतन',
-  'page.procurement.subtitle': 'खरीद दरें, घोषणाएँ, कार्यक्रम और व्यापार अवसर।',
   'page.memberships.title': 'संस्थागत सदस्यता',
-  'page.memberships.subtitle': 'सिधकोफेड और ज़िला संघ सदस्य संस्थानों की निर्देशिका।',
+  'page.memberships.subtitle': 'सिद्धकोफेड और ज़िला संघ सदस्य संस्थानों की निर्देशिका।',
   'page.dashboard.title': 'सार्वजनिक डैशबोर्ड',
   'page.dashboard.subtitle': 'निर्धारित सार्वजनिक रिपोर्ट और प्रभाव आँकड़े।',
   'page.faqs.title': 'अक्सर पूछे जाने वाले प्रश्न',
-  'page.faqs.subtitle': 'सिधकोफेड सेवाओं और सामग्री के सामान्य प्रश्नों के उत्तर।',
+  'page.faqs.subtitle': 'सिद्धकोफेड सेवाओं और सामग्री के सामान्य प्रश्नों के उत्तर।',
   'page.digitalServices.title': 'डिजिटल सेवाएँ',
   'page.digitalServices.subtitle': 'ऑनलाइन सेवाएँ और बाहरी प्रणालियाँ। लिंक नई विंडो में खुलते हैं।',
   'page.contact.title': 'संपर्क करें',
-  'page.contact.subtitle': 'सिधकोफेड कार्यालय से संपर्क करें।',
+  'page.contact.subtitle': 'सिद्धकोफेड कार्यालय से संपर्क करें।',
 
   'contact.office': 'कार्यालय',
   'contact.phone': 'फ़ोन',
@@ -385,7 +387,7 @@ const hi: Dict = {
   'contact.address': 'पता',
 
   'page.about.title': 'SIDHKOFED के बारे में',
-  'page.about.subtitle': 'सिधो कान्हो बिरसा बहुउद्देशीय सहकारी फेडरेशन — झारखंड में सहकारी आजीविका को सशक्त बना रहा है।',
+  'page.about.subtitle': 'सिद्धो-कान्हो कृषि एवं वनोपज राज्य सहकारी संघ — झारखंड में सहकारी आजीविका को सशक्त बना रहा है।',
   'page.about.translateNotice': 'यह पृष्ठ अंग्रेज़ी में है। आपका ब्राउज़र इसे स्वचालित रूप से अनुवाद कर सकता है।',
   'page.vision.title': 'दृष्टि, मिशन, उद्देश्य और कार्य',
   'page.vision.subtitle': 'हमारे मार्गदर्शक सिद्धांत, उद्देश्य और मुख्य कार्य।',
