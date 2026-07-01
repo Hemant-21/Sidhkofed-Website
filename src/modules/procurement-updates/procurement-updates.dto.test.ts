@@ -42,8 +42,10 @@ const publishedDocument = {
 function row(over: {
   programme?: Record<string, unknown> | null;
   document?: Record<string, unknown> | null;
+  quantity?: number | null;
+  displayQuantityAsMt?: boolean;
 }): ProcurementUpdateRow {
-  const { programme = {}, document = {} } = over;
+  const { programme = {}, document = {}, quantity = null, displayQuantityAsMt = false } = over;
   return {
     id: 'pu1',
     slug: 'pu',
@@ -57,6 +59,8 @@ function row(over: {
     commodity: null,
     rate: null,
     unit: null,
+    quantity,
+    displayQuantityAsMt,
     effectiveDate: null,
     periodStart: null,
     periodEnd: null,
@@ -125,5 +129,26 @@ describe('toProcurementUpdateDetailDto — admin still surfaces hidden linked co
     );
     expect(dto.programme).toMatchObject({ slug: 'prog' });
     expect(dto.document).toMatchObject({ slug: 'doc' });
+  });
+});
+
+describe('procurement quantity + display_quantity_as_mt fields', () => {
+  it('quantity is null when not set', () => {
+    expect(toPublicProcurementUpdateDetailDto(row({})).quantity).toBeNull();
+    expect(toProcurementUpdateDetailDto(row({})).quantity).toBeNull();
+  });
+
+  it('quantity surfaces as a number when present', () => {
+    // Prisma stores as Decimal; the factory passes a plain number via the cast
+    const pub = toPublicProcurementUpdateDetailDto(row({ quantity: 50000 }));
+    expect(pub.quantity).toBe(50000);
+    const adm = toProcurementUpdateDetailDto(row({ quantity: 1234.5 }));
+    expect(adm.quantity).toBe(1234.5);
+  });
+
+  it('display_quantity_as_mt defaults to false and reflects true', () => {
+    expect(toPublicProcurementUpdateDetailDto(row({})).display_quantity_as_mt).toBe(false);
+    expect(toPublicProcurementUpdateDetailDto(row({ displayQuantityAsMt: true })).display_quantity_as_mt).toBe(true);
+    expect(toProcurementUpdateDetailDto(row({ displayQuantityAsMt: true })).display_quantity_as_mt).toBe(true);
   });
 });

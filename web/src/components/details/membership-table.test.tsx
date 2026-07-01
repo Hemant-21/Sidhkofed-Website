@@ -22,6 +22,8 @@ const sample: MembershipSummary[] = [
     reporting_period: null,
     status: 'active',
     join_date: '2025-04-01',
+    primary_member_count: 0,
+    nominal_member_count: 0,
     highlight_type: null,
     public_url: '/memberships/lamps-gumla',
   },

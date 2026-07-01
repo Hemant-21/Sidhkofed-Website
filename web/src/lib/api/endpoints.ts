@@ -21,6 +21,7 @@ export const PUBLIC_ENDPOINTS = {
   procurement: '/public/procurement-updates',
   memberships: '/public/memberships',
   galleries: '/public/galleries',
+  videos: '/public/videos',
   faqs: '/public/faqs',
   digitalServices: '/public/digital-services',
 

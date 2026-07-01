@@ -22,6 +22,7 @@ import { TenderCard } from '@/components/cards/tender-card';
 import { HomeSection } from '@/components/home/home-section';
 import { FaqAccordion } from '@/components/content/faq-accordion';
 import { AnnouncementTicker } from '@/components/home/announcement-ticker';
+import { LeadersSection } from '@/components/home/leaders-section';
 import { OrganizationJsonLd } from '@/components/seo/json-ld';
 import { detailPath } from '@/lib/api/endpoints';
 
@@ -54,7 +55,10 @@ export default async function HomePage() {
       {/* 2. Announcement ticker — latest 5 communications, cycles every 5s */}
       <AnnouncementTicker items={ticker.items} />
 
-      {/* 3. KPI Strip */}
+      {/* 3. Leadership */}
+      <LeadersSection />
+
+      {/* 4. KPI Strip */}
       {kpis && kpis.kpis.length > 0 && (
         <section aria-label="Impact at a glance" className="border-b border-border bg-surface">
           <Container className="py-8">

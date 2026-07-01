@@ -143,7 +143,7 @@ export function DocumentLifecycleActions({ document }: { document: DocumentDetai
         dismissible={!uploading && !replace.isPending}
       >
         <div className="space-y-3">
-          <FileUpload onFiles={(files) => void onReplace(files)} accept={DOC_ACCEPT} disabled={uploading || replace.isPending} label="Upload replacement file" />
+          <FileUpload onFiles={(files) => void onReplace(files)} accept={DOC_ACCEPT} maxSizeMb={20} disabled={uploading || replace.isPending} label="Upload replacement file" hint="PDF, Word, Excel, PowerPoint or CSV" />
           {uploading ? (
             <div className="space-y-1">
               <p className="text-xs text-muted-foreground">Uploading… {progress}%</p>

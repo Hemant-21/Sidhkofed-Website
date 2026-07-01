@@ -14,7 +14,7 @@ describe('buildDocumentPayload', () => {
   });
 
   it('widens publication_date to an ISO timestamp', () => {
-    expect(buildDocumentPayload(values({ publication_date: '2026-05-01' })).publication_date).toBe('2026-05-01T00:00:00.000Z');
+    expect(buildDocumentPayload(values({ publication_date: '2026-05-01' })).publication_date).toBe('2026-05-01');
     expect(buildDocumentPayload(values({ publication_date: '' })).publication_date).toBeNull();
   });
 

@@ -57,18 +57,18 @@ function renderAs(ui: ReactNode, roles: string[]) {
 beforeEach(() => vi.clearAllMocks());
 
 describe.each([
-  ['Settings', () => <SettingsPage />, 'Settings'],
-  ['Audit Log', () => <AuditLogPage />, 'Audit Log'],
-  ['Users', () => <UserListPage />, 'Users'],
-])('%s page RBAC', (_label, Page, heading) => {
+  ['Settings', () => <SettingsPage />, 'System Settings', 'Restricted to Super Admin'],
+  ['Audit Log', () => <AuditLogPage />, 'Audit Log', 'Access denied'],
+  ['Users', () => <UserListPage />, 'Users', 'Restricted to Super Admin'],
+])('%s page RBAC', (_label, Page, heading, forbiddenText) => {
   it('shows ForbiddenState for a non-Super-Admin', () => {
     renderAs(<Page />, ['content_editor']);
-    expect(screen.getByText('Access denied')).toBeInTheDocument();
+    expect(screen.getByText(forbiddenText)).toBeInTheDocument();
   });
 
   it('renders the page heading for a Super Admin', () => {
     renderAs(<Page />, ['super_admin']);
     expect(screen.getByRole('heading', { name: heading })).toBeInTheDocument();
-    expect(screen.queryByText('Access denied')).not.toBeInTheDocument();
+    expect(screen.queryByText(forbiddenText)).not.toBeInTheDocument();
   });
 });

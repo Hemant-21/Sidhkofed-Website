@@ -27,7 +27,7 @@ const csp = [
   `img-src 'self' data: blob: https:${isProd ? '' : ' http:'}`,
   "font-src 'self' data:",
   `connect-src 'self'${isProd ? '' : ' ws: http://localhost:*'}`,
-  "frame-src 'self'",
+  "frame-src 'self' https://www.youtube-nocookie.com",
   "media-src 'self'",
   "manifest-src 'self'",
   "worker-src 'self' blob:",

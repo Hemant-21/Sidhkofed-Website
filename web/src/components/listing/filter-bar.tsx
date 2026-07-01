@@ -87,7 +87,7 @@ export function FilterBar({
               value: o.value,
               label: pickText(o.name_en, o.name_hi ?? null, language),
             }))}
-            className="md:w-44"
+            className="md:w-56"
           />
         ))}
 

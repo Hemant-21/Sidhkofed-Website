@@ -28,7 +28,7 @@ export default async function FormsFormatsPage({ searchParams }: { searchParams:
       page,
       page_size: PAGE_SIZE,
       search: qstr(searchParams.search),
-      knowledge_category_slug: 'forms',
+      knowledge_category: 'forms-and-formats',
       ordering: 'display_order',
     },
   });

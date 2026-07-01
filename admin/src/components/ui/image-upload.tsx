@@ -73,7 +73,7 @@ export function ImageUpload({ onSelect, initialUrl, maxSizeMb = 5, disabled, cla
       maxSizeMb={maxSizeMb}
       disabled={disabled}
       label="Upload an image"
-      hint="PNG, JPG, or WebP"
+      hint="JPEG, PNG, WebP or GIF"
       className={className}
     />
   );

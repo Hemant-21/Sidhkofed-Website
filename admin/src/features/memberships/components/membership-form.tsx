@@ -39,8 +39,6 @@ import {
   MEMBERSHIP_TYPES,
   MEMBERSHIP_STATUSES,
   MEMBERSHIP_LEVEL_LABEL,
-  MEMBERSHIP_TYPE_LABEL,
-  MEMBERSHIP_STATUS_LABEL,
   type MembershipDetail,
 } from '../types';
 import {
@@ -50,55 +48,35 @@ import {
   type MembershipFormValues,
 } from '../membership-form-payload';
 
-const schema = z
-  .object({
-    institution_id: z.string().min(1, 'Institution is required.'),
-    membership_level: z.enum(MEMBERSHIP_LEVELS, {
-      errorMap: () => ({ message: 'Membership level is required.' }),
-    }),
-    membership_type: z.enum(MEMBERSHIP_TYPES, {
-      errorMap: () => ({ message: 'Membership type is required.' }),
-    }),
-    membership_number: z.string().max(120),
-    district_id: z.string(),
-    district_union_id: z.string(),
-    reporting_period_id: z.string(),
-    status: z.enum(MEMBERSHIP_STATUSES),
-    join_date: z.string(),
-    notes_en: z.string(),
-    notes_hi: z.string(),
-    public_visibility: z.boolean(),
-    show_on_homepage: z.boolean(),
-    highlight_type: z.string(),
-    highlight_start_at: z.string(),
-    highlight_end_at: z.string(),
-    display_order: z.string(),
-    publish_start_at: z.string(),
-  })
-  .superRefine((v, ctx) => {
-    // Mirror backend: a District Union membership must name the District Union institution.
-    if (v.membership_level === 'district_union' && v.district_union_id.trim() === '') {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ['district_union_id'],
-        message: 'Required when the membership level is District Union.',
-      });
-    }
-  });
+const schema = z.object({
+  institution_id: z.string().min(1, 'Institution is required.'),
+  membership_level: z.enum(MEMBERSHIP_LEVELS, {
+    errorMap: () => ({ message: 'Membership level is required.' }),
+  }),
+  membership_type: z.enum(MEMBERSHIP_TYPES),
+  membership_number: z.string().max(120),
+  district_id: z.string(),
+  district_union_id: z.string(),
+  reporting_period_id: z.string(),
+  status: z.enum(MEMBERSHIP_STATUSES),
+  join_date: z.string(),
+  primary_member_count: z.string(),
+  nominal_member_count: z.string(),
+  notes_en: z.string(),
+  notes_hi: z.string(),
+  public_visibility: z.boolean(),
+  show_on_homepage: z.boolean(),
+  highlight_type: z.string(),
+  highlight_start_at: z.string(),
+  highlight_end_at: z.string(),
+  display_order: z.string(),
+  publish_start_at: z.string(),
+});
 
 const LEVEL_OPTIONS = [
   { value: '', label: 'Select level…' },
   ...MEMBERSHIP_LEVELS.map((v) => ({ value: v, label: MEMBERSHIP_LEVEL_LABEL[v] })),
 ];
-const TYPE_OPTIONS = [
-  { value: '', label: 'Select type…' },
-  ...MEMBERSHIP_TYPES.map((v) => ({ value: v, label: MEMBERSHIP_TYPE_LABEL[v] })),
-];
-const STATUS_OPTIONS = MEMBERSHIP_STATUSES.map((v) => ({
-  value: v,
-  label: MEMBERSHIP_STATUS_LABEL[v],
-}));
-
 const HIGHLIGHT_OPTIONS = [
   { value: '', label: 'No highlight' },
   ...(Object.keys(HIGHLIGHT_LABEL) as Array<keyof typeof HIGHLIGHT_LABEL>).map((k) => ({
@@ -119,7 +97,6 @@ export function MembershipForm({ membership }: MembershipFormProps) {
     defaultValues: membership ? membershipToForm(membership) : emptyMembershipForm(),
   });
 
-  const level = form.watch('membership_level');
   const highlightType = form.watch('highlight_type');
 
   const districts = useMasterOptions('districts');
@@ -129,13 +106,6 @@ export function MembershipForm({ membership }: MembershipFormProps) {
     () =>
       membership?.institution
         ? [{ value: membership.institution.id, label: membership.institution.name_en }]
-        : [],
-    [membership],
-  );
-  const districtUnionInitial = useMemo<RelationOption[]>(
-    () =>
-      membership?.district_union
-        ? [{ value: membership.district_union.id, label: membership.district_union.name_en }]
         : [],
     [membership],
   );
@@ -161,7 +131,10 @@ export function MembershipForm({ membership }: MembershipFormProps) {
 
   return (
     <Form form={form} onSubmit={onSubmit} className="space-y-8">
-      <FormSection title="Member institution" description="The institution this membership belongs to.">
+      <FormSection
+        title="Institution"
+        description="The institution this count record belongs to — a District Union or SIDHKOFED itself."
+      >
         <FormField<MembershipFormValues>
           name="institution_id"
           label="Institution"
@@ -190,55 +163,36 @@ export function MembershipForm({ membership }: MembershipFormProps) {
           options={LEVEL_OPTIONS}
         />
         <SelectField<MembershipFormValues>
-          name="membership_type"
-          label="Membership type"
-          required
-          options={TYPE_OPTIONS}
+          name="reporting_period_id"
+          label="Reporting period"
+          placeholder="None"
+          options={[{ value: '', label: 'None' }, ...reportingPeriods.options]}
         />
-        <TextField<MembershipFormValues>
-          name="membership_number"
-          label="Membership number"
-          placeholder="e.g. SKF/DU/2026/014"
-        />
-        <SelectField<MembershipFormValues> name="status" label="Status" options={STATUS_OPTIONS} />
-        {level === 'district_union' ? (
-          <FormField<MembershipFormValues>
-            name="district_union_id"
-            label="District Union"
-            required
-            description="The District Union institution this membership belongs to."
-            className="sm:col-span-2"
-            render={({ field, invalid }) => (
-              <RelationPicker
-                resource="institutions"
-                multiple={false}
-                value={toRelationValue(field.value)}
-                onChange={(v) => field.onChange(v[0] ?? '')}
-                initialOptions={districtUnionInitial}
-                placeholder="Search district unions…"
-                searchPlaceholder="Search institutions…"
-                publicationState="all"
-                invalid={invalid}
-              />
-            )}
-          />
-        ) : null}
-      </FormSection>
-
-      <FormSection title="Geography & reporting" columns={2}>
         <SelectField<MembershipFormValues>
           name="district_id"
           label="District"
           placeholder="None"
           options={[{ value: '', label: 'None' }, ...districts.options]}
         />
-        <SelectField<MembershipFormValues>
-          name="reporting_period_id"
-          label="Reporting period"
-          placeholder="None"
-          options={[{ value: '', label: 'None' }, ...reportingPeriods.options]}
+      </FormSection>
+
+      <FormSection
+        title="Member counts"
+        description="Total LAMPS/PACS for primary; FPOs, SHGs and others for nominal."
+        columns={2}
+      >
+        <TextField<MembershipFormValues>
+          name="primary_member_count"
+          label="Primary members (LAMPS / PACS)"
+          type="number"
+          placeholder="0"
         />
-        <DateField<MembershipFormValues> name="join_date" label="Join date" />
+        <TextField<MembershipFormValues>
+          name="nominal_member_count"
+          label="Nominal members (FPO, SHG, others)*"
+          type="number"
+          placeholder="0"
+        />
       </FormSection>
 
       <FormSection title="Notes" description="Internal notes — never shown publicly (codex §10).">

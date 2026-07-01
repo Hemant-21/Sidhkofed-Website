@@ -181,7 +181,6 @@ export interface DocumentDetail extends DocumentSummary {
   description_hi: string | null;
   commodities: MasterRef[];
   districts: MasterRef[];
-  tags: MasterRef[];
 }
 
 // ── Toolkits ─────────────────────────────────────────────────────────────────
@@ -337,6 +336,8 @@ export interface MembershipSummary {
   reporting_period: MasterRef | null;
   status: string;
   join_date: string | null;
+  primary_member_count: number;
+  nominal_member_count: number;
   highlight_type: string | null;
   public_url: string;
 }
@@ -350,6 +351,19 @@ export interface GalleryImage {
   caption_hi: string | null;
 }
 
+export interface GallerySummary {
+  id: string;
+  slug: string;
+  title_en: string;
+  title_hi: string | null;
+  description_en: string | null;
+  description_hi: string | null;
+  cover_media: MediaRef | null;
+  image_count: number;
+  display_order: number | null;
+  public_url: string;
+}
+
 export interface GalleryDetail {
   id: string;
   slug: string;
@@ -360,6 +374,21 @@ export interface GalleryDetail {
   cover_media: MediaRef | null;
   image_count: number;
   images: GalleryImage[];
+  display_order: number | null;
+  public_url: string;
+}
+
+// ── Videos ───────────────────────────────────────────────────────────────────
+export interface Video {
+  id: string;
+  slug: string;
+  title_en: string;
+  title_hi: string | null;
+  description_en: string | null;
+  description_hi: string | null;
+  youtube_id: string;
+  youtube_url: string;
+  thumbnail_url: string;
   display_order: number | null;
   public_url: string;
 }

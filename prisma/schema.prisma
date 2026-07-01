@@ -1200,6 +1200,8 @@ model ProcurementUpdate {
   commodityId             String?                  @map("commodity_id") @db.Uuid
   rate                    Decimal?                 @db.Decimal(14, 2)
   unit                    String?
+  quantity                Decimal?                 @db.Decimal(14, 2)
+  displayQuantityAsMt     Boolean                  @default(false) @map("display_quantity_as_mt")
   effectiveDate           DateTime?                @map("effective_date") @db.Date
   periodStart             DateTime?                @map("period_start") @db.Date
   periodEnd               DateTime?                @map("period_end") @db.Date
@@ -1381,6 +1383,8 @@ model InstitutionalMembership {
   reportingPeriodId String?          @map("reporting_period_id") @db.Uuid
   status            MembershipStatus @default(active)
   joinDate          DateTime?        @map("join_date") @db.Date
+  primaryMemberCount Int             @default(0) @map("primary_member_count")
+  nominalMemberCount Int             @default(0) @map("nominal_member_count")
   notesEn           String?          @map("notes_en")
   notesHi           String?          @map("notes_hi")
   slug              String           @unique

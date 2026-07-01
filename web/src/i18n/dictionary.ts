@@ -199,6 +199,10 @@ const en: Dict = {
   'page.publications.forms.subtitle': 'Application forms and official formats.',
   'page.publications.media.title': 'Media Gallery',
   'page.publications.media.subtitle': 'Photo and video archive from SIDHKOFED activities.',
+  'page.publications.media.galleries.title': 'Photo Galleries',
+  'page.publications.media.galleries.subtitle': 'All photo galleries from SIDHKOFED activities and events.',
+  'page.publications.media.videos.title': 'Videos',
+  'page.publications.media.videos.subtitle': 'All videos from SIDHKOFED activities and events.',
 
   'page.notifications.title': 'Notifications',
   'page.notifications.subtitle': 'Notices and tenders from SIDHKOFED.',
@@ -444,6 +448,10 @@ const hi: Dict = {
   'page.publications.forms.subtitle': 'आवेदन फॉर्म और आधिकारिक प्रारूप।',
   'page.publications.media.title': 'मीडिया गैलरी',
   'page.publications.media.subtitle': 'SIDHKOFED गतिविधियों का फोटो और वीडियो संग्रह।',
+  'page.publications.media.galleries.title': 'फोटो गैलरी',
+  'page.publications.media.galleries.subtitle': 'SIDHKOFED गतिविधियों और कार्यक्रमों की सभी फोटो गैलरी।',
+  'page.publications.media.videos.title': 'वीडियो',
+  'page.publications.media.videos.subtitle': 'SIDHKOFED गतिविधियों और कार्यक्रमों के सभी वीडियो।',
 
   'page.notifications.title': 'सूचनाएं',
   'page.notifications.subtitle': 'SIDHKOFED की नोटिस और निविदाएं।',

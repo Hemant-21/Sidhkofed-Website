@@ -216,8 +216,9 @@ export function DatasetImportForm({ reportId, onImported }: DatasetImportFormPro
           ) : (
             <FileUpload
               accept={ACCEPT}
+              maxSizeMb={10}
               label="Upload a CSV or XLSX file"
-              hint="The server parses and validates the sheet"
+              hint="CSV or XLSX · The server validates rows and column headers"
               onFiles={(files) => {
                 setFile(files[0] ?? null);
                 reset();

@@ -33,6 +33,8 @@ const baseShape = {
   commodity_id: uuid.nullable().optional(),
   rate: nonNegativeRate.nullable().optional(),
   unit: z.string().trim().max(50).nullable().optional(),
+  quantity: nonNegativeRate.nullable().optional(),
+  display_quantity_as_mt: z.boolean().optional(),
   effective_date: dateOnly.nullable().optional(),
   period_start: dateOnly.nullable().optional(),
   period_end: dateOnly.nullable().optional(),

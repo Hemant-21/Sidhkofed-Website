@@ -43,6 +43,8 @@ const baseShape = {
   reporting_period_id: uuid.nullable().optional(),
   status: z.enum(MEMBERSHIP_STATUSES).optional(),
   join_date: dateOnly.nullable().optional(),
+  primary_member_count: z.number().int().min(0).optional(),
+  nominal_member_count: z.number().int().min(0).optional(),
   notes_en: optionalText(),
   notes_hi: optionalText(),
   ...workflowShape,
@@ -89,6 +91,8 @@ const bulkRowShape = {
   reporting_period_id: uuid.nullable().optional(),
   status: z.enum(MEMBERSHIP_STATUSES).optional(),
   join_date: dateOnly.nullable().optional(),
+  primary_member_count: z.number().int().min(0).optional(),
+  nominal_member_count: z.number().int().min(0).optional(),
   notes_en: optionalText(),
   notes_hi: optionalText(),
 };

@@ -11,7 +11,10 @@ import { Pagination } from '@/components/ui/pagination';
 import { EmptyState } from '@/components/feedback/empty-state';
 import { Can } from '@/components/auth/can';
 import { SearchInput } from '@/components/ui/search-input';
+import { Select } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
 import { useFilters } from '@/hooks/crud';
+import { useMasterOptions } from '@/components/relationships';
 import { useMasterList, useActivateMaster, useDeactivateMaster } from '../hooks';
 import { MasterFormDialog } from './master-form-dialog';
 import type { MasterRecord, MasterTypeConfig } from '../types';
@@ -25,8 +28,10 @@ export function MasterList({ config }: MasterListProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editRecord, setEditRecord] = useState<MasterRecord | undefined>();
 
+  const isBlocks = config.key === 'blocks';
   const defaultSort = config.defaultSort ?? 'display_order';
-  const filters = useFilters({ keys: [] });
+  const filters = useFilters({ keys: config.filterKeys ?? [] });
+  const districts = useMasterOptions('districts', { enabled: isBlocks });
   const table = useDataTable({ initialSort: { field: defaultSort, direction: 'asc' } });
 
   const query = useMemo(
@@ -41,25 +46,58 @@ export function MasterList({ config }: MasterListProps) {
   const rows = list.data?.items ?? [];
   const pagination = list.data?.pagination;
 
+  const isFy = config.formVariant === 'financial-year';
+
   const columns = useMemo<ColumnDef<MasterRecord>[]>(
     () => [
-      {
-        id: 'name_en',
-        header: 'Name (English)',
-        sortField: 'name_en',
-        cell: (r) => <span className="font-medium text-foreground">{r.name_en}</span>,
-      },
-      {
-        id: 'name_hi',
-        header: 'नाम (Hindi)',
-        cell: (r) => <span className="text-sm text-muted-foreground">{r.name_hi ?? '—'}</span>,
-      },
-      {
-        id: 'slug',
-        header: 'Slug',
-        defaultHidden: true,
-        cell: (r) => <code className="text-xs text-muted-foreground">{r.slug}</code>,
-      },
+      isFy
+        ? {
+            id: 'label',
+            header: 'Label',
+            sortField: 'label',
+            cell: (r) => <span className="font-medium text-foreground">{r.label as string}</span>,
+          }
+        : {
+            id: 'name_en',
+            header: 'Name (English)',
+            sortField: 'name_en',
+            cell: (r) => <span className="font-medium text-foreground">{r.name_en}</span>,
+          },
+      isFy
+        ? {
+            id: 'start_date',
+            header: 'Start date',
+            sortField: 'start_date',
+            cell: (r) => <span className="text-sm text-muted-foreground">{r.start_date as string}</span>,
+          }
+        : {
+            id: 'name_hi',
+            header: 'नाम (Hindi)',
+            cell: (r) => <span className="text-sm text-muted-foreground">{r.name_hi ?? '—'}</span>,
+          },
+      ...(isFy
+        ? [{
+            id: 'end_date',
+            header: 'End date',
+            sortField: 'end_date',
+            cell: (r: MasterRecord) => <span className="text-sm text-muted-foreground">{r.end_date as string}</span>,
+          }]
+        : [{
+            id: 'slug',
+            header: 'Slug',
+            defaultHidden: true,
+            cell: (r: MasterRecord) => <code className="text-xs text-muted-foreground">{r.slug}</code>,
+          }]
+      ),
+      ...(isBlocks ? [{
+        id: 'district',
+        header: 'District',
+        sortField: 'district_id',
+        cell: (r: MasterRecord) => {
+          const d = r.district as { name_en?: string } | undefined;
+          return <span className="text-sm text-muted-foreground">{d?.name_en ?? '—'}</span>;
+        },
+      }] : []),
       ...(config.hasDisplayOrder !== false ? [{
         id: 'display_order',
         header: 'Order',
@@ -106,7 +144,7 @@ export function MasterList({ config }: MasterListProps) {
         },
       },
     ],
-    [config, activate, deactivate],
+    [config, isFy, isBlocks, activate, deactivate],
   );
 
   const openCreate = () => { setEditRecord(undefined); setDialogOpen(true); };
@@ -115,13 +153,36 @@ export function MasterList({ config }: MasterListProps) {
   return (
     <>
       <div className="space-y-4">
-        <div className="flex items-center justify-between gap-4">
-          <SearchInput
-            value={filters.search}
-            onValueChange={filters.setSearch}
-            placeholder={`Search ${config.label.toLowerCase()}…`}
-            className="max-w-sm"
-          />
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-wrap items-center gap-2">
+            <SearchInput
+              value={filters.search}
+              onValueChange={filters.setSearch}
+              placeholder={`Search ${config.label.toLowerCase()}…`}
+              className="max-w-xs"
+            />
+            {isBlocks && (
+              <div className="flex items-center gap-1.5">
+                <Label htmlFor="master-district-filter" className="sr-only">District</Label>
+                <Select
+                  id="master-district-filter"
+                  value={filters.filters.district_id ?? ''}
+                  onChange={(e) => filters.setFilter('district_id', e.target.value || undefined)}
+                  options={[{ value: '', label: 'All districts' }, ...districts.options]}
+                  className="w-44"
+                />
+              </div>
+            )}
+            {filters.isActive && (
+              <button
+                type="button"
+                onClick={filters.reset}
+                className="text-sm text-muted-foreground hover:text-foreground"
+              >
+                Clear filters
+              </button>
+            )}
+          </div>
           {config.editMode === 'full' ? (
             <Can permission="masters.create">
               <Button variant="primary" size="sm" onClick={openCreate}>
@@ -191,7 +252,7 @@ export function MasterList({ config }: MasterListProps) {
       <MasterFormDialog
         open={dialogOpen}
         onClose={closeDialog}
-        masterKey={config.key}
+        config={config}
         record={editRecord}
       />
     </>

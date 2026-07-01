@@ -20,6 +20,7 @@ import {
 } from '@/modules/auth/auth.permissions';
 import { seedMasters } from './masters';
 import { seedDashboardReports } from './dashboard';
+import { seedMemberships } from './memberships';
 
 const prisma = new PrismaClient();
 
@@ -117,6 +118,7 @@ async function main(): Promise<void> {
   await seedRolePermissions(roleIds, permIds);
   const superAdminUserId = await seedSuperAdminUser(roleIds);
   await seedMasters(prisma);
+  await seedMemberships(prisma);
   await seedDashboardReports(prisma, superAdminUserId);
   console.log('Seed complete.');
 }

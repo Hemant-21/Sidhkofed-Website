@@ -107,8 +107,9 @@ export function MembershipBulkUploadDialog({ open, onClose }: MembershipBulkUplo
 
         <FileUpload
           accept=".csv,text/csv"
+          maxSizeMb={5}
           label="Upload a CSV file"
-          hint="Or paste rows below"
+          hint="CSV format · or paste rows below"
           onFiles={async (files) => {
             const file = files[0];
             if (!file) return;

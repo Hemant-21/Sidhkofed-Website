@@ -53,6 +53,8 @@ export interface MembershipSummaryDto {
   reporting_period: MasterRef | null;
   status: string;
   join_date: string | null;
+  primary_member_count: number;
+  nominal_member_count: number;
   publication_state: string;
   public_visibility: boolean;
   show_on_homepage: boolean;
@@ -77,6 +79,8 @@ export function toMembershipSummaryDto(m: MembershipRow): MembershipSummaryDto {
     reporting_period: masterRef(m.reportingPeriod),
     status: m.status,
     join_date: dateStr(m.joinDate),
+    primary_member_count: m.primaryMemberCount,
+    nominal_member_count: m.nominalMemberCount,
     publication_state: m.publicationState,
     public_visibility: m.publicVisibility,
     show_on_homepage: m.showOnHomepage,
@@ -126,6 +130,8 @@ export interface PublicMembershipSummaryDto {
   reporting_period: MasterRef | null;
   status: string;
   join_date: string | null;
+  primary_member_count: number;
+  nominal_member_count: number;
   highlight_type: string | null;
   public_url: string;
 }
@@ -143,6 +149,8 @@ export function toPublicMembershipSummaryDto(m: MembershipRow): PublicMembership
     reporting_period: masterRef(m.reportingPeriod),
     status: m.status,
     join_date: dateStr(m.joinDate),
+    primary_member_count: m.primaryMemberCount,
+    nominal_member_count: m.nominalMemberCount,
     highlight_type: m.highlightType,
     public_url: publicUrl(m.slug),
   };

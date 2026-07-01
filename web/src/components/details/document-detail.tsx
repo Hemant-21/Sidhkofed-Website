@@ -76,7 +76,6 @@ export function DocumentAside({ document }: { document: DocumentDetail }) {
   const { t, language } = useLanguage();
   const commodities = document.commodities.map((c) => ({ label: pickText(c.name_en, c.name_hi, language) }));
   const districts = document.districts.map((d) => ({ label: pickText(d.name_en, d.name_hi, language) }));
-  const tags = document.tags.map((tg) => ({ label: pickText(tg.name_en, tg.name_hi, language) }));
 
   return (
     <>
@@ -99,11 +98,6 @@ export function DocumentAside({ document }: { document: DocumentDetail }) {
       {districts.length > 0 && (
         <DetailSection title={t('filter.district')}>
           <Chips items={districts} />
-        </DetailSection>
-      )}
-      {tags.length > 0 && (
-        <DetailSection title="Tags">
-          <Chips items={tags} />
         </DetailSection>
       )}
     </>

@@ -1,15 +1,15 @@
 'use client';
 
 /**
- * Media upload dialog. Supports images, documents, and other allowed files with per-file
- * validation (server-authoritative), progress, retry of failed items, and cancel of the pending
- * queue. Files upload sequentially through the shared single-upload pipeline (POST /admin/media)
- * so each gets its own progress + independent retry — no duplicate upload code. Image previews
- * are shown before upload.
+ * Media upload dialog. Images only (JPEG / PNG / WebP / GIF / SVG). Per-file validation is
+ * server-authoritative; the accept attribute is a client-side hint only. Progress, retry of
+ * failed items, and cancel of the pending queue are all supported. Files upload sequentially
+ * through the shared single-upload pipeline (POST /admin/media). Image previews are shown
+ * before upload. Documents are managed in the Document Centre, not here.
  */
 
 import { useRef, useState } from 'react';
-import { CheckCircle2, RotateCw, XCircle, FileText } from 'lucide-react';
+import { CheckCircle2, RotateCw, XCircle, ImageOff } from 'lucide-react';
 import { Dialog } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { FileUpload } from '@/components/ui/file-upload';
@@ -105,7 +105,7 @@ export function MediaUploadDialog({ open, onClose }: MediaUploadDialogProps) {
   return (
     <Dialog open={open} onClose={handleClose} title="Upload media" size="xl" dismissible={!running}>
       <div className="space-y-4">
-        <FileUpload onFiles={addFiles} multiple accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.csv,.txt" label="Click or drag files to upload" hint="Images and documents. Files are added to the shared media library." />
+        <FileUpload onFiles={addFiles} multiple accept="image/jpeg,image/png,image/webp,image/gif,image/svg+xml" maxSizeMb={10} label="Click or drag images to upload" hint="JPEG, PNG, WebP, GIF or SVG · Documents go to the Document Centre" />
 
         {items.length > 0 ? (
           <ul className="max-h-[24rem] space-y-2 overflow-y-auto">
@@ -116,7 +116,7 @@ export function MediaUploadDialog({ open, onClose }: MediaUploadDialogProps) {
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={it.previewUrl} alt="" className="h-full w-full object-cover" />
                   ) : (
-                    <FileText className="h-6 w-6 text-muted-foreground" aria-hidden="true" />
+                    <ImageOff className="h-6 w-6 text-muted-foreground" aria-hidden="true" />
                   )}
                 </div>
                 <div className="min-w-0 flex-1">

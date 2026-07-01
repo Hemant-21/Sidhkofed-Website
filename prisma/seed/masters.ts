@@ -10,6 +10,7 @@
  */
 import { PrismaClient } from '@prisma/client';
 import { slugify } from '@/utils/slug';
+import { seedBlocks } from './blocks';
 
 type NameRow = { nameEn: string; nameHi?: string; displayOrder?: number };
 
@@ -45,6 +46,8 @@ const INSTITUTION_TYPES: NameRow[] = [
   { nameEn: 'Government Department' }, { nameEn: 'Training Institution' }, { nameEn: 'University' },
   { nameEn: 'NGO' }, { nameEn: 'Corporate Buyer' }, { nameEn: 'Financial Institution' },
   { nameEn: 'Technical Agency' }, { nameEn: 'Cooperative Organization' }, { nameEn: 'Other Partner' },
+  { nameEn: 'District Cooperative Union', nameHi: 'जिला सहकारी संघ' },
+  { nameEn: 'Cooperative Federation',     nameHi: 'सहकारी महासंघ' },
 ];
 
 const DOCUMENT_TYPES: NameRow[] = [
@@ -70,7 +73,7 @@ const TENDER_TYPES: NameRow[] = [
 
 const PROCUREMENT_UPDATE_TYPES: NameRow[] = [
   { nameEn: 'Procurement Rate' }, { nameEn: 'Procurement Announcement' }, { nameEn: 'Procurement Schedule' },
-  { nameEn: 'Procurement Centre Update' }, { nameEn: 'Trade Opportunity' },
+  { nameEn: 'Procurement Centre Update' }, { nameEn: 'Trade Opportunity' }, { nameEn: 'Procurement Achievement' },
 ];
 
 const FAQ_CATEGORIES: NameRow[] = [
@@ -83,20 +86,34 @@ const ENQUIRY_TYPES: NameRow[] = [
   { nameEn: 'Storage / Godown Enquiry' }, { nameEn: 'Membership Enquiry' }, { nameEn: 'Partnership Enquiry' },
 ];
 
-/** All 24 districts of Jharkhand. */
+/** All 24 districts of Jharkhand (bilingual). */
 const DISTRICTS: NameRow[] = [
-  'Bokaro', 'Chatra', 'Deoghar', 'Dhanbad', 'Dumka', 'East Singhbhum', 'Garhwa', 'Giridih',
-  'Godda', 'Gumla', 'Hazaribagh', 'Jamtara', 'Khunti', 'Koderma', 'Latehar', 'Lohardaga',
-  'Pakur', 'Palamu', 'Ramgarh', 'Ranchi', 'Sahibganj', 'Seraikela Kharsawan', 'Simdega',
-  'West Singhbhum',
-].map((nameEn) => ({ nameEn }));
+  { nameEn: 'Bokaro',              nameHi: 'बोकारो' },
+  { nameEn: 'Chatra',              nameHi: 'चतरा' },
+  { nameEn: 'Deoghar',             nameHi: 'देवघर' },
+  { nameEn: 'Dhanbad',             nameHi: 'धनबाद' },
+  { nameEn: 'Dumka',               nameHi: 'दुमका' },
+  { nameEn: 'East Singhbhum',      nameHi: 'पूर्वी सिंहभूम' },
+  { nameEn: 'Garhwa',              nameHi: 'गढ़वा' },
+  { nameEn: 'Giridih',             nameHi: 'गिरिडीह' },
+  { nameEn: 'Godda',               nameHi: 'गोड्डा' },
+  { nameEn: 'Gumla',               nameHi: 'गुमला' },
+  { nameEn: 'Hazaribagh',          nameHi: 'हजारीबाग' },
+  { nameEn: 'Jamtara',             nameHi: 'जामताड़ा' },
+  { nameEn: 'Khunti',              nameHi: 'खूंटी' },
+  { nameEn: 'Koderma',             nameHi: 'कोडरमा' },
+  { nameEn: 'Latehar',             nameHi: 'लातेहार' },
+  { nameEn: 'Lohardaga',           nameHi: 'लोहरदगा' },
+  { nameEn: 'Pakur',               nameHi: 'पाकुड़' },
+  { nameEn: 'Palamu',              nameHi: 'पलामू' },
+  { nameEn: 'Ramgarh',             nameHi: 'रामगढ़' },
+  { nameEn: 'Ranchi',              nameHi: 'रांची' },
+  { nameEn: 'Sahibganj',           nameHi: 'साहिबगंज' },
+  { nameEn: 'Seraikela Kharsawan', nameHi: 'सरायकेला खरसावां' },
+  { nameEn: 'Simdega',             nameHi: 'सिमडेगा' },
+  { nameEn: 'West Singhbhum',      nameHi: 'पश्चिमी सिंहभूम' },
+];
 
-/** Representative blocks per district (official full list loaded from approved data later). */
-const BLOCKS_BY_DISTRICT: Record<string, string[]> = {
-  Ranchi: ['Ranchi Sadar', 'Namkum', 'Kanke', 'Ratu', 'Bero'],
-  Gumla: ['Gumla', 'Bishunpur', 'Ghaghra', 'Raidih', 'Sisai'],
-  Khunti: ['Khunti', 'Murhu', 'Torpa', 'Rania'],
-};
 
 export async function seedMasters(prisma: PrismaClient): Promise<void> {
   console.log('Seeding master data (idempotent)…');
@@ -124,24 +141,10 @@ export async function seedMasters(prisma: PrismaClient): Promise<void> {
   await seedNameMaster('enquiry types', ENQUIRY_TYPES, (r) =>
     prisma.enquiryType.upsert({ where: { slug: r.slug }, update: { nameEn: r.nameEn, displayOrder: r.displayOrder }, create: r }));
 
-  // Districts + representative blocks.
+  // Districts, then all 264 official blocks.
   await seedNameMaster('districts', DISTRICTS, (r) =>
-    prisma.district.upsert({ where: { slug: r.slug }, update: { nameEn: r.nameEn, displayOrder: r.displayOrder }, create: r }));
-
-  let blockCount = 0;
-  for (const [districtName, blocks] of Object.entries(BLOCKS_BY_DISTRICT)) {
-    const district = await prisma.district.findUnique({ where: { slug: slugify(districtName) } });
-    if (!district) continue;
-    for (const [i, nameEn] of blocks.entries()) {
-      await prisma.block.upsert({
-        where: { districtId_nameEn: { districtId: district.id, nameEn } },
-        update: { displayOrder: i + 1 },
-        create: { districtId: district.id, nameEn, slug: slugify(`${districtName}-${nameEn}`), displayOrder: i + 1 },
-      });
-      blockCount += 1;
-    }
-  }
-  console.log(`  ✓ blocks: ${blockCount}`);
+    prisma.district.upsert({ where: { slug: r.slug }, update: { nameEn: r.nameEn, nameHi: r.nameHi ?? null, displayOrder: r.displayOrder }, create: r }));
+  await seedBlocks(prisma);
 
   // Financial years (Indian FY: 1 Apr – 31 Mar).
   const FINANCIAL_YEARS = [

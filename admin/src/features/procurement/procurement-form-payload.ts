@@ -21,6 +21,8 @@ export interface ProcurementFormValues {
   location_text: string;
   rate: string;
   unit: string;
+  quantity: string;
+  display_quantity_as_mt: boolean;
   effective_date: string;
   period_start: string;
   period_end: string;
@@ -62,7 +64,9 @@ export function emptyProcurementForm(): ProcurementFormValues {
     programme_scheme_id: null,
     location_text: '',
     rate: '',
-    unit: '',
+    unit: 'KG',
+    quantity: '',
+    display_quantity_as_mt: false,
     effective_date: '',
     period_start: '',
     period_end: '',
@@ -93,7 +97,9 @@ export function procurementToForm(p: ProcurementDetail): ProcurementFormValues {
     programme_scheme_id: p.programme?.id ?? null,
     location_text: p.location_text ?? '',
     rate: p.rate != null ? String(p.rate) : '',
-    unit: p.unit ?? '',
+    unit: p.unit ?? 'KG',
+    quantity: p.quantity != null ? String(p.quantity) : '',
+    display_quantity_as_mt: p.display_quantity_as_mt,
     effective_date: p.effective_date ? p.effective_date.slice(0, 10) : '',
     period_start: p.period_start ? p.period_start.slice(0, 10) : '',
     period_end: p.period_end ? p.period_end.slice(0, 10) : '',
@@ -126,6 +132,8 @@ export function buildProcurementPayload(v: ProcurementFormValues): ProcurementWr
     location_text: blank(v.location_text),
     rate: toRate(v.rate),
     unit: blank(v.unit),
+    quantity: toRate(v.quantity),
+    display_quantity_as_mt: v.display_quantity_as_mt,
     effective_date: dateOnly(v.effective_date),
     period_start: dateOnly(v.period_start),
     period_end: dateOnly(v.period_end),

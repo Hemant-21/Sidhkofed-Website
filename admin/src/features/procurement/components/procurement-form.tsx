@@ -13,7 +13,7 @@ import { useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { z } from 'zod';
 import { Form } from '@/components/form/form';
-import { TextField, TextareaField, SelectField, SwitchField, DateField } from '@/components/form/fields';
+import { TextField, TextareaField, SelectField, SwitchField, DateField, CheckboxField } from '@/components/form/fields';
 import { FormField } from '@/components/form/form-field';
 import { FormSection, FormActions } from '@/components/form/form-section';
 import { BilingualTabs } from '@/components/form/bilingual-tabs';
@@ -52,6 +52,14 @@ const schema = z
         'Rate must be a non-negative number.',
       ),
     unit: z.string().max(50),
+    quantity: z
+      .string()
+      .max(50)
+      .refine(
+        (v) => v.trim() === '' || (Number.isFinite(Number(v)) && Number(v) >= 0),
+        'Quantity must be a non-negative number.',
+      ),
+    display_quantity_as_mt: z.boolean(),
     effective_date: z.string(),
     period_start: z.string(),
     period_end: z.string(),
@@ -117,7 +125,7 @@ export function ProcurementForm({ procurement }: ProcurementFormProps) {
   // are filtered to the selected district.
   const commodities = useMasterOptions('commodities');
   const districts = useMasterOptions('districts');
-  const blocks = useMasterOptions('blocks', { districtId: districtId || null });
+  const blocks = useMasterOptions('blocks', { districtId: districtId || null, enabled: Boolean(districtId) });
 
   const commodityOptions = [{ value: '', label: 'None' }, ...commodities.options];
   const districtOptions = [{ value: '', label: 'None' }, ...districts.options];
@@ -215,21 +223,35 @@ export function ProcurementForm({ procurement }: ProcurementFormProps) {
       </FormSection>
 
       <FormSection
-        title="Rate & unit"
-        description="Rate and unit are informational display values only. No calculation is performed here."
+        title="Rate & quantity"
+        description="Rate is per KG (standard MFP unit). Quantity is entered in KG; tick the checkbox to display it as MT on the public site."
         columns={2}
       >
         <TextField<ProcurementFormValues>
           name="rate"
-          label="Rate"
+          label="Rate (₹ per KG)"
           placeholder="e.g. 250.00"
-          description="Displayed as-is — frontend performs no calculation."
+          description="Procurement rate per kilogram."
         />
         <TextField<ProcurementFormValues>
           name="unit"
-          label="Unit"
-          placeholder="e.g. per kg, per MT"
+          label="Rate unit"
+          placeholder="KG"
+          description="Pre-filled KG — change only if needed."
         />
+        <TextField<ProcurementFormValues>
+          name="quantity"
+          label="Quantity procured (KG)"
+          placeholder="e.g. 50000"
+          description="Enter total quantity in KG."
+        />
+        <div className="flex flex-col justify-end gap-1 pb-1">
+          <CheckboxField<ProcurementFormValues>
+            name="display_quantity_as_mt"
+            label="Display quantity as MT on public site"
+            description="When ticked, quantity ÷ 1000 is shown (e.g. 50,000 KG → 50 MT)."
+          />
+        </div>
       </FormSection>
 
       <FormSection title="Dates" columns={3}>
@@ -274,7 +296,8 @@ export function ProcurementForm({ procurement }: ProcurementFormProps) {
         <SelectField<ProcurementFormValues>
           name="block_id"
           label="Block"
-          placeholder="None"
+          placeholder={districtId ? 'Select block' : 'Select a district first'}
+          disabled={!districtId}
           options={blockOptions}
         />
         <TextField<ProcurementFormValues>

@@ -29,7 +29,7 @@ export default async function TrainingMaterialsPage({ searchParams }: { searchPa
       page,
       page_size: PAGE_SIZE,
       search: qstr(searchParams.search),
-      knowledge_category_slug: 'training',
+      knowledge_category: 'training-resources',
       year: qstr(searchParams.year),
       ordering: '-publication_date',
     },

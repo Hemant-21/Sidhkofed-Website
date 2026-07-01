@@ -61,6 +61,8 @@ export interface ProcurementUpdateSummaryDto {
   commodity: MasterRef | null;
   rate: number | null;
   unit: string | null;
+  quantity: number | null;
+  display_quantity_as_mt: boolean;
   effective_date: string | null;
   period_start: string | null;
   period_end: string | null;
@@ -90,6 +92,8 @@ export function toProcurementUpdateSummaryDto(p: ProcurementUpdateRow): Procurem
     commodity: masterRef(p.commodity),
     rate: dec(p.rate),
     unit: p.unit,
+    quantity: dec(p.quantity),
+    display_quantity_as_mt: p.displayQuantityAsMt,
     effective_date: dateOnly(p.effectiveDate),
     period_start: dateOnly(p.periodStart),
     period_end: dateOnly(p.periodEnd),
@@ -153,6 +157,8 @@ export interface PublicProcurementUpdateSummaryDto {
   commodity: MasterRef | null;
   rate: number | null;
   unit: string | null;
+  quantity: number | null;
+  display_quantity_as_mt: boolean;
   effective_date: string | null;
   period_start: string | null;
   period_end: string | null;
@@ -176,6 +182,8 @@ export function toPublicProcurementUpdateSummaryDto(p: ProcurementUpdateRow): Pu
     commodity: masterRef(p.commodity),
     rate: dec(p.rate),
     unit: p.unit,
+    quantity: dec(p.quantity),
+    display_quantity_as_mt: p.displayQuantityAsMt,
     effective_date: dateOnly(p.effectiveDate),
     period_start: dateOnly(p.periodStart),
     period_end: dateOnly(p.periodEnd),

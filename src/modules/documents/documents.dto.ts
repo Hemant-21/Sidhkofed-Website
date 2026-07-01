@@ -215,12 +215,13 @@ export function toPublicDocumentSummaryDto(d: DocumentSummaryRow): PublicDocumen
 }
 
 // ── Public detail (single) ────────────────────────────────────────────────────
+// Tags are intentionally omitted: they are internal CMS classification (isPublic: false in the
+// masters registry) and must not appear in any public-facing response.
 export interface PublicDocumentDetailDto extends PublicDocumentSummaryDto {
   description_en: string | null;
   description_hi: string | null;
   commodities: MasterRef[];
   districts: MasterRef[];
-  tags: MasterRef[];
 }
 
 export function toPublicDocumentDetailDto(d: DocumentRow): PublicDocumentDetailDto {
@@ -230,6 +231,5 @@ export function toPublicDocumentDetailDto(d: DocumentRow): PublicDocumentDetailD
     description_hi: d.descriptionHi,
     commodities: d.commodities.map((c) => masterRef(c.commodity)),
     districts: d.districts.map((x) => masterRef(x.district)),
-    tags: d.tags.map((t) => masterRef(t.tag)),
   };
 }

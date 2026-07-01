@@ -23,11 +23,6 @@ const STATIC_ROUTES = [
   '/activities/institutional-events',
   '/activities/success-stories',
   '/membership',
-  '/membership/sidhkofed',
-  '/membership/district-unions',
-  '/membership/directory',
-  '/membership/process',
-  '/membership/faqs',
   '/procurement',
   '/procurement/announcements',
   '/procurement/upcoming',
@@ -41,6 +36,8 @@ const STATIC_ROUTES = [
   '/publications/training-materials',
   '/publications/forms-formats',
   '/publications/media',
+  '/publications/media/galleries',
+  '/publications/media/videos',
   '/notifications',
   '/notifications/notices',
   '/notifications/tenders',
@@ -54,6 +51,8 @@ const STATIC_ROUTES = [
   '/digital-services',
   '/search',
   '/contact',
+  '/privacy-policy',
+  '/disclaimer',
 ];
 
 const DYNAMIC_SOURCES: Array<{ endpoint: string; prefix: string }> = [
@@ -65,6 +64,8 @@ const DYNAMIC_SOURCES: Array<{ endpoint: string; prefix: string }> = [
   { endpoint: PUBLIC_ENDPOINTS.institutions, prefix: '/institutions' },
   { endpoint: PUBLIC_ENDPOINTS.communications, prefix: '/notifications/notices' },
   { endpoint: PUBLIC_ENDPOINTS.tenders, prefix: '/notifications/tenders' },
+  { endpoint: PUBLIC_ENDPOINTS.galleries, prefix: '/galleries' },
+  { endpoint: PUBLIC_ENDPOINTS.videos, prefix: '/videos' },
   { endpoint: PUBLIC_ENDPOINTS.procurement, prefix: '/procurement/announcements' },
 ];
 

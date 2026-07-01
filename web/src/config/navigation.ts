@@ -14,21 +14,6 @@ export const PRIMARY_NAV: NavItem[] = [
     labelEn: 'About Us',
     labelHi: 'हमारे बारे में',
     href: '/about',
-    children: [
-      { key: 'about-sidhkofed', labelEn: 'About SIDHKOFED', labelHi: 'SIDHKOFED के बारे में', href: '/about' },
-      {
-        key: 'about-vision',
-        labelEn: 'Vision, Mission, Objectives & Functions',
-        labelHi: 'दृष्टि, मिशन, उद्देश्य और कार्य',
-        href: '/about/vision-mission-objectives-functions',
-      },
-      {
-        key: 'about-org',
-        labelEn: 'Organisation & Governance',
-        labelHi: 'संगठन और शासन',
-        href: '/about/organisation-governance',
-      },
-    ],
   },
   {
     key: 'activities',
@@ -68,39 +53,6 @@ export const PRIMARY_NAV: NavItem[] = [
     labelEn: 'Membership',
     labelHi: 'सदस्यता',
     href: '/membership',
-    children: [
-      { key: 'membership-overview', labelEn: 'Membership Overview', labelHi: 'सदस्यता अवलोकन', href: '/membership' },
-      {
-        key: 'membership-sidhkofed',
-        labelEn: 'SIDHKOFED Membership',
-        labelHi: 'SIDHKOFED सदस्यता',
-        href: '/membership/sidhkofed',
-      },
-      {
-        key: 'membership-district',
-        labelEn: 'District Union Membership',
-        labelHi: 'जिला संघ सदस्यता',
-        href: '/membership/district-unions',
-      },
-      {
-        key: 'membership-directory',
-        labelEn: 'Member Directory',
-        labelHi: 'सदस्य निर्देशिका',
-        href: '/membership/directory',
-      },
-      {
-        key: 'membership-process',
-        labelEn: 'Membership Process',
-        labelHi: 'सदस्यता प्रक्रिया',
-        href: '/membership/process',
-      },
-      {
-        key: 'membership-faqs',
-        labelEn: 'Membership FAQs',
-        labelHi: 'सदस्यता FAQ',
-        href: '/membership/faqs',
-      },
-    ],
   },
   {
     key: 'procurement',
@@ -160,44 +112,6 @@ export const PRIMARY_NAV: NavItem[] = [
     labelEn: 'Publications',
     labelHi: 'प्रकाशन',
     href: '/publications',
-    children: [
-      {
-        key: 'publications-overview',
-        labelEn: 'Publications Overview',
-        labelHi: 'प्रकाशन अवलोकन',
-        href: '/publications',
-      },
-      {
-        key: 'publications-reports',
-        labelEn: 'Reports & Research',
-        labelHi: 'रिपोर्ट और अनुसंधान',
-        href: '/publications/reports-research',
-      },
-      {
-        key: 'publications-policies',
-        labelEn: 'Policies, Guidelines & SOPs',
-        labelHi: 'नीतियाँ, दिशानिर्देश और SOP',
-        href: '/publications/policies-guidelines-sops',
-      },
-      {
-        key: 'publications-training',
-        labelEn: 'Training Materials',
-        labelHi: 'प्रशिक्षण सामग्री',
-        href: '/publications/training-materials',
-      },
-      {
-        key: 'publications-forms',
-        labelEn: 'Forms & Formats',
-        labelHi: 'फॉर्म और प्रारूप',
-        href: '/publications/forms-formats',
-      },
-      {
-        key: 'publications-media',
-        labelEn: 'Media Gallery',
-        labelHi: 'मीडिया गैलरी',
-        href: '/publications/media',
-      },
-    ],
   },
   {
     key: 'notifications',
@@ -214,18 +128,6 @@ export const PRIMARY_NAV: NavItem[] = [
 export const FOOTER_NAV = {
   about: [
     { key: 'f-about', labelEn: 'About SIDHKOFED', labelHi: 'SIDHKOFED के बारे में', href: '/about' },
-    {
-      key: 'f-vision',
-      labelEn: 'Vision & Mission',
-      labelHi: 'दृष्टि और मिशन',
-      href: '/about/vision-mission-objectives-functions',
-    },
-    {
-      key: 'f-org',
-      labelEn: 'Organisation & Governance',
-      labelHi: 'संगठन और शासन',
-      href: '/about/organisation-governance',
-    },
     { key: 'f-membership', labelEn: 'Membership', labelHi: 'सदस्यता', href: '/membership' },
   ],
   resources: [
@@ -248,7 +150,7 @@ export const FOOTER_NAV = {
       external: true,
     },
     { key: 'f-digital', labelEn: 'Digital Services', labelHi: 'डिजिटल सेवाएं', href: '/digital-services' },
-    { key: 'f-privacy', labelEn: 'Privacy Policy', labelHi: 'गोपनीयता नीति', href: '/pages/privacy-policy' },
-    { key: 'f-disclaimer', labelEn: 'Disclaimer', labelHi: 'अस्वीकरण', href: '/pages/disclaimer' },
+    { key: 'f-privacy', labelEn: 'Privacy Policy', labelHi: 'गोपनीयता नीति', href: '/privacy-policy' },
+    { key: 'f-disclaimer', labelEn: 'Disclaimer', labelHi: 'अस्वीकरण', href: '/disclaimer' },
   ],
 };

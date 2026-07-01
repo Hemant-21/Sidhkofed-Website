@@ -43,6 +43,10 @@ export interface MasterTypeConfig {
   hasDisplayOrder?: boolean;
   /** Default sort field sent to the API. Defaults to 'display_order'. */
   defaultSort?: string;
+  /** Use a specialised form dialog instead of the generic name/order form. */
+  formVariant?: 'financial-year';
+  /** Extra filter keys sent to the backend list endpoint (URL-synced via useFilters). */
+  filterKeys?: string[];
 }
 
 /** All 18 master types defined in the CMS requirements (codex §6). */
@@ -130,6 +134,7 @@ export const MASTER_TYPES: MasterTypeConfig[] = [
     label: 'Blocks',
     description: 'Blocks within districts. Seeded at setup; contact the administrator to add records.',
     editMode: 'seeded',
+    filterKeys: ['district_id'],
   },
   {
     key: 'financial-years',
@@ -138,6 +143,7 @@ export const MASTER_TYPES: MasterTypeConfig[] = [
     editMode: 'full',
     hasDisplayOrder: false,
     defaultSort: 'label',
+    formVariant: 'financial-year',
   },
   {
     key: 'reporting-periods',

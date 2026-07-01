@@ -28,6 +28,8 @@ export interface ProcurementSummary {
   block: MasterRef | null;
   rate: number | null;
   unit: string | null;
+  quantity: number | null;
+  display_quantity_as_mt: boolean;
   effective_date: string | null;
   period_start: string | null;
   period_end: string | null;
@@ -74,6 +76,8 @@ export interface ProcurementWriteInput {
   location_text?: string | null;
   rate?: number | null;
   unit?: string | null;
+  quantity?: number | null;
+  display_quantity_as_mt?: boolean;
   effective_date?: string | null;
   period_start?: string | null;
   period_end?: string | null;

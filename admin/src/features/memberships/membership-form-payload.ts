@@ -28,6 +28,8 @@ export interface MembershipFormValues {
   reporting_period_id: string;
   status: MembershipStatus;
   join_date: string;
+  primary_member_count: string;
+  nominal_member_count: string;
   notes_en: string;
   notes_hi: string;
   // workflow
@@ -56,6 +58,8 @@ export function emptyMembershipForm(): MembershipFormValues {
     reporting_period_id: '',
     status: 'active',
     join_date: '',
+    primary_member_count: '0',
+    nominal_member_count: '0',
     notes_en: '',
     notes_hi: '',
     public_visibility: false,
@@ -80,6 +84,8 @@ export function membershipToForm(m: MembershipDetail): MembershipFormValues {
     reporting_period_id: m.reporting_period?.id ?? '',
     status: m.status,
     join_date: m.join_date ? m.join_date.slice(0, 10) : '',
+    primary_member_count: String(m.primary_member_count ?? 0),
+    nominal_member_count: String(m.nominal_member_count ?? 0),
     notes_en: m.notes_en ?? '',
     notes_hi: m.notes_hi ?? '',
     public_visibility: m.public_visibility,
@@ -107,6 +113,8 @@ export function buildMembershipPayload(v: MembershipFormValues): MembershipWrite
     reporting_period_id: blank(v.reporting_period_id),
     status: v.status,
     join_date: dateOnly(v.join_date),
+    primary_member_count: v.primary_member_count.trim() === '' ? null : Number(v.primary_member_count),
+    nominal_member_count: v.nominal_member_count.trim() === '' ? null : Number(v.nominal_member_count),
     notes_en: blank(v.notes_en),
     notes_hi: blank(v.notes_hi),
     public_visibility: v.public_visibility,

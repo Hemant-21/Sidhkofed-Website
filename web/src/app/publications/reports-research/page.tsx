@@ -3,7 +3,7 @@ import { getListSafe } from '@/lib/api/server';
 import { PUBLIC_ENDPOINTS } from '@/lib/api/endpoints';
 import type { DocumentSummary } from '@/lib/types/content';
 import { buildMetadata } from '@/lib/seo';
-import { PAGE_SIZE, toPage, qstr, getMasterOptions, yearOptions } from '@/lib/listing';
+import { PAGE_SIZE, toPage, qstr, yearOptions } from '@/lib/listing';
 import { ListingLayout } from '@/components/listing/listing-layout';
 import { FilterBar } from '@/components/listing/filter-bar';
 import { PaginationNav } from '@/components/listing/pagination-nav';
@@ -29,7 +29,7 @@ export default async function ReportsResearchPage({ searchParams }: { searchPara
       page,
       page_size: PAGE_SIZE,
       search: qstr(searchParams.search),
-      knowledge_category_slug: 'reports',
+      knowledge_category: 'research-and-reports',
       year: qstr(searchParams.year),
       ordering: '-publication_date',
     },

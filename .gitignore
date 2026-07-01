@@ -143,6 +143,9 @@ vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 .vite/
 
+# ── Local tooling (Python packages, scripts — not part of the deployable app) ──
+.tools/
+
 # ── Backend (SIDHKOFED CMS) ──
 /dist
 /storage

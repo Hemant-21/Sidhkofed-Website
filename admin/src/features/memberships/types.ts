@@ -62,6 +62,8 @@ export interface MembershipSummary {
   reporting_period: MasterRef | null;
   status: MembershipStatus;
   join_date: string | null;
+  primary_member_count: number;
+  nominal_member_count: number;
   publication_state: PublicationState;
   public_visibility: boolean;
   show_on_homepage: boolean;
@@ -99,6 +101,8 @@ export interface MembershipWriteInput {
   reporting_period_id?: string | null;
   status?: MembershipStatus;
   join_date?: string | null;
+  primary_member_count?: number | null;
+  nominal_member_count?: number | null;
   notes_en?: string | null;
   notes_hi?: string | null;
   // workflow

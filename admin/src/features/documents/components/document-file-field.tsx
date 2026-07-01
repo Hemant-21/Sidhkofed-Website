@@ -84,9 +84,10 @@ export function DocumentFileField<T extends FieldValues>({ name, label = 'Attach
             <FileUpload
               onFiles={(files) => void upload(files)}
               accept={DOC_ACCEPT}
+              maxSizeMb={20}
               disabled={uploading}
-              label="Upload a document (PDF, Office, CSV…)"
-              hint="The file is stored once in the media library and linked by reference."
+              label="Upload a document"
+              hint="PDF, Word, Excel, PowerPoint or CSV · Stored once and linked by reference"
             />
             {uploading ? (
               <div className="space-y-1">

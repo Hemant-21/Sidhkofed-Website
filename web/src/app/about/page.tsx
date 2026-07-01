@@ -1,6 +1,5 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
-import { Eye, Building2, Users } from 'lucide-react';
+import { Eye, Crosshair, Leaf } from 'lucide-react';
 import { buildMetadata } from '@/lib/seo';
 import { Breadcrumbs } from '@/components/ui/breadcrumb';
 import { Container } from '@/components/ui/container';
@@ -15,31 +14,19 @@ export const metadata: Metadata = buildMetadata({
 });
 
 const STATS = [
-  { value: 'Est. 2021',   label: 'Incorporated' },
-  { value: '24',          label: 'Districts' },
-  { value: '4,454',       label: 'MPCS' },
-  { value: 'Jharkhand',   label: 'State' },
+  { value: 'Est. 2021', label: 'Incorporated' },
+  { value: '24',        label: 'Districts'     },
+  { value: '4,454',     label: 'MPCS'          },
+  { value: 'Jharkhand', label: 'State'         },
 ];
 
-const NAV_CARDS = [
-  {
-    href: '/about/vision-mission-objectives-functions',
-    icon: Eye,
-    title: 'Vision, Mission, Objectives & Functions',
-    desc: 'Our guiding principles, strategic objectives and core operational functions.',
-  },
-  {
-    href: '/about/organisation-governance',
-    icon: Building2,
-    title: 'Organisation & Governance',
-    desc: "SIDHKOFED's organisational structure, board composition and governance framework.",
-  },
-  {
-    href: '/membership',
-    icon: Users,
-    title: 'Membership',
-    desc: 'View member institutions, district unions and the membership process.',
-  },
+const COMMODITIES = [
+  { name: 'Lac',           category: 'Minor Forest Produce' },
+  { name: 'Honey',         category: 'Minor Forest Produce' },
+  { name: 'Karanj Seeds',  category: 'Oil Seed / MFP'       },
+  { name: 'Ragi',          category: 'Agriculture'           },
+  { name: 'Sal Seeds',     category: 'Minor Forest Produce' },
+  { name: 'Mahua',         category: 'Minor Forest Produce' },
 ];
 
 export default function AboutPage() {
@@ -47,10 +34,9 @@ export default function AboutPage() {
     <>
       <Breadcrumbs items={[{ label: 'About Us' }]} />
 
-      {/* ── PAGE HEADER BAND ── */}
+      {/* ── 1. PAGE HEADER BAND ── */}
       <div className="bg-primary">
         <Container className="py-10 sm:py-14">
-          {/* Org identity */}
           <div className="mb-6 flex flex-wrap items-start gap-3">
             <div>
               <h1 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
@@ -67,8 +53,6 @@ export default function AboutPage() {
               Reg. No. 02/H.Q./2021
             </span>
           </div>
-
-          {/* Stat chips */}
           <div className="flex flex-wrap gap-x-8 gap-y-3 border-t border-white/15 pt-6">
             {STATS.map((s) => (
               <div key={s.label} className="flex items-baseline gap-1.5">
@@ -80,64 +64,146 @@ export default function AboutPage() {
         </Container>
       </div>
 
-      {/* ── TWO-COLUMN: PROSE LEFT, STRUCTURE RIGHT ── */}
+      {/* ── 2. ABOUT + COOPERATIVE STRUCTURE ── */}
       <Container className="py-12">
         <div className="grid grid-cols-1 gap-10 lg:grid-cols-2 lg:items-start">
-
-          {/* Left — existing prose */}
           <div className="space-y-4 text-base leading-relaxed text-foreground">
             <p>
-              SIDHKOFED is the apex cooperative body of Jharkhand, established to strengthen the
-              cooperative movement and improve the livelihoods of tribal and rural communities
-              across the state. Incorporated under the Cooperative Societies Act and functioning
-              under the aegis of the Government of Jharkhand, the federation addresses market
-              inefficiencies and ensures fair compensation to Scheduled Tribe and rural producers.
+              Sidho Kanho Agriculture and Forest Produce State Cooperative Federation Ltd.
+              (SIDHKOFED) is the State-level apex cooperative federation working for the
+              development of agriculture and minor forest produce-based livelihoods in Jharkhand.
             </p>
             <p>
-              The federation works with primary cooperatives and district-level cooperative unions
-              to provide training, marketing support, procurement facilitation and institutional
-              capacity-building services for its member institutions and their beneficiaries.
-            </p>
-            <p>
-              SIDHKOFED&apos;s mandate encompasses the procurement of Minor Forest Produce (MFP),
-              trade facilitation for forest-based and agricultural commodities, skill development
-              programmes, and dissemination of cooperative best practices across
-              Jharkhand&apos;s 24 districts.
+              Through a three-tier cooperative structure, it connects 24 District Cooperative
+              Unions with approximately 4,454 MPCS/LAMPS across the State. Its major areas of
+              work include capacity building, procurement, value addition, storage, marketing,
+              digital services and livelihood promotion.
             </p>
           </div>
-
-          {/* Right — hierarchy diagram */}
           <div>
             <p className="mb-4 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
               Cooperative Structure
             </p>
             <CooperativeStructure />
           </div>
+        </div>
+      </Container>
+
+      {/* ── 3. ORGANISATION STRUCTURE ── */}
+      <div className="bg-muted/40">
+        <Container className="py-12">
+          <div className="grid grid-cols-1 gap-10 lg:grid-cols-2 lg:items-start">
+
+            <div>
+              <p className="mb-1 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                Organisation Structure
+              </p>
+              <h2 className="mb-4 text-xl font-bold text-foreground">How SIDHKOFED is organised</h2>
+              <p className="text-base leading-relaxed text-foreground">
+                SIDHKOFED functions through a three-tier structure comprising the State-level apex
+                federation, 24 District Cooperative Unions and approximately 4,454 grassroots
+                MPCS/LAMPS. The Federation is governed by its Board of Directors and supported by
+                the Chief Executive Officer, officials, technical experts and programme teams.
+              </p>
+              <p className="mt-4 text-base leading-relaxed text-foreground">
+                This structure enables State-level planning and coordination while ensuring
+                implementation and beneficiary outreach through district and primary cooperative
+                institutions.
+              </p>
+            </div>
+
+            {/* Governance card */}
+            <div className="space-y-3">
+              <p className="mb-1 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                Governance
+              </p>
+              {[
+                { role: 'Board of Directors',          note: 'Apex governing body of the federation' },
+                { role: 'Chief Executive Officer',     note: 'Shri Shashi Ranjan, I.A.S.' },
+                { role: 'Technical Experts',           note: 'Programme and domain specialists' },
+                { role: 'Programme Teams',             note: 'District and field implementation' },
+              ].map((item) => (
+                <div
+                  key={item.role}
+                  className="flex items-start gap-3 rounded-lg border border-border bg-surface px-4 py-3"
+                >
+                  <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-primary" />
+                  <div>
+                    <p className="text-sm font-semibold text-foreground">{item.role}</p>
+                    <p className="text-xs text-muted-foreground">{item.note}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+          </div>
+        </Container>
+      </div>
+
+      {/* ── 4. VISION & MISSION ── */}
+      <Container className="py-12">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+
+          {/* Vision */}
+          <div className="rounded-xl border border-primary/20 bg-primary/5 p-6">
+            <div className="mb-4 inline-flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+              <Eye className="h-5 w-5 text-primary" aria-hidden="true" />
+            </div>
+            <h2 className="mb-3 text-lg font-bold text-foreground">Vision</h2>
+            <p className="text-sm leading-relaxed text-foreground">
+              To establish an inclusive, professionally managed and digitally enabled cooperative
+              ecosystem across all 24 districts of Jharkhand. SIDHKOFED envisions strong grassroots
+              institutions that improve the income, market participation and livelihood security of
+              farmers, forest-produce collectors, artisans and cooperative members. It seeks to
+              position cooperatives as sustainable engines of rural economic growth and community
+              empowerment.
+            </p>
+          </div>
+
+          {/* Mission */}
+          <div className="rounded-xl border border-accent/20 bg-accent/5 p-6">
+            <div className="mb-4 inline-flex h-10 w-10 items-center justify-center rounded-lg bg-accent/10">
+              <Crosshair className="h-5 w-5 text-accent" aria-hidden="true" />
+            </div>
+            <h2 className="mb-3 text-lg font-bold text-foreground">Mission</h2>
+            <p className="text-sm leading-relaxed text-foreground">
+              To strengthen more than 4,400 primary cooperative institutions through training,
+              technology, market linkage and transparent programme implementation. SIDHKOFED works
+              to improve procurement, processing, value addition, storage and marketing of
+              agricultural and minor forest produce.
+            </p>
+          </div>
 
         </div>
       </Container>
 
-      {/* ── SECTION NAV CARDS ── */}
-      <Container className="py-12">
-        <nav aria-label="About sections" className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {NAV_CARDS.map(({ href, icon: Icon, title, desc }) => (
-            <Link
-              key={href}
-              href={href}
-              className="group flex flex-col rounded-xl border border-border bg-surface p-6 shadow-sm transition-all hover:border-primary/40 hover:shadow-md"
-            >
-              <div className="mb-4 inline-flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary transition-colors group-hover:bg-primary group-hover:text-white">
-                <Icon className="h-5 w-5" aria-hidden="true" />
+      {/* ── 5. KEY COMMODITIES ── */}
+      <div className="bg-muted/40">
+        <Container className="py-12">
+          <p className="mb-1 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+            What We Procure
+          </p>
+          <h2 className="mb-6 text-xl font-bold text-foreground">Key Commodities</h2>
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
+            {COMMODITIES.map((c) => (
+              <div
+                key={c.name}
+                className="flex flex-col items-center rounded-xl border border-border bg-surface p-4 text-center"
+              >
+                <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
+                  <Leaf className="h-4 w-4 text-primary" aria-hidden="true" />
+                </div>
+                <p className="text-sm font-bold text-foreground">{c.name}</p>
+                <p className="mt-0.5 text-[11px] text-muted-foreground">{c.category}</p>
               </div>
-              <h2 className="text-base font-semibold text-foreground group-hover:text-primary">
-                {title}
-              </h2>
-              <p className="mt-1.5 text-sm text-muted-foreground">{desc}</p>
-            </Link>
-          ))}
-        </nav>
+            ))}
+          </div>
+        </Container>
+      </div>
 
-        <div className="mt-8 max-w-3xl">
+      {/* ── 6. CONTACT CTA ── */}
+      <Container className="py-12">
+        <div className="max-w-3xl">
           <ContactCta />
         </div>
       </Container>

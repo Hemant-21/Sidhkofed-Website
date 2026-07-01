@@ -24,6 +24,8 @@ const BACKEND_KEYS = new Set([
   'commodity_id',
   'rate',
   'unit',
+  'quantity',
+  'display_quantity_as_mt',
   'effective_date',
   'period_start',
   'period_end',
@@ -109,5 +111,22 @@ describe('buildProcurementPayload', () => {
     expect(p.slug).toBeUndefined();
     expect(p.publication_state).toBeUndefined();
     expect(p.created_by).toBeUndefined();
+  });
+
+  it('sends quantity as a number (KG) when entered', () => {
+    const p = buildProcurementPayload(values({ quantity: '50000' }));
+    expect(p.quantity).toBe(50000);
+    expect(typeof p.quantity).toBe('number');
+  });
+
+  it('sends quantity as null when blank or non-numeric', () => {
+    expect(buildProcurementPayload(values({ quantity: '' })).quantity).toBeNull();
+    expect(buildProcurementPayload(values({ quantity: '  ' })).quantity).toBeNull();
+    expect(buildProcurementPayload(values({ quantity: 'abc' })).quantity).toBeNull();
+  });
+
+  it('passes display_quantity_as_mt boolean through unchanged', () => {
+    expect(buildProcurementPayload(values({ display_quantity_as_mt: true })).display_quantity_as_mt).toBe(true);
+    expect(buildProcurementPayload(values({ display_quantity_as_mt: false })).display_quantity_as_mt).toBe(false);
   });
 });
