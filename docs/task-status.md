@@ -1,5 +1,5 @@
 # SIDHKOFED Website — Task Status
-_Last verified: 2026-06-30 by repo audit_
+_Last updated: 2026-07-01_
 
 ## ✅ DONE — Backend, Admin & CMS (Tasks 1–13)
 - 886 backend tests green, 320 admin tests green
@@ -111,12 +111,54 @@ Only `membership/page.tsx` remains.
   the homepage "Knowledge Hub" section and `sitemap.ts`, just no longer from Browse by
   Category.
 
-## ⏸️ PAUSED — Media Gallery (`/publications/media`)
-Still the static "coming soon" placeholder. Backend has `GET /public/galleries` (list +
-slug detail, with `images[]`) and `GET /public/videos` (YouTube-only, thumbnail computed as
-`https://i.ytimg.com/vi/{id}/hqdefault.jpg`). Web app has no `videos` endpoint entry, no
-`GallerySummary` list-item type, no `Video` type yet — all still need to be added before
-building this page out.
+## ✅ DONE — Media Gallery (2026-07-01)
+
+### Types & endpoints
+- `GallerySummary` (list-item, no images array) added to `web/src/lib/types/content.ts`
+- `Video` type added to `web/src/lib/types/content.ts` (mirrors `PublicVideoDto`)
+- `videos: '/public/videos'` added to `PUBLIC_ENDPOINTS` in `web/src/lib/api/endpoints.ts`
+- CSP `frame-src` updated to allow `https://www.youtube-nocookie.com` (YouTube embed)
+
+### Routes added
+| Route | Description |
+|---|---|
+| `/publications/media` | Overview: 8 galleries preview + 8 videos preview, stat chips in header |
+| `/publications/media/galleries` | Full paginated gallery grid (ListingLayout) |
+| `/publications/media/videos` | Full paginated video grid (ListingLayout) |
+| `/galleries/[slug]` | Gallery detail: carousel viewer + thumbnail strip + download |
+| `/videos/[slug]` | Video detail: YouTube embed (youtube-nocookie.com) + title/description |
+
+### Components
+- `web/src/components/cards/gallery-card.tsx` — cover image (4:3), title, photo count
+- `web/src/components/cards/video-card.tsx` — YouTube thumbnail with play icon overlay
+- `web/src/components/details/gallery-detail.tsx` — full carousel viewer:
+  - 16:9 main image with `object-contain`, prev/next arrows (fade on hover), keyboard ←→
+  - Counter badge ("3 / 12"), per-image download button (hover reveal)
+  - Horizontal thumbnail strip (80×64px, active highlighted, smooth-scrolls into view)
+  - "Download All (N)" button — sequential `<a download>` clicks, 250ms apart, no JSZip needed
+- `web/src/components/details/video-detail.tsx` — YouTube iframe embed + bilingual title/desc
+
+### Filtering
+- `hero-slides` gallery excluded from all public listings via `INTERNAL_GALLERY_SLUGS` set
+  in both `media/page.tsx` and `media/galleries/page.tsx`; count shown in header strip is
+  also adjusted (`total_items - internalInBatch`)
+- Header green strip shows "N Galleries · N Videos" stat chips (live from API)
+
+### Select dropdown fix
+- `web/src/components/ui/select.tsx`: added `appearance-none` + custom `ChevronDown` icon
+  (positioned absolute, pointer-events-none) to prevent native browser arrow overlapping long
+  option text like "Policies and Guidelines"
+- `web/src/components/listing/filter-bar.tsx`: dropdown width `md:w-44` → `md:w-56`
+
+### i18n & sitemap
+- New dictionary keys (EN + HI): `page.publications.media.galleries.*`,
+  `page.publications.media.videos.*`
+- `sitemap.ts`: added `/publications/media/galleries`, `/publications/media/videos` static
+  routes; added `galleries` + `videos` to `DYNAMIC_SOURCES`
+
+### Misc
+- `.tools/` added to `.gitignore` (Python packages — platform-specific binaries, not source)
+- `web/src/components/ui/container.tsx` gained optional `id` prop (used for `#listing` anchor)
 
 ---
 
