@@ -1,0 +1,14 @@
+node_modules
+npm-debug.log*
+.next
+.env
+.env.*
+!.env.example
+.DS_Store
+Thumbs.db
+.vscode
+.idea
+coverage
+*.swp
+*.swo
+README.md

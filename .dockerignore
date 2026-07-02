@@ -1,0 +1,46 @@
+# Dependencies (re-installed inside the image)
+node_modules
+npm-debug.log*
+
+# Test outputs
+coverage
+.nyc_output
+
+# Build artefacts (rebuilt inside the image)
+dist
+.next
+
+# Development infrastructure
+docker-compose.yml
+docker-compose.dev.yml
+
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Editor and OS
+.vscode
+.idea
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Git
+.git
+.gitignore
+
+# CI / GitHub
+.github
+
+# Docs and legacy
+docs
+legacy-prototype
+TESTING.md
+README.md
+coverage
+
+# Frontend workspaces (not needed in the API image)
+admin
+web

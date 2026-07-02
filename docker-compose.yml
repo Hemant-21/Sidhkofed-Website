@@ -1,0 +1,46 @@
+# Local development infrastructure for the SIDHKOFED CMS backend.
+# Brings up PostgreSQL and Redis only — the application runs on the host via
+# `npm run dev`. Production uses managed/private services (see docs/foundation).
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: sidhkofed-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: sidhkofed
+      POSTGRES_PASSWORD: sidhkofed_dev_password
+      # POSTGRES_DB creates the DEVELOPMENT database. The dedicated integration-test database
+      # (sidhkofed_test) + its `test` role are created by the init script mounted below, which the
+      # postgres entrypoint auto-runs once on a fresh volume. On an existing volume, (re)create
+      # them with `npm run db:test:create`. The two databases stay isolated — tests never touch
+      # dev data.
+      POSTGRES_DB: sidhkofed_cms
+    ports:
+      - '5432:5432'
+    volumes:
+      - sidhkofed_pgdata:/var/lib/postgresql/data
+      - ./scripts/db/01-init-test-db.sql:/docker-entrypoint-initdb.d/01-init-test-db.sql:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U sidhkofed -d sidhkofed_cms']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: sidhkofed-redis
+    restart: unless-stopped
+    command: ['redis-server', '--appendonly', 'yes']
+    ports:
+      - '6379:6379'
+    volumes:
+      - sidhkofed_redisdata:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  sidhkofed_pgdata:
+  sidhkofed_redisdata:

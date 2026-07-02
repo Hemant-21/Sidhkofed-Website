@@ -1,0 +1,201 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * Public-website design tokens — HSL CSS variables shared with the admin design
+ * system (one semantic palette: primary/surface/muted/danger…). The public portal
+ * ships the light theme only. Never use raw hex in components — consume tokens.
+ *
+ * `--font-size-scale` powers the accessibility text-size controls (codex §6/§7):
+ * the controls bump this variable and the root font-size scales with it.
+ */
+@layer base {
+  :root {
+    --background: 210 20% 98%;
+    --foreground: 222 22% 12%;
+
+    --surface: 0 0% 100%;
+    --surface-foreground: 222 22% 12%;
+
+    --muted: 214 16% 92%;
+    --muted-foreground: 215 16% 38%;
+
+    --border: 214 18% 86%;
+    --input: 214 18% 84%;
+    --ring: 158 64% 32%;
+
+    /* SIDHKOFED cooperative green primary. */
+    --primary: 158 64% 24%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 214 16% 92%;
+    --secondary-foreground: 222 22% 18%;
+
+    /* Warm earthen accent for highlights / calls to action. */
+    --accent: 28 80% 42%;
+    --accent-foreground: 0 0% 100%;
+
+    --success: 150 60% 30%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 35 92% 38%;
+    --warning-foreground: 0 0% 100%;
+
+    --danger: 0 72% 44%;
+    --danger-foreground: 0 0% 100%;
+
+    --info: 211 80% 40%;
+    --info-foreground: 0 0% 100%;
+
+    --radius: 0.5rem;
+
+    --font-size-scale: 1;
+  }
+
+  html.dark {
+    --background: 222 22% 10%;
+    --foreground: 210 20% 93%;
+
+    --surface: 222 22% 13%;
+    --surface-foreground: 210 20% 90%;
+
+    --muted: 222 15% 18%;
+    --muted-foreground: 215 15% 58%;
+
+    --border: 222 15% 22%;
+    --input: 222 15% 20%;
+    --ring: 158 55% 45%;
+
+    --primary: 158 55% 42%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 222 15% 18%;
+    --secondary-foreground: 210 20% 88%;
+
+    --accent: 28 75% 55%;
+    --accent-foreground: 0 0% 100%;
+
+    --success: 150 50% 42%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 35 85% 50%;
+    --warning-foreground: 0 0% 100%;
+
+    --danger: 0 65% 55%;
+    --danger-foreground: 0 0% 100%;
+
+    --info: 211 70% 52%;
+    --info-foreground: 0 0% 100%;
+  }
+
+  html {
+    /* Accessibility text resizing scales the base font for the whole document. */
+    font-size: calc(100% * var(--font-size-scale));
+  }
+
+  * {
+    border-color: hsl(var(--border));
+  }
+
+  body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    font-feature-settings: 'rlig' 1, 'calt' 1;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Hindi content uses a Devanagari-capable stack and handles text expansion. */
+  [lang='hi'] {
+    font-family: var(--font-hindi), var(--font-sans), system-ui, sans-serif;
+    line-height: 1.7;
+  }
+
+  /* Announcement ticker — continuous horizontal scroll, seamless loop via 50% translate. */
+  @keyframes ticker-scroll {
+    from { transform: translateX(0); }
+    to   { transform: translateX(-50%); }
+  }
+  .ticker-track {
+    animation: ticker-scroll linear infinite;
+    will-change: transform;
+  }
+  .ticker-track:hover {
+    animation-play-state: paused;
+  }
+
+  /* Visible keyboard focus everywhere (WCAG 2.4.7). */
+  :focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+  }
+
+  /* Respect reduced-motion preference (WCAG 2.3.3). */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@layer components {
+  /* Skip-to-content link, visible only when focused. */
+  .skip-link {
+    position: absolute;
+    left: 1rem;
+    top: -3rem;
+    z-index: 100;
+    border-radius: var(--radius);
+    background-color: hsl(var(--primary));
+    color: hsl(var(--primary-foreground));
+    padding: 0.5rem 1rem;
+    transition: top 150ms ease-out;
+  }
+  .skip-link:focus {
+    top: 1rem;
+  }
+
+  /* Sanitized rich-text body (RichText component output). */
+  .prose-content {
+    line-height: 1.7;
+  }
+  .prose-content h2 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin: 1.5rem 0 0.75rem;
+  }
+  .prose-content h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin: 1.25rem 0 0.5rem;
+  }
+  .prose-content p {
+    margin: 0.75rem 0;
+  }
+  .prose-content ul,
+  .prose-content ol {
+    margin: 0.75rem 0;
+    padding-left: 1.5rem;
+    list-style: revert;
+  }
+  .prose-content a {
+    color: hsl(var(--primary));
+    text-decoration: underline;
+  }
+  .prose-content table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1rem 0;
+  }
+  .prose-content th,
+  .prose-content td {
+    border: 1px solid hsl(var(--border));
+    padding: 0.5rem 0.75rem;
+    text-align: left;
+  }
+}

@@ -1,0 +1,78 @@
+{
+  "generated_at": "2026-06-27T13:00:53.087Z",
+  "database": "sidhkofed_seed",
+  "schema_migration": "20260627061544_add_enquiries_table",
+  "files": {
+    "database_dump": {
+      "name": "sidhkofed-seed.sql.gz",
+      "bytes": 76459,
+      "sha256": "ae06ba86ac1bf37f9e62c81014e5f7e9994aa8e4eec6b9f79c45d5916c56bb7e"
+    },
+    "media_archive": {
+      "name": "sidhkofed-seed-media.tar.gz",
+      "bytes": 5430699,
+      "sha256": "dce93617b043af9a5e819226585840d3d0247f120f7eb14cced7f1210ba5741e"
+    }
+  },
+  "expected_minimums": {
+    "media_assets": 40,
+    "galleries": 10,
+    "gallery_images": 30,
+    "videos": 10,
+    "institutions": 12,
+    "programme_schemes": 10,
+    "toolkits": 10,
+    "toolkit_items": 30,
+    "documents": 18,
+    "events": 24,
+    "event_news": 12,
+    "official_communications": 12,
+    "tenders": 12,
+    "procurement_updates": 12,
+    "pages": 12,
+    "menu_items": 24,
+    "faqs": 12,
+    "digital_services": 10,
+    "institutional_memberships": 20,
+    "enquiries": 15,
+    "dashboard_reports": 13,
+    "dashboard_datasets": 13,
+    "dashboard_metrics": 52,
+    "event_field_definitions": 12,
+    "audit_logs": 36,
+    "media_usages": 46
+  },
+  "row_counts": {
+    "media_assets": 40,
+    "galleries": 10,
+    "gallery_images": 30,
+    "videos": 10,
+    "institutions": 12,
+    "programme_schemes": 10,
+    "toolkits": 10,
+    "toolkit_items": 30,
+    "documents": 18,
+    "events": 24,
+    "event_news": 12,
+    "official_communications": 12,
+    "tenders": 12,
+    "procurement_updates": 12,
+    "pages": 12,
+    "menu_items": 24,
+    "faqs": 12,
+    "digital_services": 10,
+    "institutional_memberships": 20,
+    "enquiries": 15,
+    "dashboard_reports": 13,
+    "dashboard_datasets": 13,
+    "dashboard_metrics": 52,
+    "event_field_definitions": 12,
+    "audit_logs": 36,
+    "media_usages": 46
+  },
+  "limitations": [
+    "success_stories_not_implemented",
+    "homepage_is_aggregated",
+    "search_vectors_are_database_generated"
+  ]
+}
