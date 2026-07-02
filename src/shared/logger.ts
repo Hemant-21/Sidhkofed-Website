@@ -30,10 +30,15 @@ const options: LoggerOptions = {
 };
 
 if (!isProduction) {
-  options.transport = {
-    target: 'pino-pretty',
-    options: { colorize: true, translateTime: 'SYS:HH:MM:ss.l', ignore: 'pid,hostname,service,env' },
-  };
+  try {
+    require.resolve('pino-pretty');
+    options.transport = {
+      target: 'pino-pretty',
+      options: { colorize: true, translateTime: 'SYS:HH:MM:ss.l', ignore: 'pid,hostname,service,env' },
+    };
+  } catch {
+    // pino-pretty not installed (e.g. production image built with --omit=dev); fall back to JSON output
+  }
 }
 
 export const logger = pino(options);
