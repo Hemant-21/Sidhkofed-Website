@@ -11,7 +11,8 @@
   "main": "dist/server.js",
   "scripts": {
     "dev": "tsx watch src/server.ts",
-    "build": "tsc -p tsconfig.json && tsc-alias -p tsconfig.json",
+    "build": "tsc -p tsconfig.json && tsc-alias -p tsconfig.json && npm run build:seed",
+    "build:seed": "tsc -p prisma/tsconfig.seed.json && tsc-alias -p prisma/tsconfig.seed.json",
     "start": "node dist/server.js",
     "smoke": "tsx scripts/smoke.ts",
     "test": "vitest run",
@@ -38,7 +39,7 @@
   },
   "prisma": {
     "schema": "prisma/schema.prisma",
-    "seed": "tsx prisma/seed/index.ts"
+    "seed": "node dist/prisma/seed/index.js"
   },
   "overrides": {
     "ioredis": "^5.4.1"
