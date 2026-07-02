@@ -51,6 +51,14 @@ const nextConfig = {
   // Enable standalone output for Docker — produces a self-contained server
   // bundle under .next/standalone that does not require node_modules at runtime.
   output: 'standalone',
+  // isomorphic-dompurify pulls in jsdom for server-side HTML sanitization
+  // (src/utils/sanitize-html.ts). jsdom reads an internal default-stylesheet.css
+  // asset via a path relative to its own module location; webpack bundling that
+  // into the server component chunk breaks that path (ENOENT at build time).
+  // Excluding it from bundling makes Next.js require it natively at runtime instead.
+  experimental: {
+    serverComponentsExternalPackages: ['isomorphic-dompurify', 'jsdom'],
+  },
   // The public website renders server-side (SSR/ISR) and also makes client-side
   // requests for filters/pagination. Browser requests go to `/api/v1/*` and are
   // proxied same-origin to the Express backend so they are never blocked by the
