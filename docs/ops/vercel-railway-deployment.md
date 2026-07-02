@@ -107,10 +107,42 @@ Once `web`'s final domain is live, update `PUBLIC_WEBSITE_URL` on the Railway
 disk (see [.env.example:64-66](../../.env.example)). Railway containers are
 ephemeral and don't share disk across replicas or redeploys, so production
 must use `STORAGE_PROVIDER=s3` against any S3-compatible bucket (AWS S3,
-Cloudflare R2, Backblaze B2). Set the `S3_*` variables listed in §1 and point
-`STORAGE_PUBLIC_BASE_URL` at the bucket's public/CDN URL — the app validates
-these are present at boot when `STORAGE_PROVIDER=s3` (see
+Cloudflare R2, Backblaze B2). The app validates the `S3_*` variables below are
+present at boot when `STORAGE_PROVIDER=s3` (see
 [src/config/env.ts:159-170](../../src/config/env.ts)).
+
+### Example: Backblaze B2
+
+```
+STORAGE_PROVIDER=s3
+S3_ENDPOINT=https://s3.<region>.backblazeb2.com
+S3_REGION=<region>                    # e.g. us-west-004 — the 2nd segment of your endpoint
+S3_BUCKET=<your-bucket-name>
+S3_ACCESS_KEY_ID=<applicationKeyId>
+S3_SECRET_ACCESS_KEY=<applicationKey>
+S3_FORCE_PATH_STYLE=true
+SIGNED_URL_TTL_SECONDS=600
+STORAGE_PUBLIC_BASE_URL=https://s3.<region>.backblazeb2.com/<your-bucket-name>
+```
+
+- **Endpoint / region**: shown on the bucket's page in the B2 dashboard as
+  `s3.<region>.backblazeb2.com` (e.g. `s3.us-west-004.backblazeb2.com` →
+  region `us-west-004`). A B2 account is pinned to a single region.
+- **Keys**: create an Application Key scoped to just this bucket (B2 dashboard
+  → App Keys → Add a New Application Key) rather than using the master key.
+  `keyID` → `S3_ACCESS_KEY_ID`, `applicationKey` → `S3_SECRET_ACCESS_KEY` — B2
+  shows the secret once, at creation time, so capture it immediately.
+- **Path style**: B2 supports both path-style and virtual-hosted-style
+  addressing, so the repo's default of `true` works unchanged.
+- **Bucket visibility**: keep it private. The S3 driver
+  ([src/services/storage/s3.storage.ts:123-132](../../src/services/storage/s3.storage.ts))
+  always delivers via time-limited presigned GET URLs built from
+  `S3_ENDPOINT` + credentials — it never reads `STORAGE_PUBLIC_BASE_URL`.
+  That variable is only consumed by the local-disk driver, but Zod still
+  requires it to be a well-formed URL at boot regardless of provider, so the
+  bucket base URL above is just a placeholder to satisfy validation.
+- **Signing**: B2's S3-compatible API only supports SigV4, which
+  `@aws-sdk/client-s3` already uses by default — no extra config needed.
 
 ---
 
