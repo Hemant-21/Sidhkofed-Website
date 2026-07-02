@@ -10,14 +10,9 @@
  * Run with `npm run db:seed` (after migrations create the identity tables).
  */
 import { PrismaClient } from '@prisma/client';
-import { seedConfig } from '@/config';
+import { seedConfig } from '../../src/config';
 import { hashPassword } from '@/modules/auth/password';
-import {
-  ROLES,
-  PERMISSIONS,
-  ROLE_PERMISSIONS,
-  ROLE_KEYS,
-} from '@/modules/auth/auth.permissions';
+import { ROLES, PERMISSIONS, ROLE_PERMISSIONS, ROLE_KEYS } from '@/modules/auth/auth.permissions';
 import { seedMasters } from './masters';
 import { seedDashboardReports } from './dashboard';
 import { seedMemberships } from './memberships';
@@ -44,7 +39,12 @@ async function seedPermissions(): Promise<Map<string, string>> {
     const row = await prisma.permission.upsert({
       where: { key: perm.key },
       update: { module: perm.module, action: perm.action, description: perm.description },
-      create: { key: perm.key, module: perm.module, action: perm.action, description: perm.description },
+      create: {
+        key: perm.key,
+        module: perm.module,
+        action: perm.action,
+        description: perm.description,
+      },
     });
     idByKey.set(perm.key, row.id);
   }
@@ -53,7 +53,11 @@ async function seedPermissions(): Promise<Map<string, string>> {
 }
 
 /** Connect a role to a set of permission keys (idempotent via the composite unique). */
-async function grant(roleId: string, permissionKeys: string[], permIds: Map<string, string>): Promise<void> {
+async function grant(
+  roleId: string,
+  permissionKeys: string[],
+  permIds: Map<string, string>,
+): Promise<void> {
   for (const key of permissionKeys) {
     const permissionId = permIds.get(key);
     if (!permissionId) continue;
