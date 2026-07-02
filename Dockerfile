@@ -20,6 +20,11 @@ RUN npm ci --ignore-scripts
 FROM node:20-alpine AS builder
 WORKDIR /app
 
+# OpenSSL so `prisma generate` (below) detects the real libssl version instead
+# of guessing (this stage is a separate filesystem from `deps` — packages
+# installed there don't carry over, only the COPY'd node_modules do).
+RUN apk add --no-cache openssl
+
 # Bring in the installed node_modules from the deps stage.
 COPY --from=deps /app/node_modules ./node_modules
 
@@ -42,9 +47,9 @@ LABEL org.opencontainers.image.title="sidhkofed-cms-api" \
       org.opencontainers.image.description="SIDHKOFED CMS Backend API" \
       org.opencontainers.image.vendor="SIDHKOFED"
 
-# Runtime OS packages (none required for a pure-JS Node app; add only what is
-# strictly needed — e.g. curl for the healthcheck probe).
-RUN apk add --no-cache curl && \
+# Runtime OS packages: curl for the healthcheck probe, openssl because the
+# copied Prisma query-engine binary dynamically links against libssl.
+RUN apk add --no-cache curl openssl && \
     addgroup --system --gid 1001 nodejs && \
     adduser  --system --uid 1001 nodeuser && \
     mkdir -p /app/storage && \
