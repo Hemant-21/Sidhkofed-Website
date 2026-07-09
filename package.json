@@ -83,7 +83,6 @@
     "prisma": "^5.18.0",
     "supertest": "^7.2.2",
     "tsc-alias": "^1.8.10",
-    "tsx": "^4.17.0",
     "typescript": "^5.5.4",
     "vitest": "^4.1.9"
   }
