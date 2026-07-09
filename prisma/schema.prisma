@@ -39,6 +39,8 @@ model User {
   updatedMemberships            InstitutionalMembership[]    @relation("MembershipUpdatedBy")
   createdInstitutions           Institution[]                @relation("InstitutionCreatedBy")
   updatedInstitutions           Institution[]                @relation("InstitutionUpdatedBy")
+  leadershipCreated             Leadership[]                 @relation("LeadershipCreatedBy")
+  leadershipUpdated             Leadership[]                 @relation("LeadershipUpdatedBy")
   uploadedMedia                 MediaAsset[]                 @relation("MediaUploadedBy")
   createdMenuItems              MenuItem[]                   @relation("MenuItemCreatedBy")
   updatedMenuItems              MenuItem[]                   @relation("MenuItemUpdatedBy")
@@ -173,6 +175,7 @@ model MediaAsset {
   galleryCovers    Gallery[]          @relation("GalleryCover")
   galleryImages    GalleryImage[]
   institutionLogos Institution[]      @relation("InstitutionLogo")
+  leadershipPhotos Leadership[]       @relation("LeadershipPhoto")
   replacedBy       MediaAsset?        @relation("MediaReplace", fields: [replacedById], references: [id])
   replaces         MediaAsset[]       @relation("MediaReplace")
   uploadedBy       User?              @relation("MediaUploadedBy", fields: [uploadedById], references: [id])
@@ -485,25 +488,25 @@ model EnquiryType {
 }
 
 model Enquiry {
-  id                String          @id @default(uuid()) @db.Uuid
-  enquiryTypeId     String          @map("enquiry_type_id") @db.Uuid
-  name              String          @db.VarChar(150)
-  mobile            String          @db.VarChar(20)
-  email             String          @db.VarChar(255)
-  subject           String          @db.VarChar(255)
-  message           String          @db.Text
-  organization      String?         @db.VarChar(255)
-  commodityId       String?         @map("commodity_id") @db.Uuid
-  programmeSchemeId String?         @map("programme_scheme_id") @db.Uuid
-  submittedAt       DateTime        @default(now()) @map("submitted_at")
-  sourceIpHash      String?         @map("source_ip_hash") @db.VarChar(128)
-  spamState         SpamState       @default(clean) @map("spam_state")
-  internalNotes     String?         @map("internal_notes") @db.Text
-  archivedAt        DateTime?       @map("archived_at")
-  createdAt         DateTime        @default(now()) @map("created_at")
-  updatedAt         DateTime        @updatedAt @map("updated_at")
-  enquiryType       EnquiryType     @relation(fields: [enquiryTypeId], references: [id], onDelete: Restrict)
-  commodity         Commodity?      @relation(fields: [commodityId], references: [id])
+  id                String           @id @default(uuid()) @db.Uuid
+  enquiryTypeId     String           @map("enquiry_type_id") @db.Uuid
+  name              String           @db.VarChar(150)
+  mobile            String           @db.VarChar(20)
+  email             String           @db.VarChar(255)
+  subject           String           @db.VarChar(255)
+  message           String           @db.Text
+  organization      String?          @db.VarChar(255)
+  commodityId       String?          @map("commodity_id") @db.Uuid
+  programmeSchemeId String?          @map("programme_scheme_id") @db.Uuid
+  submittedAt       DateTime         @default(now()) @map("submitted_at")
+  sourceIpHash      String?          @map("source_ip_hash") @db.VarChar(128)
+  spamState         SpamState        @default(clean) @map("spam_state")
+  internalNotes     String?          @map("internal_notes") @db.Text
+  archivedAt        DateTime?        @map("archived_at")
+  createdAt         DateTime         @default(now()) @map("created_at")
+  updatedAt         DateTime         @updatedAt @map("updated_at")
+  enquiryType       EnquiryType      @relation(fields: [enquiryTypeId], references: [id], onDelete: Restrict)
+  commodity         Commodity?       @relation(fields: [commodityId], references: [id])
   programmeScheme   ProgrammeScheme? @relation(fields: [programmeSchemeId], references: [id])
 
   @@index([enquiryTypeId])
@@ -1372,42 +1375,74 @@ model DigitalService {
   @@map("digital_services")
 }
 
+model Leadership {
+  id               String           @id @default(uuid()) @db.Uuid
+  nameEn           String           @map("name_en")
+  nameHi           String?          @map("name_hi")
+  govtRoleEn       String           @map("govt_role_en")
+  govtRoleHi       String?          @map("govt_role_hi")
+  sidhkofedRoleEn  String           @map("sidhkofed_role_en")
+  sidhkofedRoleHi  String?          @map("sidhkofed_role_hi")
+  photoMediaId     String?          @map("photo_media_id") @db.Uuid
+  slug             String           @unique
+  publicationState PublicationState @default(draft) @map("publication_state")
+  publicVisibility Boolean          @default(true) @map("public_visibility")
+  publishStartAt   DateTime?        @map("publish_start_at")
+  publishedAt      DateTime?        @map("published_at")
+  archivedAt       DateTime?        @map("archived_at")
+  highlightType    HighlightType?   @map("highlight_type")
+  highlightStartAt DateTime?        @map("highlight_start_at")
+  highlightEndAt   DateTime?        @map("highlight_end_at")
+  displayOrder     Int?             @map("display_order")
+  createdById      String?          @map("created_by") @db.Uuid
+  updatedById      String?          @map("updated_by") @db.Uuid
+  createdAt        DateTime         @default(now()) @map("created_at")
+  updatedAt        DateTime         @updatedAt @map("updated_at")
+  createdBy        User?            @relation("LeadershipCreatedBy", fields: [createdById], references: [id])
+  photoMedia       MediaAsset?      @relation("LeadershipPhoto", fields: [photoMediaId], references: [id])
+  updatedBy        User?            @relation("LeadershipUpdatedBy", fields: [updatedById], references: [id])
+
+  @@index([publicationState, publicVisibility, archivedAt, publishedAt])
+  @@index([displayOrder])
+  @@map("leadership")
+}
+
 model InstitutionalMembership {
-  id                String           @id @default(uuid()) @db.Uuid
-  institutionId     String           @map("institution_id") @db.Uuid
-  membershipLevel   MembershipLevel  @map("membership_level")
-  membershipType    MembershipType   @map("membership_type")
-  membershipNumber  String?          @unique @map("membership_number")
-  districtId        String?          @map("district_id") @db.Uuid
-  districtUnionId   String?          @map("district_union_id") @db.Uuid
-  reportingPeriodId String?          @map("reporting_period_id") @db.Uuid
-  status            MembershipStatus @default(active)
-  joinDate          DateTime?        @map("join_date") @db.Date
-  primaryMemberCount Int             @default(0) @map("primary_member_count")
-  nominalMemberCount Int             @default(0) @map("nominal_member_count")
-  notesEn           String?          @map("notes_en")
-  notesHi           String?          @map("notes_hi")
-  slug              String           @unique
-  publicationState  PublicationState @default(draft) @map("publication_state")
-  publicVisibility  Boolean          @default(true) @map("public_visibility")
-  publishStartAt    DateTime?        @map("publish_start_at")
-  publishedAt       DateTime?        @map("published_at")
-  archivedAt        DateTime?        @map("archived_at")
-  highlightType     HighlightType?   @map("highlight_type")
-  highlightStartAt  DateTime?        @map("highlight_start_at")
-  highlightEndAt    DateTime?        @map("highlight_end_at")
-  displayOrder      Int?             @map("display_order")
-  showOnHomepage    Boolean          @default(false) @map("show_on_homepage")
-  createdById       String?          @map("created_by") @db.Uuid
-  updatedById       String?          @map("updated_by") @db.Uuid
-  createdAt         DateTime         @default(now()) @map("created_at")
-  updatedAt         DateTime         @updatedAt @map("updated_at")
-  createdBy         User?            @relation("MembershipCreatedBy", fields: [createdById], references: [id])
-  district          District?        @relation(fields: [districtId], references: [id], onDelete: Restrict)
-  districtUnion     Institution?     @relation("MembershipDistrictUnion", fields: [districtUnionId], references: [id], onDelete: Restrict)
-  institution       Institution      @relation("MembershipInstitution", fields: [institutionId], references: [id])
-  reportingPeriod   ReportingPeriod? @relation(fields: [reportingPeriodId], references: [id])
-  updatedBy         User?            @relation("MembershipUpdatedBy", fields: [updatedById], references: [id])
+  id                 String           @id @default(uuid()) @db.Uuid
+  institutionId      String           @map("institution_id") @db.Uuid
+  membershipLevel    MembershipLevel  @map("membership_level")
+  membershipType     MembershipType   @map("membership_type")
+  membershipNumber   String?          @unique @map("membership_number")
+  districtId         String?          @map("district_id") @db.Uuid
+  districtUnionId    String?          @map("district_union_id") @db.Uuid
+  reportingPeriodId  String?          @map("reporting_period_id") @db.Uuid
+  status             MembershipStatus @default(active)
+  joinDate           DateTime?        @map("join_date") @db.Date
+  primaryMemberCount Int              @default(0) @map("primary_member_count")
+  nominalMemberCount Int              @default(0) @map("nominal_member_count")
+  notesEn            String?          @map("notes_en")
+  notesHi            String?          @map("notes_hi")
+  slug               String           @unique
+  publicationState   PublicationState @default(draft) @map("publication_state")
+  publicVisibility   Boolean          @default(true) @map("public_visibility")
+  publishStartAt     DateTime?        @map("publish_start_at")
+  publishedAt        DateTime?        @map("published_at")
+  archivedAt         DateTime?        @map("archived_at")
+  highlightType      HighlightType?   @map("highlight_type")
+  highlightStartAt   DateTime?        @map("highlight_start_at")
+  highlightEndAt     DateTime?        @map("highlight_end_at")
+  displayOrder       Int?             @map("display_order")
+  showOnHomepage     Boolean          @default(false) @map("show_on_homepage")
+  createdById        String?          @map("created_by") @db.Uuid
+  updatedById        String?          @map("updated_by") @db.Uuid
+  createdAt          DateTime         @default(now()) @map("created_at")
+  updatedAt          DateTime         @updatedAt @map("updated_at")
+  createdBy          User?            @relation("MembershipCreatedBy", fields: [createdById], references: [id])
+  district           District?        @relation(fields: [districtId], references: [id], onDelete: Restrict)
+  districtUnion      Institution?     @relation("MembershipDistrictUnion", fields: [districtUnionId], references: [id], onDelete: Restrict)
+  institution        Institution      @relation("MembershipInstitution", fields: [institutionId], references: [id])
+  reportingPeriod    ReportingPeriod? @relation(fields: [reportingPeriodId], references: [id])
+  updatedBy          User?            @relation("MembershipUpdatedBy", fields: [updatedById], references: [id])
 
   @@unique([institutionId, membershipLevel, membershipType, districtUnionId, reportingPeriodId], map: "institutional_memberships_business_key")
   @@index([publicationState, publicVisibility, archivedAt, publishedAt])

@@ -210,126 +210,110 @@ Used by: Membership (intro + nav cards ABOVE the listing), Publications (quickli
 
 ## 4. Page-by-Page Specifications
 
-### 4.1 Homepage (`/`) — STATUS: PLANNED
+### 4.1 Homepage (`/`) — STATUS: ✅ DONE (2026-07-09)
 
-**Template:** A (unique)  
-**Current state:** Text hero + 9 data sections (News, Events, Programmes, Services, Comms, Tenders, Documents, Partners)  
-**Target:** Split 2-col hero + 8 narrative sections from the legacy prototype
+> Implemented 2026-07-09 via direct collaboration; supersedes the original spec text
+> below where they differ. The core intent (real search, live stats/leadership, retire
+> the ticker, demote leadership, fewer/clearer zones) was carried out in full. What
+> differs from the literal spec: the hero keeps its existing `bg-primary` + dot-grid +
+> diagonal-image treatment rather than switching to `bg-gradient-to-b from-primary
+> to-primary/85` or a plain `<Image src="/hero-cooperative.png"/>` right panel (the
+> existing CMS-driven gallery carousel with a static fallback was already better than
+> a single static image, so it was kept and just extended to mobile); Quick Access
+> kept its existing 6 task tiles rather than being expanded to the spec's 3×3/9-tile
+> grid (no corresponding page for 3 of the 9 suggested links existed to justify the
+> expansion); and leadership was demoted in position rather than also visually
+> "collapsed to a lighter treatment" — the spec offered position-or-treatment as
+> alternatives, and moving it below Hero/KPI/Quick Access/Governance was sufficient on
+> its own to satisfy "leadership must not outrank citizen tasks" without also needing
+> to redesign a component that wasn't itself the problem.
 
-#### Mandatory homepage corrections from the 2026-07-09 review
+**Template:** A (unique)
+**Built — section stack (top → bottom):**
 
-1. **Hero must earn the name `HeroSearch`.**
-   If the component remains `HeroSearch`, it must contain a real wide search field for high-frequency tasks like notices, documents, forms, and tenders.
-2. **Low-contrast hero copy must be removed.**
-   No `text-white/45` or similar low-opacity headline/stat text on the green hero panel.
-3. **Hero stats and leadership content must stop being hardcoded constants.**
-   Use the existing KPI or CMS/settings pattern instead of code-only values.
-4. **Leadership must not outrank citizen tasks.**
-   Move it below Quick Access/KPIs or collapse it to a much lighter treatment.
-5. **Mobile must retain a real hero image.**
-   The main institutional visual cannot disappear for the most common device class.
-6. **The red alert marquee pattern should be retired.**
-   Replace moving ticker behavior with a calmer, static latest-notices presentation.
-7. **Homepage sections must be regrouped into fewer, clearer zones.**
-   The page should read as:
-   - hero + search
-   - one live impact row
-   - task/action band
-   - latest governance/notices/tenders
-   - supporting exploration/editorial
+1. **Hero** (`web/src/components/home/hero-search.tsx`) — contrast fixed (the two
+   `text-white/45` low-opacity spots, on the sub-headline and stat labels, bumped to
+   `/75` and `/70`); a real embedded search box (new
+   `web/src/components/home/hero-search-bar.tsx`, submits to `/search?q=...` via
+   `router.push`, reusing the existing `/api/v1/public/search` endpoint and `/search`
+   page — no new backend work); the hardcoded `STATS` constant replaced by a
+   `stats: DashboardMetric[]` prop — the first 3 metrics from the same
+   `/public/dashboard/kpis` data `<KpiStrip>` already renders below, so this needed
+   zero new backend work (KPI reports are already admin-editable via a
+   `show_on_homepage` flag); a `lg:hidden` mobile image band added above the text
+   content so the institutional image no longer disappears below `lg` (previously the
+   diagonal right panel was `hidden lg:block` with no mobile equivalent at all).
+2. **KPI Strip** — unchanged.
+3. **Quick Access** (`web/src/components/home/quick-links.tsx`) — the decorative `01–06`
+   numerals (implying a false ranking) replaced with a per-link Lucide icon in a
+   `h-9 w-9 rounded-lg bg-primary/10` container, matching the icon treatment already
+   used by `<CategoryCards>` elsewhere on the site. Kept the existing 6 links; did not
+   expand to the spec's 9-link 3×3 grid (see note above).
+4. **Governance band** (Notices + Tenders) — promoted from its old position near the
+   bottom to right after Quick Access, to absorb the "latest updates" job the retired
+   ticker used to do, per the spec's own reasoning ("this band becomes more important
+   once the moving alert ticker is retired").
+5. **Leadership** (`web/src/components/home/leaders-section.tsx`) — demoted from
+   position 3 (previously right after the ticker) to position 5, below Hero/KPI/Quick
+   Access/Governance, satisfying "must not outrank citizen tasks." Also made
+   CMS-driven: a new backend `Leadership` module (`src/modules/leadership/*`, mirrors
+   the existing `digital-services` module — bilingual name/govt-role/SIDHKOFED-role,
+   photo via the standard media picker, publish workflow, display order, no
+   `show_on_homepage` since this section has no other public listing) replaces the
+   hardcoded `LEADERS` array; a matching admin CRUD UI
+   (`admin/src/features/leadership/`) lets admins manage entries and upload real
+   photos. Public endpoint `GET /public/leadership`; the section hides entirely when
+   there are zero published entries, same pattern as the conditionally-hidden
+   Activities & Commodities section below it.
+6. **About editorial** — unchanged.
+7. **Activities & Commodities** — unchanged.
+8. **Capacity Building** — unchanged.
+9. **FAQ** — unchanged content, background alternation adjusted for the new section
+   order (was previously adjacent to the old Governance-band position).
+10. **Knowledge Hub** — unchanged (4 static cards; not expanded to CMS-driven).
+11. **Media Gallery** — unchanged.
 
-#### Section stack (top → bottom)
+**Retired:** the moving red "Alert" ticker (`AnnouncementTicker`) — deleted outright
+(`web/src/components/home/announcement-ticker.tsx` and its `ticker-track` CSS
+keyframes in `globals.css`), a deliberate product retirement per the review, not
+dead code left in place. Its job is now carried by the promoted Governance band.
 
-**Section 1 — Hero (split 2-col)**
-- Background: `bg-gradient-to-b from-primary to-primary/85`
-- Left (text column):
-  - Plain-language service-first H1 before any slogan-style flourish
-  - Add a real search field with 2-3 example queries or placeholder prompts
-  - Keep CTAs, but ensure the primary action is task-oriented rather than purely exploratory
-  - Any secondary poetic line must remain fully legible and visually secondary by scale, not by contrast failure
-- Right (visual column):
-  - `<Image src="/hero-cooperative.png" />` (copy from `legacy-prototype/assets/images/hero-cooperative.png`)
-  - Floating chip allowed only if sourced from live/configurable data
-- Mobile: keep a real cropped hero image visible; do not reduce mobile to text on a flat green slab
+**Also fixed as part of this pass (review priority-1 item):** the stale
+`footer.prototypeNotice` disclaimer ("Representative prototype content — official
+data pending approval.") removed from `site-footer.tsx` and the dictionary — it was
+still live in production despite the review calling it out by name for removal.
 
-**Section 2 — KPI Strip** (no change — keep existing `<KpiStrip>`)
-
-**Section 3 — Quick Access (new component: `quick-links.tsx`)**
-- Eyebrow: "Fast Pathways"
-- H2: "Quick Access"
-- 3×3 numbered grid:
-  01 ERP / MIS Login → /digital-services
-  02 Impact Dashboard → /impact/dashboard
-  03 Membership → /membership
-  04 Procurement Rates → /procurement
-  05 Tenders → /notifications/tenders
-  06 Publications → /publications
-  07 Buyer Enquiry → /procurement/enquiry
-  08 Notices → /notifications/notices
-  09 Digital Services → /digital-services
-  - Card style: use meaningful equal-weight task tiles; avoid decorative ranking numerals that imply a false order
-
-**Section 4 — About (static editorial, 2-col on lg)**
-- Eyebrow: "Institutional Identity"
-- H2: "SIDHKOFED as the apex cooperative platform"
-- Left column: eyebrow + H2
-- Right column: paragraph + 3 benefit bullets + [→ About SIDHKOFED] link
-- Background: `bg-muted/40` section band
-
-**Section 5 — Activities & Commodities (CMS: Programmes API)**
-- Eyebrow: "Activities & Commodities"
-- H2: "Forest economy and cooperative value chains"
-- Renders `programmes.items` as `<ProgrammeCard>` grid (3-col)
-- API: `getListSafe(programmes, {show_on_homepage: true, page_size: 6})`
-- Hidden when `programmes.items.length === 0`
-
-**Section 6 — Capacity Building (CMS: Training events timeline)**
-- 2-col layout: text left, timeline right
-- Left: Eyebrow "Capacity Building" + H2 + paragraph + [View All Trainings → /activities/trainings]
-- Right: 3 training events as `<article>` rows: `[Month badge] Title — District`
-- API: `getListSafe(events, {event_type: 'training', page_size: 3, ordering: '-start_date'})`
-- Each row: `<time>` chip (e.g. "May") + `<strong>` title + `<small>` district
-- If empty: entire right column shows "No upcoming trainings" placeholder
-
-**Section 7 — Governance (2-col muted band)**
-- 2-col split: left = Notices, right = Tenders
-- Existing `CommunicationCard` + `TenderCard` components
-- This band becomes more important once the moving alert ticker is retired. It should carry the "latest governance" job cleanly and statically.
-
-**Section 8 — Knowledge Hub (static, 4 cards)**
-- Eyebrow: "Knowledge Hub"
-- H2: "Acts, SOPs, reports, training materials and publications"
-- 4 equal-width cards (static, not CMS):
-  - Reports & Research → /publications/reports-research
-  - Policies, Guidelines & SOPs → /publications/policies-guidelines-sops
-  - Training Materials → /publications/training-materials
-  - Forms & Formats → /publications/forms-formats
-
-#### Files to change
-- `legacy-prototype/assets/images/hero-cooperative.png` → copy to `web/public/hero-cooperative.png`
-- `web/src/components/home/hero-search.tsx` → rewrite to split 2-col layout
-- `web/src/components/home/quick-links.tsx` → create (numbered Quick Access grid)
-- `web/src/app/page.tsx` → new section order, updated Promise.all
+#### Files changed
+- `web/src/components/home/hero-search.tsx`, `web/src/components/home/hero-search-bar.tsx` (new)
+- `web/src/components/home/quick-links.tsx`
+- `web/src/components/home/leaders-section.tsx`
+- `web/src/components/home/announcement-ticker.tsx` (deleted)
+- `web/src/components/layout/site-footer.tsx`
+- `web/src/app/page.tsx`, `web/src/app/globals.css`, `web/src/i18n/dictionary.ts`
+- `web/src/lib/types/content.ts`, `web/src/lib/api/endpoints.ts` (`Leader` type, `/public/leadership`)
+- `src/modules/leadership/*` (new backend module), `prisma/schema.prisma`, `prisma/seed/leadership-defaults.ts`, `src/routes/index.ts`
+- `admin/src/features/leadership/*`, `admin/src/app/(admin)/leadership/*` (new admin CRUD UI)
 
 #### Audit checklist — Homepage
-- [ ] Hero image loads (no broken img `<img>` tag error)
-- [ ] Mobile still shows a real hero image, not text-only green slab
-- [ ] Hero contains real search if the component remains `HeroSearch`
-- [ ] Hero headline and supporting copy clear accessibility-minded contrast expectations; no low-opacity white that reads disabled
-- [ ] Floating "24 Districts" chip is visible over image only if sourced from live/configurable data
-- [ ] Hero stats are live/configurable rather than hardcoded duplicate values
-- [ ] KPI strip: renders when data present, hidden when absent
-- [ ] Quick Access: all task tiles display, all hrefs correct
-- [ ] Quick Access avoids decorative false-ranking numerals unless they are made meaningful
-- [ ] Leadership does not outrank Quick Access/KPIs/task content
-- [ ] About editorial: 2-col on `lg`, stacks on mobile
-- [ ] Activities section: hidden when no CMS programmes; cards appear when data entered
-- [ ] Capacity Building: training timeline shows 3 events; "No upcoming trainings" when empty
-- [ ] Governance: notices left, tenders right — both have "View all" links
-- [ ] Alert/notices treatment is static and readable; no crying-wolf marquee behavior
-- [ ] Knowledge Hub: 4 static cards, all 4 links resolve
-- [ ] Dark mode decision is explicit: either fully audited or intentionally withheld
-- [ ] Language toggle: all `t()` strings switch to Hindi
+- [x] Hero image loads, including on mobile (previously absent below `lg`)
+- [x] Hero contains a real search box, submitting to `/search`
+- [x] Hero headline/stat contrast fixed (no `/45`-opacity white)
+- [x] Hero stats are live (`/public/dashboard/kpis`), not hardcoded — hidden when empty
+- [x] KPI strip: renders when data present, hidden when absent
+- [x] Quick Access: icons replace decorative ranking numerals; all hrefs correct
+- [x] Leadership does not outrank Quick Access/KPIs/Governance content, and is now
+      CMS-driven end-to-end (verified live: `GET /public/leadership` → 3 seeded
+      leaders → rendered on the homepage in the correct position)
+- [x] About/Activities/Capacity Building sections: unchanged, still correct
+- [x] Governance band promoted; carries the "latest updates" job the ticker used to
+- [x] Ticker removed — no moving marquee/red alert badge remains
+- [x] Knowledge Hub: 4 static cards, all links resolve
+- [x] Footer prototype notice removed
+- [x] Dark mode: all touched styling is token-based except the hero's bespoke
+      opacity-based whites, which were the one area re-checked directly against a
+      dark-mode render
+- [x] Language toggle: leadership bilingual fields switch via `pickText`; hero search
+      labels/placeholder switch via `t()`
 
 ---
 
@@ -772,7 +756,7 @@ Pages are implemented one at a time. Each audit checklist must be manually verif
 
 | Priority | Page | Status | Template | Effort | Notes |
 |---|---|---|---|---|---|
-| 1 | Homepage | 🔴 PENDING | A (unique) | High | New components + API restructure |
+| — | Homepage | ✅ DONE (2026-07-09) | A (unique) | — | Hero contrast/search/mobile-image + live stats, new Leadership module (backend+admin), ticker retired, sections reordered — see §4.1 |
 | 4 | Publications | 🔴 PENDING | E (hybrid) | Low | 5 category quicklinks above listing |
 | 5 | Membership Process | 🔴 PENDING | B (static) | Medium | Numbered step cards + ContactCta |
 | 6 | Membership | 🔴 PENDING | E (hybrid) | Medium | Intro + nav cards + inline FAQs |

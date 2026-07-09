@@ -58,6 +58,7 @@ export const ROUTES = {
   memberships: '/memberships',
   faqs: '/faqs',
   digitalServices: '/digital-services',
+  leadership: '/leadership',
   enquiries: '/enquiries',
   dashboardData: '/dashboard-data',
   masters: '/masters',

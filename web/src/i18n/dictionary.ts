@@ -97,7 +97,6 @@ const en: Dict = {
   'footer.importantLinks': 'Important links',
   'footer.about': 'About',
   'footer.copyright': 'SIDHKOFED. All rights reserved.',
-  'footer.prototypeNotice': 'Representative prototype content — official data pending approval.',
 
   // Filters
   'filter.type': 'Type',
@@ -394,7 +393,6 @@ const hi: Dict = {
   'footer.importantLinks': 'महत्वपूर्ण लिंक',
   'footer.about': 'परिचय',
   'footer.copyright': 'सिद्धकोफेड। सर्वाधिकार सुरक्षित।',
-  'footer.prototypeNotice': 'प्रातिनिधिक प्रोटोटाइप सामग्री — आधिकारिक डेटा अनुमोदन हेतु लंबित।',
 
   // Filters (keys not listed fall back to English automatically)
   'filter.type': 'प्रकार',

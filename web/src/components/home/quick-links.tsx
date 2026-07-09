@@ -1,14 +1,17 @@
 import Link from 'next/link';
+import { GraduationCap, Package, Handshake, FileText, Bell, MonitorSmartphone } from 'lucide-react';
 import { Container } from '@/components/ui/container';
 
+const ICON_CLASS = 'h-5 w-5 text-primary';
+
 const LINKS = [
-  { num: '01', label: 'Training Programmes', href: '/activities/trainings' },
-  { num: '02', label: 'Procurement', href: '/procurement' },
-  { num: '03', label: 'Buyer Enquiry', href: '/procurement/enquiry' },
-  { num: '04', label: 'Forms & Formats', href: '/publications/forms-formats' },
-  { num: '05', label: 'Notices', href: '/notifications/notices' },
-  { num: '06', label: 'Digital Services', href: '/digital-services' },
-] as const;
+  { icon: <GraduationCap className={ICON_CLASS} aria-hidden="true" />, label: 'Training Programmes', href: '/activities/trainings' },
+  { icon: <Package className={ICON_CLASS} aria-hidden="true" />, label: 'Procurement', href: '/procurement' },
+  { icon: <Handshake className={ICON_CLASS} aria-hidden="true" />, label: 'Buyer Enquiry', href: '/procurement/enquiry' },
+  { icon: <FileText className={ICON_CLASS} aria-hidden="true" />, label: 'Forms & Formats', href: '/publications/forms-formats' },
+  { icon: <Bell className={ICON_CLASS} aria-hidden="true" />, label: 'Notices', href: '/notifications/notices' },
+  { icon: <MonitorSmartphone className={ICON_CLASS} aria-hidden="true" />, label: 'Digital Services', href: '/digital-services' },
+];
 
 export function QuickLinks() {
   return (
@@ -23,13 +26,13 @@ export function QuickLinks() {
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
           {LINKS.map((link) => (
             <Link
-              key={link.num}
+              key={link.href}
               href={link.href}
               className="group relative rounded-lg border border-border bg-surface p-5 transition-all hover:border-primary hover:shadow-sm"
             >
-              <span className="block text-4xl font-black leading-none text-border transition-colors group-hover:text-primary/20">
-                {link.num}
-              </span>
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 transition-colors group-hover:bg-primary/20">
+                {link.icon}
+              </div>
               <p className="mt-3 text-sm font-semibold text-foreground group-hover:text-primary">
                 {link.label}
               </p>

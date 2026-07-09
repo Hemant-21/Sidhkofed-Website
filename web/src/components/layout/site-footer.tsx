@@ -105,7 +105,6 @@ export function SiteFooter({ contactSettings }: { contactSettings: PublicContact
 
         <div className="mt-10 flex flex-col items-start justify-between gap-3 border-t border-background/20 pt-6 text-sm text-background/70 sm:flex-row sm:items-center">
           <p>© {year} {t('footer.copyright')}</p>
-          <p className="text-xs text-background/50">{t('footer.prototypeNotice')}</p>
           <Link href="/search" className="hover:text-background hover:underline">
             {t('nav.search')}
           </Link>

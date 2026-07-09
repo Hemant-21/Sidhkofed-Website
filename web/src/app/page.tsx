@@ -10,6 +10,7 @@ import type {
   CommunicationSummary,
   TenderSummary,
   KpisResponse,
+  Leader,
 } from '@/lib/types/content';
 import { Container } from '@/components/ui/container';
 import { HeroSearch } from '@/components/home/hero-search';
@@ -21,7 +22,6 @@ import { CommunicationCard } from '@/components/cards/communication-card';
 import { TenderCard } from '@/components/cards/tender-card';
 import { HomeSection } from '@/components/home/home-section';
 import { FaqAccordion } from '@/components/content/faq-accordion';
-import { AnnouncementTicker } from '@/components/home/announcement-ticker';
 import { LeadersSection } from '@/components/home/leaders-section';
 import { OrganizationJsonLd } from '@/components/seo/json-ld';
 import { detailPath } from '@/lib/api/endpoints';
@@ -29,10 +29,10 @@ import { detailPath } from '@/lib/api/endpoints';
 export const revalidate = 300;
 
 export default async function HomePage() {
-  const [kpis, heroGallery, ticker, programmes, communications, tenders, trainings, faqs, galleryEvents] = await Promise.all([
+  const [kpis, heroGallery, leaders, programmes, communications, tenders, trainings, faqs, galleryEvents] = await Promise.all([
     getOneSafe<KpisResponse>(PUBLIC_ENDPOINTS.dashboardKpis),
     getOneSafe<GalleryDetail>(detailPath(PUBLIC_ENDPOINTS.galleries, 'hero-slides')),
-    getListSafe<CommunicationSummary>(PUBLIC_ENDPOINTS.communications, { query: { page_size: 5, ordering: '-issue_date' } }),
+    getListSafe<Leader>(PUBLIC_ENDPOINTS.leadership, { query: { page_size: 12 } }),
     getListSafe<ProgrammeSummary>(PUBLIC_ENDPOINTS.programmes, { query: { show_on_homepage: true, page_size: 6 } }),
     getListSafe<CommunicationSummary>(PUBLIC_ENDPOINTS.communications, { query: { show_on_homepage: true, page_size: 4 } }),
     getListSafe<TenderSummary>(PUBLIC_ENDPOINTS.tenders, { query: { tender_status: 'open', page_size: 4 } }),
@@ -42,23 +42,20 @@ export default async function HomePage() {
   ]);
 
   const galleryItems = galleryEvents.items.filter((e) => e.cover_media !== null).slice(0, 6);
+  // First 3 live KPI metrics for the hero's inline stat strip — same data `<KpiStrip>`
+  // renders below, just capped shorter for the hero's compact layout.
+  const heroStats = (kpis?.kpis ?? []).flatMap((r) => r.metrics).slice(0, 3);
 
   return (
     <>
       <OrganizationJsonLd />
 
-      {/* 1. Hero — bold split with diagonal image panel */}
+      {/* 1. Hero — bold split with diagonal image panel, live stats, embedded search */}
       <section className="overflow-hidden bg-primary">
-        <HeroSearch slides={heroGallery?.images ?? []} />
+        <HeroSearch slides={heroGallery?.images ?? []} stats={heroStats} />
       </section>
 
-      {/* 2. Announcement ticker — latest 5 communications, cycles every 5s */}
-      <AnnouncementTicker items={ticker.items} />
-
-      {/* 3. Leadership */}
-      <LeadersSection />
-
-      {/* 4. KPI Strip */}
+      {/* 2. KPI Strip */}
       {kpis && kpis.kpis.length > 0 && (
         <section aria-label="Impact at a glance" className="border-b border-border bg-surface">
           <Container className="py-8">
@@ -70,7 +67,46 @@ export default async function HomePage() {
       {/* 3. Quick Access */}
       <QuickLinks />
 
-      {/* 4. About editorial — 2-col */}
+      {/* 4. Governance band — notices + tenders (promoted: carries the "latest updates"
+          job the retired announcement ticker used to do) */}
+      {(communications.items.length > 0 || tenders.items.length > 0) && (
+        <section className="bg-muted/40">
+          <Container className="py-14">
+            <div className="grid grid-cols-1 gap-10 lg:grid-cols-2">
+              <HomeSection
+                titleKey="home.section.communications"
+                viewAllHref="/notifications/notices"
+                show={communications.items.length > 0}
+                bare
+              >
+                <div className="space-y-4">
+                  {communications.items.map((c) => (
+                    <CommunicationCard key={c.id} item={c} />
+                  ))}
+                </div>
+              </HomeSection>
+              <HomeSection
+                titleKey="home.section.tenders"
+                viewAllHref="/notifications/tenders"
+                show={tenders.items.length > 0}
+                bare
+              >
+                <div className="space-y-4">
+                  {tenders.items.map((tdr) => (
+                    <TenderCard key={tdr.id} tender={tdr} />
+                  ))}
+                </div>
+              </HomeSection>
+            </div>
+          </Container>
+        </section>
+      )}
+
+      {/* 5. Leadership — demoted below Quick Access/KPI/Governance so it no longer
+          outranks citizen tasks; CMS-driven via the Leadership module */}
+      <LeadersSection leaders={leaders.items} />
+
+      {/* 6. About editorial — 2-col */}
       <section className="bg-muted/40">
         <Container className="py-14">
           <div className="grid grid-cols-1 gap-10 lg:grid-cols-2 lg:items-center">
@@ -111,7 +147,7 @@ export default async function HomePage() {
         </Container>
       </section>
 
-      {/* 5. Activities & Commodities — CMS programmes */}
+      {/* 7. Activities & Commodities — CMS programmes */}
       {programmes.items.length > 0 && (
         <section>
           <Container className="py-14">
@@ -137,7 +173,7 @@ export default async function HomePage() {
         </section>
       )}
 
-      {/* 6. Capacity Building — training events timeline */}
+      {/* 8. Capacity Building — training events timeline */}
       <section className={programmes.items.length > 0 ? 'bg-muted/40' : ''}>
         <Container className="py-14">
           <div className="grid grid-cols-1 gap-10 lg:grid-cols-2 lg:items-start">
@@ -166,50 +202,16 @@ export default async function HomePage() {
         </Container>
       </section>
 
-      {/* 7. Governance band — notices + tenders */}
-      {(communications.items.length > 0 || tenders.items.length > 0) && (
-        <section className={programmes.items.length > 0 ? '' : 'bg-muted/40'}>
-          <Container className="py-14">
-            <div className="grid grid-cols-1 gap-10 lg:grid-cols-2">
-              <HomeSection
-                titleKey="home.section.communications"
-                viewAllHref="/notifications/notices"
-                show={communications.items.length > 0}
-                bare
-              >
-                <div className="space-y-4">
-                  {communications.items.map((c) => (
-                    <CommunicationCard key={c.id} item={c} />
-                  ))}
-                </div>
-              </HomeSection>
-              <HomeSection
-                titleKey="home.section.tenders"
-                viewAllHref="/notifications/tenders"
-                show={tenders.items.length > 0}
-                bare
-              >
-                <div className="space-y-4">
-                  {tenders.items.map((tdr) => (
-                    <TenderCard key={tdr.id} tender={tdr} />
-                  ))}
-                </div>
-              </HomeSection>
-            </div>
-          </Container>
-        </section>
-      )}
-
-      {/* 8. FAQ — highlight_type=homepage, hidden when empty */}
+      {/* 9. FAQ — highlight_type=homepage, hidden when empty */}
       {faqs.items.length > 0 && (
-        <section className="bg-muted/40">
+        <section className={programmes.items.length > 0 ? '' : 'bg-muted/40'}>
           <Container className="py-14">
             <FaqAccordion faqs={faqs.items} title="Common Questions" />
           </Container>
         </section>
       )}
 
-      {/* 9. Knowledge Hub — static category cards */}
+      {/* 10. Knowledge Hub — static category cards */}
       <section className="border-t border-border">
         <Container className="py-14">
           <div className="mb-8">
@@ -258,7 +260,7 @@ export default async function HomePage() {
         </Container>
       </section>
 
-      {/* 10. Media Gallery — event cover photos, hidden when fewer than 2 images */}
+      {/* 11. Media Gallery — event cover photos, hidden when fewer than 2 images */}
       {galleryItems.length >= 2 && (
         <section className="bg-muted/40">
           <Container className="py-14">

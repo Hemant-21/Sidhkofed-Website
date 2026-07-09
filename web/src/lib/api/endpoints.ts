@@ -24,6 +24,7 @@ export const PUBLIC_ENDPOINTS = {
   videos: '/public/videos',
   faqs: '/public/faqs',
   digitalServices: '/public/digital-services',
+  leadership: '/public/leadership',
 
   // Dashboard
   dashboard: '/public/dashboard',

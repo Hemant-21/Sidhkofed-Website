@@ -419,6 +419,20 @@ export interface DigitalService {
   opens_new_tab: boolean;
 }
 
+// ── Leadership ───────────────────────────────────────────────────────────────
+export interface Leader {
+  id: string;
+  slug: string;
+  name_en: string;
+  name_hi: string | null;
+  govt_role_en: string;
+  govt_role_hi: string | null;
+  sidhkofed_role_en: string;
+  sidhkofed_role_hi: string | null;
+  photo: MediaRef | null;
+  display_order: number | null;
+}
+
 // ── Dashboard ────────────────────────────────────────────────────────────────
 export interface DashboardMetric {
   metric_key: string;

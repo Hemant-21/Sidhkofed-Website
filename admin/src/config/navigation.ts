@@ -102,6 +102,7 @@ export const NAVIGATION: NavSection[] = [
       { key: 'menus', label: 'Menus', href: ROUTES.menus, icon: MenuIcon },
       { key: 'faqs', label: 'FAQs', href: ROUTES.faqs, icon: HelpCircle },
       { key: 'digital-services', label: 'Digital Services', href: ROUTES.digitalServices, icon: AppWindow },
+      { key: 'leadership', label: 'Leadership', href: ROUTES.leadership, icon: Users },
     ],
   },
   {

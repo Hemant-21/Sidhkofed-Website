@@ -6,23 +6,24 @@ import Link from 'next/link';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useLanguage } from '@/providers/language-provider';
 import { buttonClasses } from '@/components/ui/button';
-import type { GalleryImage } from '@/lib/types/content';
+import { pickText } from '@/utils/bilingual';
+import { formatNumber } from '@/utils/format';
+import { HeroSearchBar } from './hero-search-bar';
+import type { GalleryImage, DashboardMetric } from '@/lib/types/content';
 
 interface HeroSearchProps {
   slides: GalleryImage[];
+  /** First 3 live KPI metrics (same data `<KpiStrip>` renders below) — replaces what
+   *  used to be a hardcoded STATS constant. Hidden entirely when empty. */
+  stats: DashboardMetric[];
 }
 
-const STATS = [
-  { value: '24',      label: 'Districts' },
-  { value: '3,000+', label: 'Members' },
-  { value: '₹12 Cr+', label: 'MFP Procured' },
-];
-
-export function HeroSearch({ slides }: HeroSearchProps) {
+export function HeroSearch({ slides, stats }: HeroSearchProps) {
   const { t, language } = useLanguage();
   const [current, setCurrent] = useState(0);
   const hasSlides = slides.length > 0;
   const isCarousel = slides.length > 1;
+  const currentSlide = slides[current] ?? null;
 
   const next = useCallback(() => setCurrent((i) => (i + 1) % slides.length), [slides.length]);
   const prev = useCallback(() => setCurrent((i) => (i - 1 + slides.length) % slides.length), [slides.length]);
@@ -35,6 +36,25 @@ export function HeroSearch({ slides }: HeroSearchProps) {
 
   return (
     <div className="mx-auto max-w-screen-xl">
+      {/* Mobile hero image band — the institutional image must not disappear below `lg`,
+          where the diagonal right panel is hidden. Reuses the same slide/fallback source. */}
+      <div className="relative h-48 w-full overflow-hidden sm:h-64 lg:hidden">
+        <Image
+          src={currentSlide ? currentSlide.media.url : '/hero-cooperative.png'}
+          alt={
+            currentSlide
+              ? currentSlide.media.alt_text || currentSlide.caption_en || currentSlide.media.title || ''
+              : 'Cooperative value chains — Jharkhand tribal communities'
+          }
+          fill
+          className="object-cover"
+          priority
+          sizes="100vw"
+          unoptimized={Boolean(currentSlide?.media.url.startsWith('http://localhost'))}
+        />
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-primary/60 via-transparent to-transparent" />
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-2">
 
         {/* ── LEFT PANEL ── */}
@@ -74,7 +94,7 @@ export function HeroSearch({ slides }: HeroSearchProps) {
             {/* Accent rule separating the two headline pairs */}
             <div className="my-3 h-[2px] w-8 rounded-full bg-accent/50 sm:my-4 sm:w-10" />
 
-            <p className="text-2xl font-black leading-[1.08] tracking-tight text-white/45 sm:text-3xl lg:text-[2.75rem]">
+            <p className="text-2xl font-black leading-[1.08] tracking-tight text-white/75 sm:text-3xl lg:text-[2.75rem]">
               From Village<br />to Value.
             </p>
 
@@ -83,8 +103,13 @@ export function HeroSearch({ slides }: HeroSearchProps) {
               {t('site.tagline')}
             </p>
 
-            {/* CTAs */}
-            <div className="mt-6 flex flex-wrap gap-3 sm:mt-7">
+            {/* Search — the primary, task-oriented action */}
+            <div className="mt-6 max-w-sm sm:mt-7">
+              <HeroSearchBar />
+            </div>
+
+            {/* Secondary CTAs */}
+            <div className="mt-4 flex flex-wrap gap-3">
               <Link href="/activities" className={buttonClasses('accent', 'lg')}>
                 Explore Activities
               </Link>
@@ -96,15 +121,21 @@ export function HeroSearch({ slides }: HeroSearchProps) {
               </Link>
             </div>
 
-            {/* Inline stat strip */}
-            <div className="mt-6 flex flex-wrap gap-x-5 gap-y-2 border-t border-white/[0.12] pt-4 sm:mt-7 sm:gap-x-6 sm:pt-5">
-              {STATS.map((stat) => (
-                <div key={stat.label} className="flex items-baseline gap-1.5">
-                  <span className="text-sm font-black text-white">{stat.value}</span>
-                  <span className="text-[11px] font-medium text-white/45">{stat.label}</span>
-                </div>
-              ))}
-            </div>
+            {/* Inline stat strip — live KPI data, hidden when none is configured */}
+            {stats.length > 0 && (
+              <div className="mt-6 flex flex-wrap gap-x-5 gap-y-2 border-t border-white/[0.12] pt-4 sm:mt-7 sm:gap-x-6 sm:pt-5">
+                {stats.map((metric) => {
+                  const label = pickText(metric.label_en, metric.label_hi, language);
+                  const value = metric.value != null ? formatNumber(metric.value, language) : metric.value_text ?? '—';
+                  return (
+                    <div key={metric.metric_key} className="flex items-baseline gap-1.5">
+                      <span className="text-sm font-black text-white">{value}</span>
+                      <span className="text-[11px] font-medium text-white/70">{label}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </div>
 
