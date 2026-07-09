@@ -61,8 +61,9 @@
     "multer": "^2.0.1",
     "pino": "^9.3.2",
     "pino-http": "^10.2.0",
-    "zod": "^3.23.8",
-    "tsx": "^4.17.0"
+    "prisma": "^5.18.0",
+    "tsx": "^4.17.0",
+    "zod": "^3.23.8"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
@@ -80,7 +81,6 @@
     "eslint": "^8.57.0",
     "pino-pretty": "^11.2.2",
     "prettier": "^3.3.3",
-    "prisma": "^5.18.0",
     "supertest": "^7.2.2",
     "tsc-alias": "^1.8.10",
     "typescript": "^5.5.4",
