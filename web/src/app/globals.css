@@ -4,8 +4,9 @@
 
 /*
  * Public-website design tokens — HSL CSS variables shared with the admin design
- * system (one semantic palette: primary/surface/muted/danger…). The public portal
- * ships the light theme only. Never use raw hex in components — consume tokens.
+ * system (one semantic palette: primary/surface/muted/danger…). Both light and dark
+ * themes are supported (see the `html.dark` overrides below and `ThemeToggle`).
+ * Never use raw hex in components — consume tokens so both themes stay correct.
  *
  * `--font-size-scale` powers the accessibility text-size controls (codex §6/§7):
  * the controls bump this variable and the root font-size scales with it.

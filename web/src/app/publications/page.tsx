@@ -1,17 +1,16 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
 import {
   GraduationCap,
   ImageIcon,
   BookOpen,
   FileText,
-  ArrowRight,
 } from 'lucide-react';
 import { getListSafe } from '@/lib/api/server';
 import { PUBLIC_ENDPOINTS } from '@/lib/api/endpoints';
 import type { DocumentSummary } from '@/lib/types/content';
 import { buildMetadata } from '@/lib/seo';
 import { PAGE_SIZE, toPage, qstr, getMasterOptions } from '@/lib/listing';
+import { CategoryCards, type CategoryCardDef } from '@/components/listing/category-cards';
 import { FilterBar } from '@/components/listing/filter-bar';
 import { PaginationNav } from '@/components/listing/pagination-nav';
 import { ResultsSummary } from '@/components/listing/results-summary';
@@ -31,29 +30,29 @@ export const metadata: Metadata = buildMetadata({
 
 type SP = Record<string, string | string[] | undefined>;
 
-const CATEGORIES = [
+const CATEGORIES: CategoryCardDef[] = [
   {
-    icon: FileText,
-    label: 'Bye-laws',
-    description: 'SIDHKOFED and District Union bye-laws.',
+    icon: <FileText className="h-5 w-5 text-primary" aria-hidden="true" />,
+    titleKey: 'page.publications.category.byelaws.title',
+    descriptionKey: 'page.publications.category.byelaws.subtitle',
     href: '/publications?knowledge_category=bye-laws#listing',
   },
   {
-    icon: GraduationCap,
-    label: 'Training Resources',
-    description: 'Manuals, handbooks and learning resources.',
+    icon: <GraduationCap className="h-5 w-5 text-primary" aria-hidden="true" />,
+    titleKey: 'page.publications.category.training.title',
+    descriptionKey: 'page.publications.category.training.subtitle',
     href: '/publications?knowledge_category=training-resources#listing',
   },
   {
-    icon: BookOpen,
-    label: 'SOPs & Manuals',
-    description: 'Standard operating procedures and operational manuals.',
+    icon: <BookOpen className="h-5 w-5 text-primary" aria-hidden="true" />,
+    titleKey: 'page.publications.category.sops.title',
+    descriptionKey: 'page.publications.category.sops.subtitle',
     href: '/publications?knowledge_category=sops-and-manuals#listing',
   },
   {
-    icon: ImageIcon,
-    label: 'Media Gallery',
-    description: 'Photo and video archive of activities and events.',
+    icon: <ImageIcon className="h-5 w-5 text-primary" aria-hidden="true" />,
+    titleKey: 'page.publications.category.media.title',
+    descriptionKey: 'page.publications.category.media.subtitle',
     href: '/publications/media',
   },
 ];
@@ -92,24 +91,7 @@ export default async function PublicationsPage({ searchParams }: { searchParams:
       <div className="bg-muted/40 border-b border-border">
         <Container className="py-8">
           <SectionHeading title="Browse by Category" />
-          <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            {CATEGORIES.map(({ icon: Icon, label, description, href }) => (
-              <Link
-                key={href}
-                href={href}
-                className="group flex flex-col gap-2 rounded-xl border border-border bg-surface p-4 transition-colors hover:border-primary/50 hover:bg-primary/5"
-              >
-                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 transition-colors group-hover:bg-primary/20">
-                  <Icon className="h-5 w-5 text-primary" aria-hidden="true" />
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm font-semibold text-foreground leading-tight">{label}</p>
-                  <p className="mt-1 text-xs text-muted-foreground leading-relaxed">{description}</p>
-                </div>
-                <ArrowRight className="h-3.5 w-3.5 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary" aria-hidden="true" />
-              </Link>
-            ))}
-          </div>
+          <CategoryCards categories={CATEGORIES} />
         </Container>
       </div>
 

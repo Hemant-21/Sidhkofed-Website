@@ -93,7 +93,7 @@ export function MemberHierarchy({ apexRecord, duRecords, totalPrimary, totalNomi
         </div>
 
         {/* Branch B — 12 Nominal at apex */}
-        <div className="rounded-xl border border-border bg-surface px-4 py-4 text-center">
+        <div className="rounded-lg border border-border bg-surface px-4 py-4 text-center">
           <p className="text-3xl font-black tabular-nums text-accent">
             {apexRecord ? apexRecord.nominal_member_count : 12}
           </p>

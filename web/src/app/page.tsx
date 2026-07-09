@@ -246,7 +246,7 @@ export default async function HomePage() {
               <Link
                 key={item.href}
                 href={item.href}
-                className="group rounded-xl border border-border bg-surface p-5 transition-all hover:border-primary hover:shadow-sm"
+                className="group rounded-lg border border-border bg-surface p-5 transition-all hover:border-primary hover:shadow-sm"
               >
                 <p className="font-semibold text-foreground transition-colors group-hover:text-primary">
                   {item.label}

@@ -31,7 +31,7 @@ export default function VisionPage() {
           { label: 'Vision, Mission, Objectives & Functions' },
         ]}
       />
-      <Container className="py-10">
+      <Container className="py-12">
         <meta name="google" content="on" />
         <header className="mb-10 max-w-3xl">
           <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">

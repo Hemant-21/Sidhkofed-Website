@@ -244,7 +244,7 @@ export default async function MembershipPage() {
             <Link
               key={label}
               href={href}
-              className="flex items-center gap-3 rounded-xl border border-border bg-surface px-5 py-4 transition-colors hover:border-primary/40 hover:bg-primary/5"
+              className="flex items-center gap-3 rounded-lg border border-border bg-surface px-5 py-4 transition-colors hover:border-primary/40 hover:bg-primary/5"
             >
               <FileDown className="h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
               <div>
@@ -311,7 +311,7 @@ export default async function MembershipPage() {
         <div className="bg-muted/40">
           <Container className="py-12">
             <SectionHeading title="Frequently Asked Questions" />
-            <div className="mt-6 divide-y divide-border overflow-hidden rounded-xl border border-border bg-surface">
+            <div className="mt-6 divide-y divide-border overflow-hidden rounded-lg border border-border bg-surface">
               {faqList.items.map((faq) => (
                 <details key={faq.id} className="group">
                   <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 marker:hidden hover:bg-muted/50">

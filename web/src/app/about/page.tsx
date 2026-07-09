@@ -188,7 +188,7 @@ export default function AboutPage() {
             {COMMODITIES.map((c) => (
               <div
                 key={c.name}
-                className="flex flex-col items-center rounded-xl border border-border bg-surface p-4 text-center"
+                className="flex flex-col items-center rounded-lg border border-border bg-surface p-4 text-center"
               >
                 <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
                   <Leaf className="h-4 w-4 text-primary" aria-hidden="true" />

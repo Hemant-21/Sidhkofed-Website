@@ -36,7 +36,7 @@ export function CategoryCards({ categories }: { categories: CategoryCardDef[] })
         <Link
           key={href}
           href={href}
-          className="group flex flex-col gap-2 rounded-xl border border-border bg-surface p-4 transition-colors hover:border-primary/50 hover:bg-primary/5"
+          className="group flex flex-col gap-2 rounded-lg border border-border bg-surface p-4 transition-colors hover:border-primary/50 hover:bg-primary/5"
         >
           <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 transition-colors group-hover:bg-primary/20">
             {icon}

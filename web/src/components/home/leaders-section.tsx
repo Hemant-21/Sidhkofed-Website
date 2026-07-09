@@ -55,7 +55,7 @@ function LeaderPhoto({ src, alt, initials }: { src: string; alt: string; initial
 export function LeadersSection() {
   return (
     <section aria-label="Leadership" className="border-b border-border bg-surface">
-      <Container className="py-10">
+      <Container className="py-14">
         <p className="mb-6 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
           Our Leadership
         </p>

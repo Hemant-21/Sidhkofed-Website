@@ -13,7 +13,7 @@ const LINKS = [
 export function QuickLinks() {
   return (
     <section aria-label="Quick access">
-      <Container className="py-12">
+      <Container className="py-14">
         <div className="mb-6">
           <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
             Fast Pathways
@@ -25,7 +25,7 @@ export function QuickLinks() {
             <Link
               key={link.num}
               href={link.href}
-              className="group relative rounded-xl border border-border bg-surface p-5 transition-all hover:border-primary hover:shadow-sm"
+              className="group relative rounded-lg border border-border bg-surface p-5 transition-all hover:border-primary hover:shadow-sm"
             >
               <span className="block text-4xl font-black leading-none text-border transition-colors group-hover:text-primary/20">
                 {link.num}
