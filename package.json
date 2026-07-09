@@ -11,7 +11,8 @@
   "main": "dist/server.js",
   "scripts": {
     "dev": "tsx watch src/server.ts",
-    "build": "tsc -p tsconfig.json && tsc-alias -p tsconfig.json",
+    "build": "tsc -p tsconfig.json && tsc-alias -p tsconfig.json && npm run build:seed",
+    "build:seed": "tsc -p prisma/tsconfig.seed.json && tsc-alias -p prisma/tsconfig.seed.json",
     "start": "node dist/server.js",
     "smoke": "tsx scripts/smoke.ts",
     "test": "vitest run",
@@ -38,7 +39,7 @@
   },
   "prisma": {
     "schema": "prisma/schema.prisma",
-    "seed": "tsx prisma/seed/index.ts"
+    "seed": "node dist/prisma/seed/index.js"
   },
   "overrides": {
     "ioredis": "^5.4.1"
@@ -61,6 +62,8 @@
     "multer": "^2.0.1",
     "pino": "^9.3.2",
     "pino-http": "^10.2.0",
+    "prisma": "^5.18.0",
+    "tsx": "^4.17.0",
     "zod": "^3.23.8"
   },
   "devDependencies": {
@@ -79,10 +82,8 @@
     "eslint": "^8.57.0",
     "pino-pretty": "^11.2.2",
     "prettier": "^3.3.3",
-    "prisma": "^5.18.0",
     "supertest": "^7.2.2",
     "tsc-alias": "^1.8.10",
-    "tsx": "^4.17.0",
     "typescript": "^5.5.4",
     "vitest": "^4.1.9"
   }

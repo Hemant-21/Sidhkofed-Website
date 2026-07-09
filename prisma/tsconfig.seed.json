@@ -1,0 +1,9 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "rootDir": "..",
+    "outDir": "../dist"
+  },
+  "include": ["seed/**/*.ts"],
+  "exclude": ["seed/fixtures.ts", "seed/build-xlsx.ts"]
+}

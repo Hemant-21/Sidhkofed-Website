@@ -30,7 +30,7 @@ export async function seedContactDefaults(prisma: PrismaClient): Promise<void> {
     await prisma.setting.upsert({
       where: { key },
       update: {}, // never overwrite an existing row — admin edits (or a prior seed) always win
-      create: { key, valueText, valueJson, description: def.description },
+      create: { key, valueText, valueJson: valueJson ?? undefined, description: def.description },
     });
   }
   await settingsService.invalidate(); // so a fresh seed takes effect immediately, not after the cache TTL
