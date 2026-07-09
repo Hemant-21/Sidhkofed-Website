@@ -22,6 +22,8 @@ export class ClientApiError extends Error {
     public readonly status: number,
     public readonly code: string,
     message: string,
+    /** Per-field validation messages (only present for `validation_error`). */
+    public readonly fields?: Record<string, string[]>,
   ) {
     super(message);
     this.name = 'ClientApiError';
@@ -36,6 +38,7 @@ function normalize(err: unknown): ClientApiError {
       status,
       body?.error?.code ?? (status === 0 ? 'network_error' : 'error'),
       body?.error?.message ?? err.message,
+      body?.error?.fields,
     );
   }
   return new ClientApiError(0, 'error', err instanceof Error ? err.message : 'Unexpected error');
@@ -66,6 +69,19 @@ export async function fetchList<T>(path: string, params?: QueryParams): Promise<
 export async function fetchOne<T>(path: string, params?: QueryParams): Promise<T> {
   try {
     const { data } = await publicClient.get<SuccessResponse<T>>(path, { params: cleanParams(params) });
+    return data.data;
+  } catch (err) {
+    throw normalize(err);
+  }
+}
+
+/**
+ * POST a body to a public endpoint → unwrapped `data` (e.g. the enquiry submission form). Errors
+ * are normalized the same way as GET, including per-field validation messages.
+ */
+export async function postOne<T, B = unknown>(path: string, body: B): Promise<T> {
+  try {
+    const { data } = await publicClient.post<SuccessResponse<T>>(path, body);
     return data.data;
   } catch (err) {
     throw normalize(err);

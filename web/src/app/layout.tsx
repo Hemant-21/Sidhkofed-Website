@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { Inter, Noto_Sans_Devanagari } from 'next/font/google';
 import './globals.css';
 import { env } from '@/config/env';
+import { getContactSettings } from '@/lib/contact-settings';
 import { AppProviders } from '@/providers/app-providers';
 import { SiteHeader } from '@/components/layout/site-header';
 import { SiteFooter } from '@/components/layout/site-footer';
@@ -40,7 +41,11 @@ export const viewport: Viewport = {
   themeColor: '#0f5132',
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  // Fetched once here (Next dedupes identical fetches within a request) and passed down —
+  // the footer is a Client Component and can't call server-only data fetchers itself.
+  const contactSettings = await getContactSettings();
+
   return (
     <html lang="en" suppressHydrationWarning className={`${inter.variable} ${devanagari.variable}`}>
       <head>
@@ -60,7 +65,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <main id="main-content" className="flex-1">
             {children}
           </main>
-          <SiteFooter />
+          <SiteFooter contactSettings={contactSettings} />
         </AppProviders>
       </body>
     </html>

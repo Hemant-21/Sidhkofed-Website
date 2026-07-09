@@ -34,9 +34,20 @@ export const PUBLIC_ENDPOINTS = {
 
   // Search
   search: '/public/search',
+
+  // Public enquiry submission (POST only — no public list; API spec §6 Enquiries).
+  enquiries: '/public/enquiries',
+
+  // Curated public settings groups (settings.public.controller.ts allow-list).
+  settings: '/public/settings', // /{group}
 } as const;
 
 /** Build `/public/<resource>/<slug>` */
 export function detailPath(base: string, slug: string): string {
   return `${base}/${encodeURIComponent(slug)}`;
+}
+
+/** Build `/public/settings/<group>` (e.g. `contact`). */
+export function publicSettingsPath(group: string): string {
+  return `${PUBLIC_ENDPOINTS.settings}/${encodeURIComponent(group)}`;
 }

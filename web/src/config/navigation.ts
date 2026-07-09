@@ -20,33 +20,6 @@ export const PRIMARY_NAV: NavItem[] = [
     labelEn: 'Activities',
     labelHi: 'गतिविधियाँ',
     href: '/activities',
-    children: [
-      { key: 'activities-overview', labelEn: 'Activities Overview', labelHi: 'गतिविधियाँ अवलोकन', href: '/activities' },
-      {
-        key: 'activities-trainings',
-        labelEn: 'Trainings & Capacity Building',
-        labelHi: 'प्रशिक्षण और क्षमता निर्माण',
-        href: '/activities/trainings',
-      },
-      {
-        key: 'activities-workshops',
-        labelEn: 'Workshops & Awareness Programmes',
-        labelHi: 'कार्यशाला और जागरूकता कार्यक्रम',
-        href: '/activities/workshops-awareness',
-      },
-      {
-        key: 'activities-institutional',
-        labelEn: 'Meetings, Visits & Institutional Events',
-        labelHi: 'बैठकें, दौरे और संस्थागत कार्यक्रम',
-        href: '/activities/institutional-events',
-      },
-      {
-        key: 'activities-success',
-        labelEn: 'Success Stories',
-        labelHi: 'सफलता की कहानियाँ',
-        href: '/activities/success-stories',
-      },
-    ],
   },
   {
     key: 'membership',
@@ -59,53 +32,12 @@ export const PRIMARY_NAV: NavItem[] = [
     labelEn: 'Procurement',
     labelHi: 'खरीद',
     href: '/procurement',
-    children: [
-      {
-        key: 'procurement-overview',
-        labelEn: 'Procurement Overview',
-        labelHi: 'खरीद अवलोकन',
-        href: '/procurement',
-      },
-      {
-        key: 'procurement-announcements',
-        labelEn: 'Procurement Announcements',
-        labelHi: 'खरीद घोषणाएं',
-        href: '/procurement/announcements',
-      },
-      {
-        key: 'procurement-upcoming',
-        labelEn: 'Upcoming Procurements',
-        labelHi: 'आगामी खरीद',
-        href: '/procurement/upcoming',
-      },
-      {
-        key: 'procurement-enquiry',
-        labelEn: 'Buyer / Seller Enquiry',
-        labelHi: 'खरीदार / विक्रेता पूछताछ',
-        href: '/procurement/enquiry',
-      },
-    ],
   },
   {
     key: 'impact',
     labelEn: 'Impact',
     labelHi: 'प्रभाव',
     href: '/impact',
-    children: [
-      { key: 'impact-overview', labelEn: 'Impact Overview', labelHi: 'प्रभाव अवलोकन', href: '/impact' },
-      {
-        key: 'impact-dashboard',
-        labelEn: 'Public Dashboard',
-        labelHi: 'सार्वजनिक डैशबोर्ड',
-        href: '/impact/dashboard',
-      },
-      {
-        key: 'impact-training',
-        labelEn: 'Training & Beneficiary Impact',
-        labelHi: 'प्रशिक्षण और लाभार्थी प्रभाव',
-        href: '/impact/training-beneficiaries',
-      },
-    ],
   },
   {
     key: 'publications',
@@ -118,10 +50,6 @@ export const PRIMARY_NAV: NavItem[] = [
     labelEn: 'Notifications',
     labelHi: 'सूचनाएं',
     href: '/notifications',
-    children: [
-      { key: 'notifications-notices', labelEn: 'Notices', labelHi: 'नोटिस', href: '/notifications/notices' },
-      { key: 'notifications-tenders', labelEn: 'Tenders', labelHi: 'निविदाएं', href: '/notifications/tenders' },
-    ],
   },
 ];
 

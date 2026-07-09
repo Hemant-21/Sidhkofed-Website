@@ -94,7 +94,6 @@ const en: Dict = {
   'events.past': 'Past events',
   'doc.knowledgeCentre': 'Knowledge centre',
   'contact.title': 'Contact',
-  'contact.formUnavailable': 'This enquiry form is a prototype and is not yet live. Submission is currently unavailable.',
   'footer.importantLinks': 'Important links',
   'footer.about': 'About',
   'footer.copyright': 'SIDHKOFED. All rights reserved.',
@@ -112,6 +111,7 @@ const en: Dict = {
   'filter.level': 'Level',
   'filter.membershipType': 'Membership type',
   'filter.knowledgeCategory': 'Knowledge category',
+  'filter.timing': 'Timing',
 
   // Page titles + subtitles
   'page.events.title': 'Events',
@@ -179,8 +179,12 @@ const en: Dict = {
   'page.procurement.announcements.subtitle': 'Rates, schedules, centre updates and procurement announcements.',
   'page.procurement.upcoming.title': 'Upcoming Procurements',
   'page.procurement.upcoming.subtitle': 'Scheduled and upcoming procurement drives.',
-  'page.procurement.enquiry.title': 'Buyer / Seller Enquiry',
-  'page.procurement.enquiry.subtitle': 'Submit a buyer or seller enquiry for SIDHKOFED commodities.',
+  'page.procurement.rate.title': 'Procurement Rate',
+  'page.procurement.rate.subtitle': 'Latest commodity procurement rates across centres.',
+  'page.procurement.centreUpdate.title': 'Procurement Centre Update',
+  'page.procurement.centreUpdate.subtitle': 'Updates on procurement centre operations and status.',
+  'page.procurement.enquiry.title': 'Buyer / Seller / Storage Enquiry',
+  'page.procurement.enquiry.subtitle': 'Submit a buyer, seller, or storage/godown enquiry for SIDHKOFED commodities.',
 
   'page.impact.title': 'Our Impact',
   'page.impact.subtitle': 'Measuring our reach across Jharkhand — beneficiaries, trainings and procurement.',
@@ -208,6 +212,12 @@ const en: Dict = {
   'page.notifications.subtitle': 'Notices and tenders from SIDHKOFED.',
   'page.notifications.notices.title': 'Notices',
   'page.notifications.notices.subtitle': 'Public notices issued by SIDHKOFED.',
+  'page.notifications.category.notice.title': 'Notice',
+  'page.notifications.category.notice.subtitle': 'Official notices issued by SIDHKOFED.',
+  'page.notifications.category.circular.title': 'Circular',
+  'page.notifications.category.circular.subtitle': 'Circulars and internal directives from SIDHKOFED.',
+  'page.notifications.category.publicAnnouncement.title': 'Public Announcement',
+  'page.notifications.category.publicAnnouncement.subtitle': 'Public announcements from SIDHKOFED.',
   'page.notifications.tenders.title': 'Tenders',
   'page.notifications.tenders.subtitle': 'Active and upcoming tenders from SIDHKOFED.',
 
@@ -253,10 +263,40 @@ const en: Dict = {
   'contact.hours': 'Office hours',
   'contact.address': 'Address',
   'contact.map': 'View on map',
+  'contact.fallbackHeading.general': 'SIDHKOFED Office',
+  'contact.fallbackHeading.procurement': 'SIDHKOFED Procurement Office',
 
   'memberships.institution': 'Institution',
   'memberships.number': 'Member no.',
   'memberships.empty': 'No membership records are published at the moment.',
+
+  // Public enquiry form (procurement buyer/seller enquiry)
+  'form.enquiry.name': 'Full name',
+  'form.enquiry.mobile': 'Mobile number',
+  'form.enquiry.email': 'Email address',
+  'form.enquiry.organization': 'Organisation (optional)',
+  'form.enquiry.type': 'Enquiry type',
+  'form.enquiry.typePlaceholder': 'Select an enquiry type',
+  'form.enquiry.commodity': 'Commodity (optional)',
+  'form.enquiry.commodityPlaceholder': 'Select a commodity',
+  'form.enquiry.subject': 'Subject',
+  'form.enquiry.message': 'Message',
+  'form.enquiry.messageHint': 'Please mention the commodity, quantity and your district, if relevant.',
+  'form.enquiry.messageHintWithCommodity': 'Please mention the quantity and your district, if relevant.',
+  'form.enquiry.submit': 'Submit enquiry',
+  'form.enquiry.submitting': 'Submitting…',
+  'form.enquiry.another': 'Submit another enquiry',
+  'form.enquiry.success.title': 'Enquiry submitted',
+  'form.enquiry.success.body':
+    'Thank you. Your enquiry has been received and will be reviewed by our team. We do not send an automatic confirmation email.',
+  'form.enquiry.error.validation': 'Please correct the highlighted fields and try again.',
+  'form.enquiry.error.typeRequired': 'Please select an enquiry type.',
+  'form.enquiry.error.rateLimited':
+    'You have submitted several enquiries recently. Please wait a while before trying again, or contact us directly using the details below.',
+  'form.enquiry.error.generic':
+    'We could not submit your enquiry. Please try again, or contact us directly using the details below.',
+  'form.enquiry.error.typesUnavailable':
+    'The enquiry form is temporarily unavailable. Please contact us directly using the details below.',
 };
 
 const hi: Dict = {
@@ -338,7 +378,6 @@ const hi: Dict = {
   'events.past': 'पिछले कार्यक्रम',
   'doc.knowledgeCentre': 'ज्ञान केंद्र',
   'contact.title': 'संपर्क',
-  'contact.formUnavailable': 'यह पूछताछ फ़ॉर्म एक प्रोटोटाइप है और अभी सक्रिय नहीं है। फ़िलहाल जमा करना उपलब्ध नहीं है।',
   'footer.importantLinks': 'महत्वपूर्ण लिंक',
   'footer.about': 'परिचय',
   'footer.copyright': 'सिद्धकोफेड। सर्वाधिकार सुरक्षित।',
@@ -356,6 +395,7 @@ const hi: Dict = {
   'filter.level': 'स्तर',
   'filter.membershipType': 'सदस्यता प्रकार',
   'filter.knowledgeCategory': 'ज्ञान श्रेणी',
+  'filter.timing': 'समय',
 
   'page.events.title': 'कार्यक्रम',
   'page.events.subtitle': 'झारखंड भर में प्रशिक्षण, कार्यशालाएँ, बैठकें और संस्थागत गतिविधियाँ।',
@@ -389,6 +429,8 @@ const hi: Dict = {
   'contact.email': 'ईमेल',
   'contact.hours': 'कार्यालय समय',
   'contact.address': 'पता',
+  'contact.fallbackHeading.general': 'सिद्धकोफेड कार्यालय',
+  'contact.fallbackHeading.procurement': 'सिद्धकोफेड खरीद कार्यालय',
 
   'page.about.title': 'SIDHKOFED के बारे में',
   'page.about.subtitle': 'सिद्धो-कान्हो कृषि एवं वनोपज राज्य सहकारी संघ — झारखंड में सहकारी आजीविका को सशक्त बना रहा है।',
@@ -428,8 +470,12 @@ const hi: Dict = {
   'page.procurement.announcements.subtitle': 'दरें, कार्यक्रम, केंद्र अद्यतन और खरीद घोषणाएं।',
   'page.procurement.upcoming.title': 'आगामी खरीद',
   'page.procurement.upcoming.subtitle': 'निर्धारित और आगामी खरीद अभियान।',
-  'page.procurement.enquiry.title': 'खरीदार / विक्रेता पूछताछ',
-  'page.procurement.enquiry.subtitle': 'SIDHKOFED वस्तुओं के लिए खरीदार या विक्रेता पूछताछ भेजें।',
+  'page.procurement.rate.title': 'खरीद दर',
+  'page.procurement.rate.subtitle': 'केंद्रों में वस्तुओं की नवीनतम खरीद दरें।',
+  'page.procurement.centreUpdate.title': 'खरीद केंद्र अद्यतन',
+  'page.procurement.centreUpdate.subtitle': 'खरीद केंद्रों के संचालन और स्थिति पर अद्यतन।',
+  'page.procurement.enquiry.title': 'खरीदार / विक्रेता / भंडारण पूछताछ',
+  'page.procurement.enquiry.subtitle': 'SIDHKOFED वस्तुओं के लिए खरीदार, विक्रेता या भंडारण/गोदाम पूछताछ भेजें।',
 
   'page.impact.title': 'हमारा प्रभाव',
   'page.impact.subtitle': 'झारखंड में हमारी पहुँच — लाभार्थी, प्रशिक्षण और खरीद।',
@@ -457,10 +503,44 @@ const hi: Dict = {
   'page.notifications.subtitle': 'SIDHKOFED की नोटिस और निविदाएं।',
   'page.notifications.notices.title': 'नोटिस',
   'page.notifications.notices.subtitle': 'SIDHKOFED द्वारा जारी सार्वजनिक नोटिस।',
+  'page.notifications.category.notice.title': 'नोटिस',
+  'page.notifications.category.notice.subtitle': 'SIDHKOFED द्वारा जारी आधिकारिक नोटिस।',
+  'page.notifications.category.circular.title': 'परिपत्र',
+  'page.notifications.category.circular.subtitle': 'SIDHKOFED के परिपत्र और आंतरिक निर्देश।',
+  'page.notifications.category.publicAnnouncement.title': 'सार्वजनिक घोषणा',
+  'page.notifications.category.publicAnnouncement.subtitle': 'SIDHKOFED की सार्वजनिक घोषणाएं।',
   'page.notifications.tenders.title': 'निविदाएं',
   'page.notifications.tenders.subtitle': 'SIDHKOFED की सक्रिय और आगामी निविदाएं।',
 
   'page.successStories.comingSoon': 'सफलता की कहानियाँ जल्द यहाँ उपलब्ध होंगी।',
+
+  // Public enquiry form (procurement buyer/seller enquiry)
+  'form.enquiry.name': 'पूरा नाम',
+  'form.enquiry.mobile': 'मोबाइल नंबर',
+  'form.enquiry.email': 'ईमेल पता',
+  'form.enquiry.organization': 'संस्था (वैकल्पिक)',
+  'form.enquiry.type': 'पूछताछ का प्रकार',
+  'form.enquiry.typePlaceholder': 'पूछताछ का प्रकार चुनें',
+  'form.enquiry.commodity': 'वस्तु (वैकल्पिक)',
+  'form.enquiry.commodityPlaceholder': 'वस्तु चुनें',
+  'form.enquiry.subject': 'विषय',
+  'form.enquiry.message': 'संदेश',
+  'form.enquiry.messageHint': 'कृपया वस्तु, मात्रा और अपने ज़िले का उल्लेख करें, यदि प्रासंगिक हो।',
+  'form.enquiry.messageHintWithCommodity': 'कृपया मात्रा और अपने ज़िले का उल्लेख करें, यदि प्रासंगिक हो।',
+  'form.enquiry.submit': 'पूछताछ भेजें',
+  'form.enquiry.submitting': 'भेजा जा रहा है…',
+  'form.enquiry.another': 'एक और पूछताछ भेजें',
+  'form.enquiry.success.title': 'पूछताछ सफलतापूर्वक भेजी गई',
+  'form.enquiry.success.body':
+    'धन्यवाद। आपकी पूछताछ प्राप्त हो गई है और हमारी टीम द्वारा इसकी समीक्षा की जाएगी। हम स्वचालित पुष्टिकरण ईमेल नहीं भेजते हैं।',
+  'form.enquiry.error.validation': 'कृपया चिह्नित फ़ील्ड सुधारें और पुनः प्रयास करें।',
+  'form.enquiry.error.typeRequired': 'कृपया पूछताछ का प्रकार चुनें।',
+  'form.enquiry.error.rateLimited':
+    'आपने हाल ही में कई पूछताछ भेजी हैं। कृपया कुछ समय बाद पुनः प्रयास करें, या नीचे दिए गए विवरण से सीधे संपर्क करें।',
+  'form.enquiry.error.generic':
+    'हम आपकी पूछताछ नहीं भेज सके। कृपया पुनः प्रयास करें, या नीचे दिए गए विवरण से सीधे संपर्क करें।',
+  'form.enquiry.error.typesUnavailable':
+    'पूछताछ फ़ॉर्म अस्थायी रूप से अनुपलब्ध है। कृपया नीचे दिए गए विवरण से सीधे संपर्क करें।',
 };
 
 export const DICTIONARIES: Record<Language, Dict> = { en, hi };
