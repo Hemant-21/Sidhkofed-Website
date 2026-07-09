@@ -1,17 +1,11 @@
 import type { Metadata } from 'next';
 import { BarChart3 } from 'lucide-react';
-import { getListSafe, getOneSafe } from '@/lib/api/server';
+import { getOneSafe } from '@/lib/api/server';
 import { PUBLIC_ENDPOINTS } from '@/lib/api/endpoints';
-import type { EventSummary, KpisResponse } from '@/lib/types/content';
+import type { KpisResponse } from '@/lib/types/content';
 import { buildMetadata } from '@/lib/seo';
-import { PAGE_SIZE, toPage, qstr, getMasterOptions, yearOptions } from '@/lib/listing';
-import { FilterBar } from '@/components/listing/filter-bar';
-import { PaginationNav } from '@/components/listing/pagination-nav';
-import { ResultsSummary } from '@/components/listing/results-summary';
 import { CategoryCards, type CategoryCardDef } from '@/components/listing/category-cards';
 import { LocalizedHero } from '@/components/listing/localized-heading';
-import { EmptyState } from '@/components/feedback/states';
-import { EventCard } from '@/components/cards/event-card';
 import { KpiStrip } from '@/components/dashboard/kpi-strip';
 import { Breadcrumbs } from '@/components/ui/breadcrumb';
 import { Container } from '@/components/ui/container';
@@ -24,17 +18,12 @@ export const metadata: Metadata = buildMetadata({
   path: '/impact',
 });
 
-type SP = Record<string, string | string[] | undefined>;
-
 /**
- * Browse-by-category shortcuts. Public Dashboard is fixed, pre-computed report content
- * (`/public/dashboard`, rendered via `ReportBlock`) — not a filterable list, so it can't be a
- * same-page category the way training/workshop/meeting was for Activities. It stays a
- * separate page, same treatment as Tenders (Notifications) and Buyer/Seller/Storage Enquiry
- * (Procurement). Training & Beneficiary Impact IS a real filterable list (the same Events
- * endpoint Activities uses, scoped to event_type=training), so it becomes the default
- * same-page content of /impact itself — same reasoning as Notices absorbing into
- * /notifications.
+ * Orphaned landing page — the "Dashboard" nav item now links straight to
+ * /impact/dashboard (which has its own KPI strip and grouped reports), since the
+ * Training & Beneficiary listing this page used to show was redundant with Activities'
+ * own "Trainings & Capacity Building" category (same event_type=training data). Left in
+ * place rather than deleted/redirected — a later dead-code pass can retire it.
  */
 const IMPACT_CATEGORIES: CategoryCardDef[] = [
   {
@@ -45,24 +34,8 @@ const IMPACT_CATEGORIES: CategoryCardDef[] = [
   },
 ];
 
-export default async function ImpactPage({ searchParams }: { searchParams: SP }) {
-  const page = toPage(searchParams.page);
-
-  const [kpis, list, districts] = await Promise.all([
-    getOneSafe<KpisResponse>(PUBLIC_ENDPOINTS.dashboardKpis),
-    getListSafe<EventSummary>(PUBLIC_ENDPOINTS.events, {
-      query: {
-        page,
-        page_size: PAGE_SIZE,
-        search: qstr(searchParams.search),
-        event_type: 'training',
-        district: qstr(searchParams.district),
-        year: qstr(searchParams.year),
-        ordering: '-start_date',
-      },
-    }),
-    getMasterOptions('districts'),
-  ]);
+export default async function ImpactPage() {
+  const kpis = await getOneSafe<KpisResponse>(PUBLIC_ENDPOINTS.dashboardKpis);
 
   return (
     <>
@@ -86,35 +59,6 @@ export default async function ImpactPage({ searchParams }: { searchParams: SP })
           <CategoryCards categories={IMPACT_CATEGORIES} />
         </Container>
       </div>
-
-      {/* Full listing (Training & Beneficiary) — same-page filters */}
-      <Container id="listing" className="scroll-mt-24 py-8">
-        <header className="mb-6">
-          <h2 className="text-xl font-bold text-foreground">All Training &amp; Beneficiary Activities</h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Training reach, district coverage and beneficiary statistics. Filter by district and year.
-          </p>
-        </header>
-        <div className="mb-2">
-          <FilterBar
-            selects={[
-              { key: 'district', labelKey: 'filter.district', options: districts },
-              { key: 'year', labelKey: 'filter.year', options: yearOptions() },
-            ]}
-          />
-        </div>
-        <ResultsSummary total={list.pagination.total_items} />
-        {list.items.length === 0 ? (
-          <EmptyState />
-        ) : (
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {list.items.map((event) => (
-              <EventCard key={event.id} event={event} />
-            ))}
-          </div>
-        )}
-        <PaginationNav page={list.pagination.page} totalPages={list.pagination.total_pages} />
-      </Container>
     </>
   );
 }

@@ -35,9 +35,9 @@ export const PRIMARY_NAV: NavItem[] = [
   },
   {
     key: 'impact',
-    labelEn: 'Impact',
-    labelHi: 'प्रभाव',
-    href: '/impact',
+    labelEn: 'Dashboard',
+    labelHi: 'डैशबोर्ड',
+    href: '/impact/dashboard',
   },
   {
     key: 'publications',
