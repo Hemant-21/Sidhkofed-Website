@@ -1,6 +1,6 @@
 # SIDHKOFED Web — Page Design Specification
 
-> Created 2026-06-28. This document is the single source of truth for the per-page visual design of the web application. Pages are implemented one at a time; each has its own audit checklist before the next page begins.
+> Created 2026-06-28. Updated 2026-07-09 using the external homepage-led design review. This document is the single source of truth for the per-page visual design of the web application. Pages are implemented one at a time; each has its own audit checklist before the next page begins.
 
 ---
 
@@ -16,6 +16,51 @@ The website must feel like a **Jharkhand government portal**, not a dashboard or
 6. **Contextual FAQs, not a FAQ dump.** FAQs are categorised in the CMS (via `faq_category`). Each category's FAQs render inline on the relevant page — Membership FAQs on `/membership`, Procurement FAQs on `/procurement`, etc. No separate `/faqs` or `/membership/faqs` route.
 
 ---
+
+## 1.1 Review Addendum (2026-07-09)
+
+An external homepage-led design review on 2026-07-09 described the current public site as a strong engineering scaffold wrapped around an unfinished product. The review direction is now part of this spec.
+
+### Protect these strengths
+
+- Shared HSL token system across web + admin
+- Skip link, focus rings, reduced motion, and ARIA fundamentals
+- EN/HI architecture with Devanagari font support
+- Reusable page shells, card patterns, and listing primitives
+
+### Priority issues adopted into this spec
+
+- Homepage hierarchy is too flat; too many sections compete at the same visual weight.
+- Leadership is placed too high relative to citizen tasks.
+- The hero behaves too much like a slogan board and not enough like a service entry point.
+- Hardcoded leaders and headline stats are not acceptable for official-grade public content.
+- Hero contrast and CTA contrast need explicit AA-minded review.
+- Dark mode must be fully audited or intentionally withheld.
+
+### Delivery order from the review
+
+High:
+
+1. Remove any prototype notice from public production surfaces.
+2. Fix hero text contrast.
+3. Move stats and leaders out of hardcoded component constants.
+4. Demote leadership below task-first homepage content.
+5. Rebuild homepage hierarchy and type scale.
+
+Medium:
+
+1. Restore a real hero image on mobile.
+2. Consolidate duplicate or overlapping public routes.
+3. Rewrite hero copy in plain language.
+4. Resolve accent CTA contrast and the dark-mode product decision.
+5. Reduce eyebrow overuse and strengthen heading voice.
+
+Low:
+
+1. Remove or rethink decorative Quick Access numerals.
+2. Standardise spacing rhythm.
+3. Add intentional empty states for sparse datasets.
+4. Add automated contrast and axe checks to CI.
 
 ## 2. Design System Reference
 
@@ -44,6 +89,20 @@ The website must feel like a **Jharkhand government portal**, not a dashboard or
 - Page top padding: `py-10`
 - Section spacing within page: `space-y-10` or `mt-10`
 - Card gap: `gap-4` (2-col) · `gap-5` (3-col) · `gap-5` (4-col)
+
+### Typography corrections from the review
+
+- The site needs a clearer type scale after the hero; section titles should feel materially larger than body copy.
+- Eyebrows should be used selectively, not on nearly every band by default.
+- Inter is acceptable for body/UI, but headline treatment should feel more institutional and less generic than a SaaS dashboard.
+
+### Spacing corrections from the review
+
+- Stop treating `py-8 / py-10 / py-12 / py-14` as interchangeable defaults.
+- Especially on the homepage, spacing must signal hierarchy through 2-3 deliberate band densities:
+  - lead / hero
+  - compact utility
+  - quieter editorial/supporting
 
 ### Shared components already built
 | Component | File | Used by |
@@ -151,98 +210,110 @@ Used by: Membership (intro + nav cards ABOVE the listing), Publications (quickli
 
 ## 4. Page-by-Page Specifications
 
-### 4.1 Homepage (`/`) — STATUS: PLANNED
+### 4.1 Homepage (`/`) — STATUS: ✅ DONE (2026-07-09)
 
-**Template:** A (unique)  
-**Current state:** Text hero + 9 data sections (News, Events, Programmes, Services, Comms, Tenders, Documents, Partners)  
-**Target:** Split 2-col hero + 8 narrative sections from the legacy prototype
+> Implemented 2026-07-09 via direct collaboration; supersedes the original spec text
+> below where they differ. The core intent (real search, live stats/leadership, retire
+> the ticker, demote leadership, fewer/clearer zones) was carried out in full. What
+> differs from the literal spec: the hero keeps its existing `bg-primary` + dot-grid +
+> diagonal-image treatment rather than switching to `bg-gradient-to-b from-primary
+> to-primary/85` or a plain `<Image src="/hero-cooperative.png"/>` right panel (the
+> existing CMS-driven gallery carousel with a static fallback was already better than
+> a single static image, so it was kept and just extended to mobile); Quick Access
+> kept its existing 6 task tiles rather than being expanded to the spec's 3×3/9-tile
+> grid (no corresponding page for 3 of the 9 suggested links existed to justify the
+> expansion); and leadership was demoted in position rather than also visually
+> "collapsed to a lighter treatment" — the spec offered position-or-treatment as
+> alternatives, and moving it below Hero/KPI/Quick Access/Governance was sufficient on
+> its own to satisfy "leadership must not outrank citizen tasks" without also needing
+> to redesign a component that wasn't itself the problem.
 
-#### Section stack (top → bottom)
+**Template:** A (unique)
+**Built — section stack (top → bottom):**
 
-**Section 1 — Hero (split 2-col)**
-- Background: `bg-gradient-to-b from-primary to-primary/85`
-- Left (text column):
-  - Eyebrow: "Public cooperative ecosystem"
-  - H1: "A modern digital gateway for Jharkhand's cooperative livelihoods."
-  - Tagline: "Discover SIDHKOFED activities, forest produce value chains, capacity building, procurement opportunities and public notices."
-  - 3 CTA buttons: [Explore Activities → /activities] [View Trainings → /activities/trainings] [Procurement → /procurement]
-- Right (visual column):
-  - `<Image src="/hero-cooperative.png" />` (copy from `legacy-prototype/assets/images/hero-cooperative.png`)
-  - Floating chip: "24 Districts covered" — positioned `absolute bottom-4 left-4` on the image container
-- Mobile: single column, image hidden at `<sm`
+1. **Hero** (`web/src/components/home/hero-search.tsx`) — contrast fixed (the two
+   `text-white/45` low-opacity spots, on the sub-headline and stat labels, bumped to
+   `/75` and `/70`); a real embedded search box (new
+   `web/src/components/home/hero-search-bar.tsx`, submits to `/search?q=...` via
+   `router.push`, reusing the existing `/api/v1/public/search` endpoint and `/search`
+   page — no new backend work); the hardcoded `STATS` constant replaced by a
+   `stats: DashboardMetric[]` prop — the first 3 metrics from the same
+   `/public/dashboard/kpis` data `<KpiStrip>` already renders below, so this needed
+   zero new backend work (KPI reports are already admin-editable via a
+   `show_on_homepage` flag); a `lg:hidden` mobile image band added above the text
+   content so the institutional image no longer disappears below `lg` (previously the
+   diagonal right panel was `hidden lg:block` with no mobile equivalent at all).
+2. **KPI Strip** — unchanged.
+3. **Quick Access** (`web/src/components/home/quick-links.tsx`) — the decorative `01–06`
+   numerals (implying a false ranking) replaced with a per-link Lucide icon in a
+   `h-9 w-9 rounded-lg bg-primary/10` container, matching the icon treatment already
+   used by `<CategoryCards>` elsewhere on the site. Kept the existing 6 links; did not
+   expand to the spec's 9-link 3×3 grid (see note above).
+4. **Governance band** (Notices + Tenders) — promoted from its old position near the
+   bottom to right after Quick Access, to absorb the "latest updates" job the retired
+   ticker used to do, per the spec's own reasoning ("this band becomes more important
+   once the moving alert ticker is retired").
+5. **Leadership** (`web/src/components/home/leaders-section.tsx`) — demoted from
+   position 3 (previously right after the ticker) to position 5, below Hero/KPI/Quick
+   Access/Governance, satisfying "must not outrank citizen tasks." Also made
+   CMS-driven: a new backend `Leadership` module (`src/modules/leadership/*`, mirrors
+   the existing `digital-services` module — bilingual name/govt-role/SIDHKOFED-role,
+   photo via the standard media picker, publish workflow, display order, no
+   `show_on_homepage` since this section has no other public listing) replaces the
+   hardcoded `LEADERS` array; a matching admin CRUD UI
+   (`admin/src/features/leadership/`) lets admins manage entries and upload real
+   photos. Public endpoint `GET /public/leadership`; the section hides entirely when
+   there are zero published entries, same pattern as the conditionally-hidden
+   Activities & Commodities section below it.
+6. **About editorial** — unchanged.
+7. **Activities & Commodities** — unchanged.
+8. **Capacity Building** — unchanged.
+9. **FAQ** — unchanged content, background alternation adjusted for the new section
+   order (was previously adjacent to the old Governance-band position).
+10. **Knowledge Hub** — unchanged (4 static cards; not expanded to CMS-driven).
+11. **Media Gallery** — unchanged.
 
-**Section 2 — KPI Strip** (no change — keep existing `<KpiStrip>`)
+**Retired:** the moving red "Alert" ticker (`AnnouncementTicker`) — deleted outright
+(`web/src/components/home/announcement-ticker.tsx` and its `ticker-track` CSS
+keyframes in `globals.css`), a deliberate product retirement per the review, not
+dead code left in place. Its job is now carried by the promoted Governance band.
 
-**Section 3 — Quick Access (new component: `quick-links.tsx`)**
-- Eyebrow: "Fast Pathways"
-- H2: "Quick Access"
-- 3×3 numbered grid:
-  01 ERP / MIS Login → /digital-services
-  02 Impact Dashboard → /impact/dashboard
-  03 Membership → /membership
-  04 Procurement Rates → /procurement
-  05 Tenders → /notifications/tenders
-  06 Publications → /publications
-  07 Buyer Enquiry → /procurement/enquiry
-  08 Notices → /notifications/notices
-  09 Digital Services → /digital-services
-- Card style: large faded number (01–09) + bold label + subtle border, hover scales border to `border-primary`
+**Also fixed as part of this pass (review priority-1 item):** the stale
+`footer.prototypeNotice` disclaimer ("Representative prototype content — official
+data pending approval.") removed from `site-footer.tsx` and the dictionary — it was
+still live in production despite the review calling it out by name for removal.
 
-**Section 4 — About (static editorial, 2-col on lg)**
-- Eyebrow: "Institutional Identity"
-- H2: "SIDHKOFED as the apex cooperative platform"
-- Left column: eyebrow + H2
-- Right column: paragraph + 3 benefit bullets + [→ About SIDHKOFED] link
-- Background: `bg-muted/40` section band
-
-**Section 5 — Activities & Commodities (CMS: Programmes API)**
-- Eyebrow: "Activities & Commodities"
-- H2: "Forest economy and cooperative value chains"
-- Renders `programmes.items` as `<ProgrammeCard>` grid (3-col)
-- API: `getListSafe(programmes, {show_on_homepage: true, page_size: 6})`
-- Hidden when `programmes.items.length === 0`
-
-**Section 6 — Capacity Building (CMS: Training events timeline)**
-- 2-col layout: text left, timeline right
-- Left: Eyebrow "Capacity Building" + H2 + paragraph + [View All Trainings → /activities/trainings]
-- Right: 3 training events as `<article>` rows: `[Month badge] Title — District`
-- API: `getListSafe(events, {event_type: 'training', page_size: 3, ordering: '-start_date'})`
-- Each row: `<time>` chip (e.g. "May") + `<strong>` title + `<small>` district
-- If empty: entire right column shows "No upcoming trainings" placeholder
-
-**Section 7 — Governance (2-col muted band)**
-- 2-col split: left = Notices, right = Tenders
-- Existing `CommunicationCard` + `TenderCard` components
-- Same pattern as current, just keep it
-
-**Section 8 — Knowledge Hub (static, 4 cards)**
-- Eyebrow: "Knowledge Hub"
-- H2: "Acts, SOPs, reports, training materials and publications"
-- 4 equal-width cards (static, not CMS):
-  - Reports & Research → /publications/reports-research
-  - Policies, Guidelines & SOPs → /publications/policies-guidelines-sops
-  - Training Materials → /publications/training-materials
-  - Forms & Formats → /publications/forms-formats
-
-#### Files to change
-- `legacy-prototype/assets/images/hero-cooperative.png` → copy to `web/public/hero-cooperative.png`
-- `web/src/components/home/hero-search.tsx` → rewrite to split 2-col layout
-- `web/src/components/home/quick-links.tsx` → create (numbered Quick Access grid)
-- `web/src/app/page.tsx` → new section order, updated Promise.all
+#### Files changed
+- `web/src/components/home/hero-search.tsx`, `web/src/components/home/hero-search-bar.tsx` (new)
+- `web/src/components/home/quick-links.tsx`
+- `web/src/components/home/leaders-section.tsx`
+- `web/src/components/home/announcement-ticker.tsx` (deleted)
+- `web/src/components/layout/site-footer.tsx`
+- `web/src/app/page.tsx`, `web/src/app/globals.css`, `web/src/i18n/dictionary.ts`
+- `web/src/lib/types/content.ts`, `web/src/lib/api/endpoints.ts` (`Leader` type, `/public/leadership`)
+- `src/modules/leadership/*` (new backend module), `prisma/schema.prisma`, `prisma/seed/leadership-defaults.ts`, `src/routes/index.ts`
+- `admin/src/features/leadership/*`, `admin/src/app/(admin)/leadership/*` (new admin CRUD UI)
 
 #### Audit checklist — Homepage
-- [ ] Hero image loads (no broken img `<img>` tag error)
-- [ ] Floating "24 Districts" chip is visible over image
-- [ ] On mobile: single column, image hidden, text + CTAs visible
-- [ ] KPI strip: renders when data present, hidden when absent
-- [ ] Quick Access: all 9 numbered cards display, all hrefs correct
-- [ ] About editorial: 2-col on `lg`, stacks on mobile
-- [ ] Activities section: hidden when no CMS programmes; cards appear when data entered
-- [ ] Capacity Building: training timeline shows 3 events; "No upcoming trainings" when empty
-- [ ] Governance: notices left, tenders right — both have "View all" links
-- [ ] Knowledge Hub: 4 static cards, all 4 links resolve
-- [ ] Dark mode: all 8 sections switch without contrast issues
-- [ ] Language toggle: all `t()` strings switch to Hindi
+- [x] Hero image loads, including on mobile (previously absent below `lg`)
+- [x] Hero contains a real search box, submitting to `/search`
+- [x] Hero headline/stat contrast fixed (no `/45`-opacity white)
+- [x] Hero stats are live (`/public/dashboard/kpis`), not hardcoded — hidden when empty
+- [x] KPI strip: renders when data present, hidden when absent
+- [x] Quick Access: icons replace decorative ranking numerals; all hrefs correct
+- [x] Leadership does not outrank Quick Access/KPIs/Governance content, and is now
+      CMS-driven end-to-end (verified live: `GET /public/leadership` → 3 seeded
+      leaders → rendered on the homepage in the correct position)
+- [x] About/Activities/Capacity Building sections: unchanged, still correct
+- [x] Governance band promoted; carries the "latest updates" job the ticker used to
+- [x] Ticker removed — no moving marquee/red alert badge remains
+- [x] Knowledge Hub: 4 static cards, all links resolve
+- [x] Footer prototype notice removed
+- [x] Dark mode: all touched styling is token-based except the hero's bespoke
+      opacity-based whites, which were the one area re-checked directly against a
+      dark-mode render
+- [x] Language toggle: leadership bilingual fields switch via `pickText`; hero search
+      labels/placeholder switch via `t()`
 
 ---
 
@@ -318,70 +389,64 @@ Used by: Membership (intro + nav cards ABOVE the listing), Publications (quickli
 
 ---
 
-### 4.5 Activities (`/activities`) — STATUS: PENDING
+### 4.5 Activities (`/activities`) — STATUS: ✅ DONE (2026-07-09)
 
-**Template:** E (Listing + Intro Hybrid)  
-**Current state:** `ListingLayout` only — filters + event cards, no context above
+> Implemented 2026-07-09 via direct collaboration; supersedes the original spec text below where they differ. The original spec described a green `bg-primary` banner with white cards embedded inside it. What was actually built follows the pattern established on Publications instead: a neutral `LocalizedHero` title band, then a **separate** `bg-muted/40` "Browse by Category" band below it — visually closer to Template E/D hybrids elsewhere on the site, and consistent with Procurement/Notifications/Impact built the same session.
 
-**Target:** Add a visual "category quicklinks" banner ABOVE the `ListingLayout`.
+**Template:** E (Listing + Intro Hybrid)
+**Built:**
+- `Breadcrumbs` → `<LocalizedHero titleKey="page.activities.title" subtitleKey="page.activities.subtitle" />` (matches Publications' hero band exactly)
+- A `bg-muted/40` "Browse by Category" band (`<CategoryCards>`, shared component also used by Procurement/Notifications/Impact) with 4 cards:
+  - Trainings → `/activities?event_type=training#listing`
+  - Workshops & Awareness → `/activities?event_type=workshop#listing`
+  - Institutional Events → `/activities?event_type=meeting#listing`
+  - Success Stories → `/activities/success-stories` (separate page — no backing `event_type` in the Events API, so it can't be a same-page filter like the other three)
+- The listing itself (`id="listing"`, breadcrumb-adjacent `FilterBar` with Event Type/Status/District/Year, `ResultsSummary`, event card grid, `PaginationNav`) is the page's own default/unfiltered view — there is no separate "Activities Overview" card, since the base page already is that view (a rule applied consistently across Activities/Procurement/Notifications/Impact).
+- **Query-param sync:** category cards are plain `<Link href="/activities?event_type=training#listing">` links. `FilterBar` reads the same `event_type` query param via `useQueryParams()`, so clicking a card and picking the same value in the filter dropdown are indistinguishable — the URL is the single source of truth, no custom sync logic needed.
 
-#### Category banner (new — above ListingLayout)
-```
-bg-primary (green band)
-  Container.py-8
-    h1.text-2xl.font-bold.text-primary-foreground  "Activities"
-    p.text-primary-foreground/90  "Trainings, workshops, field visits and events across Jharkhand"
-    4 quicklink cards (row, 2-col on mobile, 4-col on desktop):
-      [Trainings → /activities/trainings]
-      [Workshops & Awareness → /activities/workshops-awareness]
-      [Institutional Events → /activities/institutional-events]
-      [Success Stories → /activities/success-stories]
-    Card style: white bg with primary text, hover bg-white/90
-```
-
-The existing `ListingLayout` (with breadcrumbs, filters, results, pagination) follows immediately after, unchanged.
-
-**Important:** Since `ListingLayout` renders its own `<Breadcrumbs>`, the banner does NOT include a breadcrumb — they'd duplicate. The quicklinks banner is purely a visual/navigational intro.
-
-#### Files to change
-- `web/src/app/activities/page.tsx` — add banner section above `<ListingLayout>`
+#### Files changed
+- `web/src/app/activities/page.tsx`
+- `web/src/components/listing/category-cards.tsx` (shared)
 
 #### Audit checklist — Activities
-- [ ] Green banner renders above the listing section
-- [ ] H1 "Activities" + subtitle visible in banner
-- [ ] 4 quicklink cards visible in a row (4-col desktop, 2-col tablet, 1-col mobile)
-- [ ] All 4 links resolve: /activities/trainings, /activities/workshops-awareness, /activities/institutional-events, /activities/success-stories
-- [ ] ListingLayout still renders below: breadcrumb, filters (Event Type, Status, District, Year), results, cards, pagination
-- [ ] Event cards render correctly
-- [ ] Dark mode: green banner stays green (bg-primary is colour, not a light/dark token)
-- [ ] Mobile: banner text readable, cards stack correctly
+- [x] Hero band renders above the category band, matching Publications' visual treatment
+- [x] 4 category cards visible in a row (4-col desktop, 2-col tablet, 1-col mobile)
+- [x] Category cards act as same-page filters (Trainings/Workshops/Institutional) or link to a dedicated page (Success Stories)
+- [x] Listing below: breadcrumb, filters (Event Type, Status, District, Year), results, cards, pagination
+- [x] Category cards and event-type filter remain synchronized via the shared `event_type` URL param
+- [x] Event cards render correctly
+- [x] Dark mode: token-based (`bg-muted/40`, `bg-surface`, `border-border`) — correct in both themes automatically
+- [x] Mobile: band text readable, cards stack correctly
 
 ---
 
-### 4.6 Notifications (`/notifications`) — STATUS: PENDING
+### 4.6 Notifications (`/notifications`) — STATUS: ✅ DONE (2026-07-09)
 
-**Template:** D (Hub/Index)  
-**Current state:** Plain h1 + 2 nav cards (no icons, no intro sentence)
+> Implemented 2026-07-09 via direct collaboration; supersedes the original spec text below where they differ. The original spec assumed Notices and Tenders could stay as two static nav cards with icons added. During implementation, backend investigation showed Notices and Tenders are genuinely separate content types — different endpoints/DTOs (`official-communications` vs `tenders`) — which opened up the same same-page category-filtering pattern already used on Activities/Publications, so the page went further than the original minimal-icon spec.
 
-**Target:** Add icons to nav cards + a one-sentence intro under the heading.
+**Template:** E (Listing + Intro Hybrid) — reclassified from D (Hub/Index); the page now has its own listing, not just nav cards.
+**Built:**
+- `Breadcrumbs` → `<LocalizedHero titleKey="page.notifications.title" subtitleKey="page.notifications.subtitle" />`
+- A `bg-muted/40` "Browse by Category" band (`<CategoryCards>`) with 4 cards:
+  - Notice → `/notifications?communication_type=notice#listing`
+  - Circular → `/notifications?communication_type=circular#listing`
+  - Public Announcement → `/notifications?communication_type=public-announcement#listing`
+  - Tenders → `/notifications/tenders` (separate page — its own dedicated listing/filters, a different backend endpoint from communications)
+- Notices is the page's own default/unfiltered listing (no separate "Notices" card — same "don't card the default state" rule as Activities/Procurement/Impact); Notice/Circular/Public Announcement are 3 of 6 real `communication-types` master values curated onto cards, the other 3 (Office Order, Notification, Advisory) remain dropdown-only in the `FilterBar`, mirroring how Procurement curates 2 of 6 `procurement-update-types` onto cards.
+- Same query-param-sync mechanism as Activities: cards and `FilterBar` both read/write `communication_type` in the URL.
 
-#### Changes
-- Add `<Bell className="h-6 w-6 text-primary" />` icon above h2 in the Notices card
-- Add `<FileText className="h-6 w-6 text-primary" />` icon above h2 in the Tenders card
-- Intro sentence below h1: "Stay updated with official notices, circulars and procurement tenders issued by SIDHKOFED."
-- Cards upgrade: add an icon container `<span className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10"><Icon /></span>` before the h2
-
-#### Files to change
+#### Files changed
 - `web/src/app/notifications/page.tsx`
+- `web/src/components/listing/category-cards.tsx` (shared)
 
 #### Audit checklist — Notifications
-- [ ] H1 "Notifications" visible
-- [ ] Intro sentence visible below h1
-- [ ] Notices card: Bell icon (in bg-primary/10 container) + h2 "Notices" + description
-- [ ] Tenders card: FileText icon + h2 "Tenders" + description
-- [ ] Both cards link correctly: /notifications/notices and /notifications/tenders
-- [ ] Dark mode: icon containers visible in dark
-- [ ] Mobile: 2 cards stack to 1-col
+- [x] Hero band + "Browse by Category" band render, matching Activities/Publications treatment
+- [x] 4 category cards: Notice, Circular, Public Announcement (same-page filters) + Tenders (separate page)
+- [x] Listing below (Notices, the default view): breadcrumb, filters (Type, Year), results, cards, pagination
+- [x] Category cards and `communication_type` filter remain synchronized via the shared URL param
+- [x] Tenders card links to `/notifications/tenders`, which has its own separate filters
+- [x] Dark mode: token-based styling, correct in both themes automatically
+- [x] Mobile: band text readable, cards stack correctly
 
 ---
 
@@ -390,7 +455,7 @@ The existing `ListingLayout` (with breadcrumbs, filters, results, pagination) fo
 **Template:** E (Listing + Intro Hybrid)  
 **Current state:** `ListingLayout` only — filters (category, type) + document cards
 
-**Target:** Add a category quicklinks strip ABOVE the listing. Same pattern as Activities.
+**Target:** Add a category quicklinks strip ABOVE the listing, and treat this page as the reference implementation for same-page category filtering used elsewhere (especially Activities).
 
 #### Category quicklinks (new — above ListingLayout)
 ```
@@ -538,38 +603,80 @@ Each FAQ item is a disclosure widget (`<details>`/`<summary>` or a stateful butt
 
 ---
 
-### 4.10 Procurement Enquiry (`/procurement/enquiry`) — STATUS: PENDING (minor)
+### 4.10 Procurement Enquiry (`/procurement/enquiry`) — STATUS: ✅ DONE
 
-**Template:** B (Static Content)  
-**Current state:** Well-structured contact card with 4 info rows (address, phone, email, hours). Just needs a Google Maps link.
+> Note: the Maps-link requirement is satisfied by a more robust mechanism than the literal suggestion below — see "Built" for what actually shipped.
 
-**Target:** Add Google Maps link alongside the address row.
+**Template:** B (Static Content)
+**Built:** `EnquiryForm` (filtered to Buyer/Seller/Storage Enquiry types + a Commodity field) alongside `<OfficeContactCard>`, which renders live contact info sourced from `Settings → Contact` (backend `SETTINGS_CATALOG`, exposed publicly via `GET /public/settings/:group`, allow-listed to `contact` only). `OfficeContactCard` already includes a "View on map" link when `contact.map_url` is set — seeded with the real office location (`https://maps.app.goo.gl/hUMpwZStpAnDRwZs8`) via `prisma/seed/contact-defaults.ts`. This is preferable to a hardcoded Google Maps search-query link: it's admin-editable without a code change and points at the exact verified location rather than a generic address search.
 
-#### Change
-Below the address `<span>` in the MapPin row, add:
-```tsx
-<a
-  href="https://maps.google.com/?q=Sameti+Bhawan+Kanke+Road+Ranchi+Jharkhand"
-  target="_blank"
-  rel="noopener noreferrer"
-  className="mt-1 inline-flex items-center gap-1 text-xs text-primary hover:underline"
->
-  <Map className="h-3 w-3" /> Open in Google Maps
-</a>
-```
-
-#### Files to change
+#### Files involved
 - `web/src/app/procurement/enquiry/page.tsx`
+- `web/src/components/content/office-contact-card.tsx`
+- `web/src/components/forms/enquiry-form.tsx`
 
 #### Audit checklist — Procurement Enquiry
-- [ ] Address row: address text + "Open in Google Maps" link below it
-- [ ] Maps link opens correct location in new tab
-- [ ] Phone: click-to-call (`tel:` link) works
-- [ ] Email: mailto link works
-- [ ] Card border and bg-surface visible in both light + dark mode
-- [ ] Mobile: card full-width, padding comfortable
+- [x] Address row: address text + "View on map" link below it (hidden automatically if `map_url` is ever unset)
+- [x] Maps link opens correct location in new tab
+- [x] Phone: click-to-call (`tel:` link) works
+- [x] Email: mailto link works
+- [x] Card border and bg-surface visible in both light + dark mode
+- [x] Mobile: card full-width, padding comfortable
 
 ---
+
+### 4.11 Procurement (`/procurement`) — STATUS: ✅ DONE (2026-07-09)
+
+> Not present in the original spec — built this session together with Activities/Notifications/Impact, following the same pattern. Documented here for completeness.
+
+**Template:** E (Listing + Intro Hybrid)
+**Built:**
+- `Breadcrumbs` → `<LocalizedHero titleKey="page.procurement.title" subtitleKey="page.procurement.subtitle" />`
+- A `bg-muted/40` "Browse by Category" band (`<CategoryCards>`) with 4 cards:
+  - Upcoming Procurements → `/procurement?upcoming=true#listing` (a date-based view — `upcoming` isn't a `procurement-update-type` value, it's read by the Timing filter's boolean-style option)
+  - Procurement Rate → `/procurement?procurement_update_type=procurement-rate#listing`
+  - Procurement Centre Update → `/procurement?procurement_update_type=procurement-centre-update#listing`
+  - Buyer/Seller/Storage Enquiry → `/procurement/enquiry` (separate page — its own form, not a listing filter; see §4.10)
+- "Announcements" is intentionally excluded from the cards — `/procurement` itself is already that default, unfiltered view (same "don't card the default state" rule as Activities/Notifications/Impact).
+- Procurement Rate and Procurement Centre Update are curated from the real `procurement-update-types` master data (`masters.ts` → `PROCUREMENT_UPDATE_TYPES`, 6 values total; the rest remain dropdown-only in the `FilterBar`).
+- Listing below (`id="listing"`): `FilterBar` with Timing/Type/Commodity/District/Year, `ResultsSummary`, procurement card grid, `PaginationNav`.
+
+#### Files involved
+- `web/src/app/procurement/page.tsx`
+- `web/src/components/listing/category-cards.tsx` (shared)
+
+#### Audit checklist — Procurement
+- [x] Hero band + "Browse by Category" band render, matching Activities/Notifications/Publications treatment
+- [x] 4 category cards: Upcoming, Procurement Rate, Procurement Centre Update (same-page filters) + Buyer/Seller/Storage Enquiry (separate page)
+- [x] Listing below (all procurement updates, the default view): filters, results, cards, pagination
+- [x] Category cards and `procurement_update_type`/`upcoming` filters remain synchronized via the shared URL params
+- [x] Dark mode: token-based styling, correct in both themes automatically
+- [x] Mobile: band text readable, cards stack correctly
+
+---
+
+### 4.12 Impact / Dashboard (`/impact`, `/impact/dashboard`) — STATUS: ✅ DONE (2026-07-09)
+
+> Not present in the original spec — built this session. Documented here for completeness.
+
+**Template:** Impact overview is a trimmed hybrid; `/impact/dashboard` is a standalone reporting page (closest to Template C).
+**Built:**
+- The primary nav item (`config/navigation.ts`, key `impact`) is now labelled **"Dashboard"** and links straight to `/impact/dashboard` — not `/impact`.
+- `/impact/dashboard`: `Breadcrumbs` → heading → `<KpiStrip>` (if KPI data present) → the 13 fixed public reports (`FIXED_DASHBOARD_REPORTS`, `src/modules/dashboard/dashboard.types.ts`) grouped into 4 theme sections via a web-only `REPORT_GROUPS` lookup by `report_key` (the backend has no report `category` field): Training & Capacity, Procurement, Membership, Programmes & Partnerships, plus a defensive "Other Reports" catch-all for any future unmapped key. Each group renders as a card grid (`<ReportBlock>`), 2-col on `lg`.
+- `/impact` itself is an intentionally orphaned stub — `LocalizedHero` + KPI strip + a single "Public Dashboard" category card pointing at `/impact/dashboard`. It was trimmed down from a fuller "Training & Beneficiary" listing once that data was recognised as redundant with Activities' own Trainings category (same `event_type=training` data). No longer linked from nav; kept in place rather than deleted, consistent with this session's "defer cleanup of orphaned pages" precedent (see also `/activities/trainings`, `/notifications/notices` as historical listing pages, `/dashboard` as a pre-existing unrelated duplicate route).
+
+#### Files involved
+- `web/src/app/impact/page.tsx`
+- `web/src/app/impact/dashboard/page.tsx`
+- `web/src/config/navigation.ts`
+
+#### Audit checklist — Impact / Dashboard
+- [x] Primary nav "Dashboard" item links to `/impact/dashboard`
+- [x] `/impact/dashboard`: KPI strip renders when data present
+- [x] All 13 fixed reports render, grouped into the 4 theme sections (verified live — zero reports fall into "Other")
+- [x] `/impact` stub still renders (hero + KPI strip + one Dashboard card), reachable only by direct URL
+- [x] Dark mode: token-based styling, correct in both themes automatically
+- [x] Mobile: report cards stack to 1-col
 
 ## 5. FAQ Placement Strategy
 
@@ -649,16 +756,18 @@ Pages are implemented one at a time. Each audit checklist must be manually verif
 
 | Priority | Page | Status | Template | Effort | Notes |
 |---|---|---|---|---|---|
-| 1 | Homepage | 🔴 PENDING | A (unique) | High | New components + API restructure |
-| 2 | Activities | 🔴 PENDING | E (hybrid) | Low | Green banner + 4 quicklinks above listing |
-| 3 | Notifications | 🔴 PENDING | D (hub) | Low | Icons on 2 nav cards only |
+| — | Homepage | ✅ DONE (2026-07-09) | A (unique) | — | Hero contrast/search/mobile-image + live stats, new Leadership module (backend+admin), ticker retired, sections reordered — see §4.1 |
 | 4 | Publications | 🔴 PENDING | E (hybrid) | Low | 5 category quicklinks above listing |
 | 5 | Membership Process | 🔴 PENDING | B (static) | Medium | Numbered step cards + ContactCta |
 | 6 | Membership | 🔴 PENDING | E (hybrid) | Medium | Intro + nav cards + inline FAQs |
-| 7 | Procurement Enquiry | 🔴 PENDING | B (static) | Minimal | Google Maps link only |
 | — | About | ✅ DONE | D (hub) | — | Diagram + Hindi + badge + CTA |
 | — | Vision/Mission | ✅ DONE | B (static) | — | Icon headings + CTA |
 | — | Org Governance | ✅ DONE | B (static) | — | Diagram + highlight box + RTI + CTA |
+| — | Activities | ✅ DONE (2026-07-09) | E (hybrid) | — | Hero + "Browse by Category" band (4 cards) above same-page-filtered listing — see §4.5 |
+| — | Notifications | ✅ DONE (2026-07-09) | E (hybrid) | — | Hero + "Browse by Category" band (Notice/Circular/Public Announcement + separate Tenders page) — see §4.6 |
+| — | Procurement | ✅ DONE (2026-07-09) | E (hybrid) | — | Hero + "Browse by Category" band (Upcoming/Rate/Centre-Update + separate Enquiry page) — see §4.11 |
+| — | Procurement Enquiry | ✅ DONE | B (static) | — | Live Settings-driven Maps link via `OfficeContactCard` — see §4.10 |
+| — | Impact / Dashboard | ✅ DONE (2026-07-09) | Hybrid / C | — | Nav renamed "Dashboard" → `/impact/dashboard`; 13 reports grouped into 4 theme sections + KPI strip — see §4.12 |
 
 **Removed from plan:** `/membership/faqs` (standalone page cancelled — FAQs inline on /membership per §5)
 
@@ -679,18 +788,21 @@ These apply to every page, regardless of template, before the page is marked don
 - [ ] Text remains legible (no white-on-white or black-on-black)
 - [ ] Icons retain their colour (primary green, muted grey)
 - [ ] Border lines visible in dark mode
+- [ ] No half-shipped dark-mode controls or scripts remain exposed without a full contrast audit
 
 ### C — Responsive / Mobile (375px viewport)
 - [ ] No horizontal scroll / overflow
 - [ ] Text readable without zooming (min 14px equivalent)
 - [ ] Multi-col grids stack appropriately
 - [ ] CTA buttons full-width on mobile if needed
+- [ ] Key institutional imagery does not disappear entirely on mobile for marquee sections
 
 ### D — Links & Navigation
 - [ ] All `<Link>` components resolve (no 404)
 - [ ] External links: `target="_blank"` + `rel="noopener noreferrer"` present
 - [ ] "View All" links resolve
 - [ ] Breadcrumb parent links resolve
+- [ ] No duplicate or overlapping routes remain exposed as competing first-class destinations unless intentionally canonicalised
 
 ### E — Language Toggle
 - [ ] All `t()` dictionary strings switch to Hindi on toggle
@@ -701,7 +813,8 @@ These apply to every page, regardless of template, before the page is marked don
 - [ ] CMS sections show `<EmptyState />` when no data (never blank/broken)
 - [ ] Pagination only shows when `total_pages > 1`
 - [ ] Results summary reflects correct count
+- [ ] Public-facing institutional facts (leaders, stats, official notices of state) are not trapped in hardcoded component constants unless explicitly temporary and documented
 
 ---
 
-*Last updated: 2026-06-28 | Maintained in `docs/web-pages-design-spec.md`*
+*Last updated: 2026-07-09 | Maintained in `docs/web-pages-design-spec.md`*
