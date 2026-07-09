@@ -38,7 +38,7 @@
   },
   "prisma": {
     "schema": "prisma/schema.prisma",
-    "seed": "tsx prisma/seed/index.ts"
+    "seed": "node --import tsx prisma/seed/index.ts"
   },
   "overrides": {
     "ioredis": "^5.4.1"
@@ -61,7 +61,8 @@
     "multer": "^2.0.1",
     "pino": "^9.3.2",
     "pino-http": "^10.2.0",
-    "zod": "^3.23.8"
+    "zod": "^3.23.8",
+    "tsx": "^4.17.0"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
