@@ -108,6 +108,7 @@ const tags: MasterDefinition = {
 const commodityExtra = {
   description_en: z.string().trim().nullable().optional(),
   description_hi: z.string().trim().nullable().optional(),
+  category: z.string().trim().max(150).nullable().optional(),
   icon_media_id: z.string().uuid().nullable().optional(),
 };
 const commoditySchemas = standardSchemas(commodityExtra);
@@ -128,6 +129,7 @@ const commodities: MasterDefinition = {
     const data = buildStandardCreate(input);
     if (input.description_en !== undefined) data.descriptionEn = input.description_en;
     if (input.description_hi !== undefined) data.descriptionHi = input.description_hi;
+    if (input.category !== undefined) data.category = input.category;
     if (input.icon_media_id !== undefined) data.iconMediaId = input.icon_media_id;
     return data;
   },
@@ -135,6 +137,7 @@ const commodities: MasterDefinition = {
     const data = buildStandardUpdate(input);
     if (input.description_en !== undefined) data.descriptionEn = input.description_en;
     if (input.description_hi !== undefined) data.descriptionHi = input.description_hi;
+    if (input.category !== undefined) data.category = input.category;
     if (input.icon_media_id !== undefined) data.iconMediaId = input.icon_media_id;
     return data;
   },
