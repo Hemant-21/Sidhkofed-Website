@@ -7,10 +7,13 @@ import { describe, it, expect } from 'vitest';
 import {
   buildDefaultMasterPayload,
   buildFinancialYearPayload,
+  buildCommodityMasterPayload,
   defaultMasterSchema,
   financialYearSchema,
+  commodityMasterSchema,
   emptyDefaultMasterForm,
   emptyFinancialYearForm,
+  emptyCommodityMasterForm,
   type DefaultMasterValues,
 } from './master-form-payload';
 import { MASTER_TYPES, findMasterType } from './types';
@@ -112,6 +115,78 @@ describe('emptyFinancialYearForm', () => {
   });
 });
 
+// ── Commodity payload ──────────────────────────────────────────────────────────
+
+describe('buildCommodityMasterPayload', () => {
+  it('passes name_en and category through', () => {
+    const out = buildCommodityMasterPayload({
+      name_en: 'Lac', name_hi: '', display_order: '',
+      description_en: '', description_hi: '', category: 'Minor Forest Produce', icon_media_id: null,
+    });
+    expect(out.name_en).toBe('Lac');
+    expect(out.category).toBe('Minor Forest Produce');
+  });
+
+  it('coerces an empty category to null', () => {
+    const out = buildCommodityMasterPayload({
+      name_en: 'Lac', name_hi: '', display_order: '',
+      description_en: '', description_hi: '', category: '', icon_media_id: null,
+    });
+    expect(out.category).toBeNull();
+  });
+
+  it('coerces empty descriptions to null and passes non-empty ones through', () => {
+    const empty = buildCommodityMasterPayload({
+      name_en: 'Lac', name_hi: '', display_order: '',
+      description_en: '', description_hi: '', category: '', icon_media_id: null,
+    });
+    expect(empty.description_en).toBeNull();
+    expect(empty.description_hi).toBeNull();
+
+    const filled = buildCommodityMasterPayload({
+      name_en: 'Lac', name_hi: '', display_order: '',
+      description_en: 'A resin.', description_hi: 'लाख।', category: '', icon_media_id: null,
+    });
+    expect(filled.description_en).toBe('A resin.');
+    expect(filled.description_hi).toBe('लाख।');
+  });
+
+  it('passes icon_media_id through unchanged', () => {
+    const out = buildCommodityMasterPayload({
+      name_en: 'Lac', name_hi: '', display_order: '',
+      description_en: '', description_hi: '', category: '', icon_media_id: 'media-uuid',
+    });
+    expect(out.icon_media_id).toBe('media-uuid');
+  });
+});
+
+describe('commodityMasterSchema validation', () => {
+  function parse(v: unknown) { return commodityMasterSchema.safeParse(v); }
+
+  it('accepts a minimal valid input', () => {
+    expect(parse({ name_en: 'Lac', icon_media_id: null }).success).toBe(true);
+  });
+
+  it('rejects an empty name_en', () => {
+    expect(parse({ name_en: '', icon_media_id: null }).success).toBe(false);
+  });
+
+  it('accepts either allowed category value or an empty string', () => {
+    expect(parse({ name_en: 'Lac', category: 'Minor Forest Produce', icon_media_id: null }).success).toBe(true);
+    expect(parse({ name_en: 'Ragi', category: 'Agriculture', icon_media_id: null }).success).toBe(true);
+    expect(parse({ name_en: 'Lac', category: '', icon_media_id: null }).success).toBe(true);
+  });
+});
+
+describe('emptyCommodityMasterForm', () => {
+  it('returns a form-ready empty object', () => {
+    expect(emptyCommodityMasterForm()).toEqual({
+      name_en: '', name_hi: '', display_order: '',
+      description_en: '', description_hi: '', category: '', icon_media_id: null,
+    });
+  });
+});
+
 // ── MASTER_TYPES config contract ──────────────────────────────────────────────
 
 describe('MASTER_TYPES configuration', () => {
@@ -124,6 +199,11 @@ describe('MASTER_TYPES configuration', () => {
     expect(fy.formVariant).toBe('financial-year');
     expect(fy.hasDisplayOrder).toBe(false);
     expect(fy.defaultSort).toBe('label');
+  });
+
+  it('commodities uses the commodity form variant', () => {
+    const commodities = findMasterType('commodities')!;
+    expect(commodities.formVariant).toBe('commodity');
   });
 
   it('reporting-periods has no display_order and sorts by start_date', () => {

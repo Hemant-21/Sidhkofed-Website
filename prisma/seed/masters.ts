@@ -15,10 +15,10 @@ import { seedBlocks } from './blocks';
 type NameRow = { nameEn: string; nameHi?: string; displayOrder?: number };
 
 /** Upsert a batch of name-based masters (by slug) for a given delegate. */
-async function seedNameMaster(
+async function seedNameMaster<T extends NameRow>(
   label: string,
-  rows: NameRow[],
-  upsert: (row: NameRow & { slug: string }) => Promise<unknown>,
+  rows: T[],
+  upsert: (row: T & { slug: string }) => Promise<unknown>,
 ): Promise<void> {
   for (const [i, row] of rows.entries()) {
     await upsert({ ...row, slug: slugify(row.nameEn), displayOrder: row.displayOrder ?? i + 1 });
@@ -37,9 +37,13 @@ const TRAINING_TYPES: NameRow[] = [
   { nameEn: 'Refresher' }, { nameEn: 'Awareness' },
 ];
 
-const COMMODITIES: NameRow[] = [
-  { nameEn: 'Lac', nameHi: 'लाख' }, { nameEn: 'Honey', nameHi: 'शहद' }, { nameEn: 'Ragi / Millets', nameHi: 'रागी / मिलेट्स' },
-  { nameEn: 'Sal Seed', nameHi: 'साल बीज' }, { nameEn: 'Karanj', nameHi: 'करंज' }, { nameEn: 'Tamarind', nameHi: 'इमली' },
+const COMMODITIES: (NameRow & { category: string })[] = [
+  { nameEn: 'Lac', nameHi: 'लाख', category: 'Minor Forest Produce' },
+  { nameEn: 'Honey', nameHi: 'शहद', category: 'Minor Forest Produce' },
+  { nameEn: 'Ragi / Millets', nameHi: 'रागी / मिलेट्स', category: 'Agriculture' },
+  { nameEn: 'Sal Seed', nameHi: 'साल बीज', category: 'Minor Forest Produce' },
+  { nameEn: 'Karanj', nameHi: 'करंज', category: 'Minor Forest Produce' },
+  { nameEn: 'Tamarind', nameHi: 'इमली', category: 'Minor Forest Produce' },
 ];
 
 const INSTITUTION_TYPES: NameRow[] = [
@@ -123,7 +127,11 @@ export async function seedMasters(prisma: PrismaClient): Promise<void> {
   await seedNameMaster('training types', TRAINING_TYPES, (r) =>
     prisma.trainingType.upsert({ where: { slug: r.slug }, update: { nameEn: r.nameEn, displayOrder: r.displayOrder }, create: r }));
   await seedNameMaster('commodities', COMMODITIES, (r) =>
-    prisma.commodity.upsert({ where: { slug: r.slug }, update: { nameEn: r.nameEn, nameHi: r.nameHi ?? null, displayOrder: r.displayOrder }, create: r }));
+    prisma.commodity.upsert({
+      where: { slug: r.slug },
+      update: { nameEn: r.nameEn, nameHi: r.nameHi ?? null, displayOrder: r.displayOrder, category: r.category },
+      create: r,
+    }));
   await seedNameMaster('institution types', INSTITUTION_TYPES, (r) =>
     prisma.institutionType.upsert({ where: { slug: r.slug }, update: { nameEn: r.nameEn, displayOrder: r.displayOrder }, create: r }));
   await seedNameMaster('document types', DOCUMENT_TYPES, (r) =>

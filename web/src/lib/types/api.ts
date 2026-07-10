@@ -65,6 +65,13 @@ export interface MediaRef {
   height: number | null;
 }
 
+export interface Commodity extends MasterRef {
+  description_en: string | null;
+  description_hi: string | null;
+  category: string | null;
+  icon_media: MediaRef | null;
+}
+
 export interface DocumentLinkRef {
   id: string;
   slug: string;

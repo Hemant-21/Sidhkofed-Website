@@ -1,10 +1,16 @@
 import type { Metadata } from 'next';
-import { Eye, Crosshair, Leaf } from 'lucide-react';
+import { Eye, Crosshair, Leaf, CheckCircle2 } from 'lucide-react';
 import { buildMetadata } from '@/lib/seo';
+import { getListSafe } from '@/lib/api/server';
+import { PUBLIC_ENDPOINTS } from '@/lib/api/endpoints';
+import type { Commodity } from '@/lib/types/api';
 import { Breadcrumbs } from '@/components/ui/breadcrumb';
 import { Container } from '@/components/ui/container';
+import { SectionHeading } from '@/components/ui/section-heading';
 import { CooperativeStructure } from '@/components/content/cooperative-structure';
+import { GovernanceToggle } from '@/components/content/governance-toggle';
 import { ContactCta } from '@/components/content/contact-cta';
+import { CoverImage } from '@/components/content/cover-image';
 
 export const metadata: Metadata = buildMetadata({
   title: 'About SIDHKOFED',
@@ -15,21 +21,58 @@ export const metadata: Metadata = buildMetadata({
 
 const STATS = [
   { value: 'Est. 2021', label: 'Incorporated' },
-  { value: '24',        label: 'Districts'     },
-  { value: '4,454',     label: 'MPCS'          },
-  { value: 'Jharkhand', label: 'State'         },
+  { value: '24', label: 'Districts' },
+  { value: '4,454', label: 'MPCS' },
+  { value: 'Jharkhand', label: 'State' },
 ];
 
-const COMMODITIES = [
-  { name: 'Lac',           category: 'Minor Forest Produce' },
-  { name: 'Honey',         category: 'Minor Forest Produce' },
-  { name: 'Karanj Seeds',  category: 'Oil Seed / MFP'       },
-  { name: 'Ragi',          category: 'Agriculture'           },
-  { name: 'Sal Seeds',     category: 'Minor Forest Produce' },
-  { name: 'Mahua',         category: 'Minor Forest Produce' },
+const STATE_BOARD = [
+  { role: 'Chairman', note: "Hon'ble Chief Minister of Jharkhand" },
+  {
+    role: 'Vice-Chairman',
+    note: 'Minister, Agriculture, Animal Husbandry & Cooperation Department',
+  },
+  {
+    role: 'Ex-Officio Directors',
+    note: 'Addl. Chief Secretary / Principal Secretary / Secretary — Forest, Environment & Climate Change; Finance; Agriculture, Animal Husbandry & Cooperation; and Welfare Departments',
+  },
+  { role: 'Chief Executive Officer', note: 'Appointed I.A.S./I.F.S. Officer' },
+  { role: 'Secretary', note: 'Appointed Sr. Officer from Cooperative Department' },
+  {
+    role: 'Elected Directors',
+    note: '10 directors — 2 from each of the 5 divisions, 50% seats reserved for women',
+  },
+  { role: 'Nominated Directors', note: '3 directors nominated by the State Government' },
+  { role: 'Special Invitee Director', note: 'Representing JHASCOLAMPF, JHAMFCOFED and VEJFED' },
+  { role: 'Special Invitees (MLAs)', note: 'One MLA from each division' },
 ];
 
-export default function AboutPage() {
+const DISTRICT_BOARD = [
+  { role: 'Chairman', note: 'Deputy Commissioner' },
+  { role: 'Managing Director', note: 'Divisional Forest Officer' },
+  { role: 'Director-cum-Secretary', note: 'District Cooperative Officer' },
+  {
+    role: 'Ex-Officio Directors',
+    note: 'District Agriculture Officer; Project Director / District Welfare Officer; District Supply Officer; District Panchayati Raj Officer; General Manager, District Industries Centre',
+  },
+  { role: 'Special Invitees', note: "Hon'ble MLAs of the concerned district" },
+];
+
+const OBJECTIVES = [
+  'Eliminate middlemen from the trade of agricultural and forest produce and related activities.',
+  'Ensure fair prices for the products of Scheduled Tribes and rural inhabitants.',
+  'Organise the production, collection, processing and marketing of agricultural and forest produce — such as paddy, mahua, lac, tasar, bael and kodo-kutki — on a cooperative basis.',
+  'Establish a system for procurement, storage, processing and sales that maximises benefits for members.',
+  'Facilitate access to national and international markets and provide support through cooperative institutions.',
+  'Establish coordination between district-level and primary-level cooperative societies.',
+];
+
+export default async function AboutPage() {
+  const { items: commodities } = await getListSafe<Commodity>(`${PUBLIC_ENDPOINTS.masters}/commodities`, {
+    query: { page_size: 100 },
+    revalidate: 3600,
+  });
+
   return (
     <>
       <Breadcrumbs items={[{ label: 'About Us' }]} />
@@ -70,14 +113,14 @@ export default function AboutPage() {
           <div className="space-y-4 text-base leading-relaxed text-foreground">
             <p>
               Sidho Kanho Agriculture and Forest Produce State Cooperative Federation Ltd.
-              (SIDHKOFED) is the State-level apex cooperative federation working for the
-              development of agriculture and minor forest produce-based livelihoods in Jharkhand.
+              (SIDHKOFED) is the State-level apex cooperative federation working for the development
+              of agriculture and minor forest produce-based livelihoods in Jharkhand.
             </p>
             <p>
-              Through a three-tier cooperative structure, it connects 24 District Cooperative
-              Unions with approximately 4,454 MPCS/LAMPS across the State. Its major areas of
-              work include capacity building, procurement, value addition, storage, marketing,
-              digital services and livelihood promotion.
+              Through a three-tier cooperative structure, it connects 24 District Cooperative Unions
+              with approximately 4,454 MPCS/LAMPS across the State. Its major areas of work include
+              capacity building, procurement, value addition, storage, marketing, digital services
+              and livelihood promotion.
             </p>
           </div>
           <div>
@@ -89,61 +132,47 @@ export default function AboutPage() {
         </div>
       </Container>
 
-      {/* ── 3. ORGANISATION STRUCTURE ── */}
+      {/* ── 3. ORGANISATION STRUCTURE + GOVERNANCE ── */}
       <div className="bg-muted/40">
         <Container className="py-12">
           <div className="grid grid-cols-1 gap-10 lg:grid-cols-2 lg:items-start">
-
             <div>
-              <p className="mb-1 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                Organisation Structure
-              </p>
-              <h2 className="mb-4 text-xl font-bold text-foreground">How SIDHKOFED is organised</h2>
+              <SectionHeading title="Organisation Structure" />
               <p className="text-base leading-relaxed text-foreground">
                 SIDHKOFED functions through a three-tier structure comprising the State-level apex
                 federation, 24 District Cooperative Unions and approximately 4,454 grassroots
-                MPCS/LAMPS. The Federation is governed by its Board of Directors and supported by
-                the Chief Executive Officer, officials, technical experts and programme teams.
-              </p>
-              <p className="mt-4 text-base leading-relaxed text-foreground">
-                This structure enables State-level planning and coordination while ensuring
-                implementation and beneficiary outreach through district and primary cooperative
-                institutions.
+                MPCS/LAMPS. Each District Union is in turn headed by the Deputy Commissioner, with
+                district officials serving as ex-officio directors — switch the tabs alongside to
+                see either board&apos;s composition.
               </p>
             </div>
 
-            {/* Governance card */}
-            <div className="space-y-3">
-              <p className="mb-1 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                Governance
+            <div>
+              <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                Governance — Board of Directors
               </p>
-              {[
-                { role: 'Board of Directors',          note: 'Apex governing body of the federation' },
-                { role: 'Chief Executive Officer',     note: 'Shri Shashi Ranjan, I.A.S.' },
-                { role: 'Technical Experts',           note: 'Programme and domain specialists' },
-                { role: 'Programme Teams',             note: 'District and field implementation' },
-              ].map((item) => (
-                <div
-                  key={item.role}
-                  className="flex items-start gap-3 rounded-lg border border-border bg-surface px-4 py-3"
-                >
-                  <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-primary" />
-                  <div>
-                    <p className="text-sm font-semibold text-foreground">{item.role}</p>
-                    <p className="text-xs text-muted-foreground">{item.note}</p>
-                  </div>
-                </div>
-              ))}
+              <GovernanceToggle stateBoard={STATE_BOARD} districtBoard={DISTRICT_BOARD} />
             </div>
-
           </div>
         </Container>
       </div>
 
+      {/* ── 3B. OBJECTIVES ── */}
+      <Container className="py-12">
+        <SectionHeading title="Objectives" />
+        <div className="grid grid-cols-1 gap-x-8 gap-y-3 sm:grid-cols-2">
+          {OBJECTIVES.map((objective) => (
+            <div key={objective} className="flex items-start gap-2.5">
+              <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+              <p className="text-sm leading-relaxed text-foreground">{objective}</p>
+            </div>
+          ))}
+        </div>
+      </Container>
+
       {/* ── 4. VISION & MISSION ── */}
       <Container className="py-12">
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-
           {/* Vision */}
           <div className="rounded-xl border border-primary/20 bg-primary/5 p-6">
             <div className="mb-4 inline-flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
@@ -167,45 +196,51 @@ export default function AboutPage() {
             </div>
             <h2 className="mb-3 text-lg font-bold text-foreground">Mission</h2>
             <p className="text-sm leading-relaxed text-foreground">
-              To strengthen more than 4,400 primary cooperative institutions through training,
+              To strengthen more than 4,454 primary cooperative institutions through training,
               technology, market linkage and transparent programme implementation. SIDHKOFED works
               to improve procurement, processing, value addition, storage and marketing of
               agricultural and minor forest produce.
             </p>
           </div>
-
         </div>
       </Container>
 
       {/* ── 5. KEY COMMODITIES ── */}
-      <div className="bg-muted/40">
-        <Container className="py-12">
-          <p className="mb-1 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-            What We Procure
-          </p>
-          <h2 className="mb-6 text-xl font-bold text-foreground">Key Commodities</h2>
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
-            {COMMODITIES.map((c) => (
-              <div
-                key={c.name}
-                className="flex flex-col items-center rounded-lg border border-border bg-surface p-4 text-center"
-              >
-                <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
-                  <Leaf className="h-4 w-4 text-primary" aria-hidden="true" />
+      {commodities.length > 0 && (
+        <div className="bg-muted/40">
+          <Container className="py-12">
+            <SectionHeading title="Key Commodities" />
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
+              {commodities.map((c) => (
+                <div
+                  key={c.id}
+                  className="flex flex-col items-center rounded-lg border border-border bg-surface p-4 text-center"
+                >
+                  {c.icon_media ? (
+                    <CoverImage
+                      media={c.icon_media}
+                      fallbackAlt={c.name_en}
+                      rounded
+                      className="mb-3 h-10 w-10"
+                      sizes="40px"
+                    />
+                  ) : (
+                    <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
+                      <Leaf className="h-4 w-4 text-primary" aria-hidden="true" />
+                    </div>
+                  )}
+                  <p className="text-sm font-bold text-foreground">{c.name_en}</p>
+                  {c.category && <p className="mt-0.5 text-[11px] text-muted-foreground">{c.category}</p>}
                 </div>
-                <p className="text-sm font-bold text-foreground">{c.name}</p>
-                <p className="mt-0.5 text-[11px] text-muted-foreground">{c.category}</p>
-              </div>
-            ))}
-          </div>
-        </Container>
-      </div>
+              ))}
+            </div>
+          </Container>
+        </div>
+      )}
 
       {/* ── 6. CONTACT CTA ── */}
       <Container className="py-12">
-        <div className="max-w-3xl">
-          <ContactCta />
-        </div>
+        <ContactCta />
       </Container>
     </>
   );

@@ -56,6 +56,7 @@ export function serializeCommodity(row: MasterRow): Record<string, unknown> {
     ...serializeStandard(row),
     description_en: nullableStr(row.descriptionEn),
     description_hi: nullableStr(row.descriptionHi),
+    category: nullableStr(row.category),
     icon_media_id: nullableStr(row.iconMediaId),
     icon_media: row.iconMedia ? toMediaDto(row.iconMedia as MediaAsset) : null,
   };

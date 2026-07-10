@@ -44,7 +44,7 @@ export interface MasterTypeConfig {
   /** Default sort field sent to the API. Defaults to 'display_order'. */
   defaultSort?: string;
   /** Use a specialised form dialog instead of the generic name/order form. */
-  formVariant?: 'financial-year';
+  formVariant?: 'financial-year' | 'commodity';
   /** Extra filter keys sent to the backend list endpoint (URL-synced via useFilters). */
   filterKeys?: string[];
 }
@@ -68,6 +68,7 @@ export const MASTER_TYPES: MasterTypeConfig[] = [
     label: 'Commodities',
     description: 'MFP and agricultural commodities (Lac, Honey, Ragi, etc.).',
     editMode: 'full',
+    formVariant: 'commodity',
   },
   {
     key: 'institution-types',

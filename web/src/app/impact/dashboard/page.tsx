@@ -5,7 +5,7 @@ import type { DashboardResponse, DashboardReport, KpisResponse } from '@/lib/typ
 import { buildMetadata } from '@/lib/seo';
 import { Breadcrumbs } from '@/components/ui/breadcrumb';
 import { Container } from '@/components/ui/container';
-import { LocalizedHeading, LocalizedText } from '@/components/listing/localized-heading';
+import { LocalizedHero, LocalizedHeading } from '@/components/listing/localized-heading';
 import { KpiStrip } from '@/components/dashboard/kpi-strip';
 import { ReportBlock } from '@/components/dashboard/report-block';
 import { EmptyState } from '@/components/feedback/states';
@@ -83,12 +83,11 @@ export default async function DashboardPage() {
   return (
     <>
       <Breadcrumbs items={[{ label: 'Public dashboard' }]} />
-      <Container className="py-8">
-        <header className="mb-6">
-          <LocalizedHeading titleKey="page.dashboard.title" as="h1" />
-          <LocalizedText textKey="page.dashboard.subtitle" className="-mt-1 max-w-3xl text-muted-foreground" />
-        </header>
 
+      {/* Page header — same band style as /notifications and /publications */}
+      <LocalizedHero titleKey="page.dashboard.title" subtitleKey="page.dashboard.subtitle" />
+
+      <Container className="py-8">
         {kpis && kpis.kpis.length > 0 ? (
           <section aria-label="Key performance indicators" className="mb-10">
             <KpiStrip reports={kpis.kpis} />

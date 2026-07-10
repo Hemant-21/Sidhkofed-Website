@@ -320,6 +320,7 @@ model Commodity {
   slug               String               @unique
   descriptionEn      String?              @map("description_en")
   descriptionHi      String?              @map("description_hi")
+  category           String?              @map("category")
   iconMediaId        String?              @map("icon_media_id") @db.Uuid
   isActive           Boolean              @default(true) @map("is_active")
   displayOrder       Int?                 @map("display_order")

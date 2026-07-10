@@ -59,3 +59,42 @@ export function buildFinancialYearPayload(values: FinancialYearValues): {
 } {
   return { label: values.label, start_date: values.start_date, end_date: values.end_date };
 }
+
+// ── Commodity form (name / description / category / icon) ────────────────────
+
+export const COMMODITY_CATEGORY_OPTIONS = ['Minor Forest Produce', 'Agriculture'] as const;
+
+export const commodityMasterSchema = defaultMasterSchema.extend({
+  description_en: z.string().trim().max(1000).optional(),
+  description_hi: z.string().trim().max(1000).optional(),
+  category: z.string().optional(),
+  icon_media_id: z.string().nullable(),
+});
+export type CommodityMasterValues = z.infer<typeof commodityMasterSchema>;
+
+export function emptyCommodityMasterForm(): CommodityMasterValues {
+  return {
+    name_en: '',
+    name_hi: '',
+    display_order: '',
+    description_en: '',
+    description_hi: '',
+    category: '',
+    icon_media_id: null,
+  };
+}
+
+export function buildCommodityMasterPayload(values: CommodityMasterValues): MasterPayload & {
+  description_en: string | null;
+  description_hi: string | null;
+  category: string | null;
+  icon_media_id: string | null;
+} {
+  return {
+    ...buildDefaultMasterPayload(values),
+    description_en: values.description_en?.trim() || null,
+    description_hi: values.description_hi?.trim() || null,
+    category: values.category?.trim() || null,
+    icon_media_id: values.icon_media_id ?? null,
+  };
+}

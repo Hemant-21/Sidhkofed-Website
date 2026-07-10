@@ -3,10 +3,11 @@
 import { useEffect } from 'react';
 import { Dialog } from '@/components/ui/dialog';
 import { Form } from '@/components/form/form';
-import { TextField, DateField } from '@/components/form/fields';
+import { TextField, TextareaField, SelectField, DateField } from '@/components/form/fields';
 import { FormSection } from '@/components/form/form-section';
 import { Button } from '@/components/ui/button';
 import { useZodForm } from '@/components/form/use-zod-form';
+import { CoverMediaField } from '@/components/relationships';
 import { useCreateMaster, useUpdateMaster } from '../hooks';
 import type { MasterRecord, MasterPayload, MasterTypeConfig } from '../types';
 import {
@@ -16,6 +17,10 @@ import {
   financialYearSchema,
   type FinancialYearValues,
   buildFinancialYearPayload,
+  commodityMasterSchema,
+  type CommodityMasterValues,
+  buildCommodityMasterPayload,
+  COMMODITY_CATEGORY_OPTIONS,
 } from '../master-form-payload';
 
 // ── Default form (name_en / name_hi / display_order) ─────────────────────────
@@ -169,6 +174,115 @@ function FinancialYearForm({
   );
 }
 
+// ── Commodity form (name / description / category / icon) ────────────────────
+
+const COMMODITY_CATEGORY_SELECT_OPTIONS = [
+  { value: '', label: 'Select category…' },
+  ...COMMODITY_CATEGORY_OPTIONS.map((c) => ({ value: c, label: c })),
+];
+
+function CommodityMasterForm({
+  config,
+  record,
+  onClose,
+}: {
+  config: MasterTypeConfig;
+  record?: MasterRecord;
+  onClose: () => void;
+}) {
+  const isEdit = Boolean(record);
+  const initialIconMedia = (record?.icon_media as { id: string; url: string; alt_text?: string | null } | null) ?? null;
+
+  const form = useZodForm<CommodityMasterValues>(commodityMasterSchema, {
+    defaultValues: {
+      name_en: record?.name_en ?? '',
+      name_hi: (record?.name_hi as string | null) ?? '',
+      display_order: record?.display_order != null ? String(record.display_order) : '',
+      description_en: (record?.description_en as string | null) ?? '',
+      description_hi: (record?.description_hi as string | null) ?? '',
+      category: (record?.category as string | null) ?? '',
+      icon_media_id: (record?.icon_media_id as string | null) ?? null,
+    },
+  });
+
+  useEffect(() => {
+    form.reset({
+      name_en: record?.name_en ?? '',
+      name_hi: (record?.name_hi as string | null) ?? '',
+      display_order: record?.display_order != null ? String(record.display_order) : '',
+      description_en: (record?.description_en as string | null) ?? '',
+      description_hi: (record?.description_hi as string | null) ?? '',
+      category: (record?.category as string | null) ?? '',
+      icon_media_id: (record?.icon_media_id as string | null) ?? null,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [record]);
+
+  const create = useCreateMaster(config.key);
+  const update = useUpdateMaster(config.key, record?.id ?? '');
+  const saving = create.isPending || update.isPending;
+
+  const onSubmit = async (values: CommodityMasterValues) => {
+    const payload = buildCommodityMasterPayload(values);
+    if (isEdit && record) {
+      await update.mutateAsync(payload as unknown as Partial<MasterPayload>);
+    } else {
+      await create.mutateAsync(payload as unknown as MasterPayload);
+    }
+    onClose();
+  };
+
+  return (
+    <Form form={form} onSubmit={onSubmit} className="space-y-4">
+      <FormSection>
+        <TextField<CommodityMasterValues>
+          name="name_en"
+          label="Name (English)"
+          required
+          placeholder="e.g. Lac"
+        />
+        <TextField<CommodityMasterValues>
+          name="name_hi"
+          label="नाम (Hindi)"
+          placeholder="e.g. लाख"
+        />
+        <SelectField<CommodityMasterValues>
+          name="category"
+          label="Category"
+          options={COMMODITY_CATEGORY_SELECT_OPTIONS}
+        />
+        {config.hasDisplayOrder !== false && (
+          <TextField<CommodityMasterValues>
+            name="display_order"
+            label="Display order"
+            type="number"
+            placeholder="0"
+          />
+        )}
+      </FormSection>
+      <FormSection title="Description" description="Optional, shown on the public site.">
+        <TextareaField<CommodityMasterValues> name="description_en" label="Description (English)" rows={2} />
+        <TextareaField<CommodityMasterValues> name="description_hi" label="विवरण (Hindi)" rows={2} />
+      </FormSection>
+      <FormSection title="Icon" description="Optional image from the Media Library.">
+        <CoverMediaField<CommodityMasterValues>
+          name="icon_media_id"
+          label="Icon"
+          initialMedia={initialIconMedia}
+        />
+      </FormSection>
+      <div className="flex items-center justify-end gap-2">
+        <Button type="button" variant="ghost" onClick={onClose} disabled={saving}>
+          Cancel
+        </Button>
+        <Button type="submit" variant="primary" isLoading={saving}>
+          {isEdit ? 'Save changes' : 'Add record'}
+        </Button>
+      </div>
+    </Form>
+  );
+}
+
 // ── Outer dialog ──────────────────────────────────────────────────────────────
 
 export interface MasterFormDialogProps {
@@ -180,6 +294,7 @@ export interface MasterFormDialogProps {
 
 export function MasterFormDialog({ open, onClose, config, record }: MasterFormDialogProps) {
   const isFy = config.formVariant === 'financial-year';
+  const isCommodity = config.formVariant === 'commodity';
   return (
     <Dialog
       open={open}
@@ -194,6 +309,8 @@ export function MasterFormDialog({ open, onClose, config, record }: MasterFormDi
     >
       {isFy ? (
         <FinancialYearForm config={config} record={record} onClose={onClose} />
+      ) : isCommodity ? (
+        <CommodityMasterForm config={config} record={record} onClose={onClose} />
       ) : (
         <DefaultMasterForm config={config} record={record} onClose={onClose} />
       )}
