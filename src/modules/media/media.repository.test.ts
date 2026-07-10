@@ -16,6 +16,7 @@ const { db } = vi.hoisted(() => ({
     programmeScheme: { count: vi.fn() },
     toolkit: { count: vi.fn() },
     institution: { count: vi.fn() },
+    leadership: { count: vi.fn() },
     commodity: { count: vi.fn() },
     digitalService: { count: vi.fn() },
   },

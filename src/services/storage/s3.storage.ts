@@ -16,7 +16,7 @@ import {
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { storageConfig } from '@/config';
 import { logger } from '@/shared/logger';
-import { NotFoundError } from '@/shared/errors';
+import { AppError, NotFoundError } from '@/shared/errors';
 import type {
   ObjectMetadata,
   PutObjectInput,
@@ -36,6 +36,16 @@ function isMissingObjectError(err: unknown): boolean {
     e?.Code === 'NoSuchKey' ||
     e?.$metadata?.httpStatusCode === 404
   );
+}
+
+/** True when credentials or bucket policy deny the object operation. */
+function isAccessDeniedError(err: unknown): boolean {
+  const e = err as { name?: string; Code?: string; $metadata?: { httpStatusCode?: number } } | null;
+  return e?.name === 'AccessDenied' || e?.Code === 'AccessDenied' || e?.$metadata?.httpStatusCode === 403;
+}
+
+function storageAccessError(err: unknown): AppError {
+  return new AppError('internal_error', 'Storage object is not accessible.', { expose: false, cause: err });
 }
 
 export class S3StorageService implements StorageService {
@@ -89,6 +99,7 @@ export class S3StorageService implements StorageService {
     } catch (err) {
       // A missing object (NoSuchKey / 404) is a controlled 404, never a leaked 500 (round-2 Issue 2).
       if (isMissingObjectError(err)) throw new NotFoundError('Storage object not found.');
+      if (isAccessDeniedError(err)) throw storageAccessError(err);
       throw err;
     }
   }
@@ -101,7 +112,9 @@ export class S3StorageService implements StorageService {
     try {
       await this.client.send(new HeadObjectCommand({ Bucket: this.bucket, Key: key }));
       return true;
-    } catch {
+    } catch (err) {
+      if (isMissingObjectError(err)) return false;
+      if (isAccessDeniedError(err)) throw storageAccessError(err);
       return false;
     }
   }
@@ -115,7 +128,10 @@ export class S3StorageService implements StorageService {
         contentType: head.ContentType,
         lastModified: head.LastModified,
       };
-    } catch {
+    } catch (err) {
+      if (isMissingObjectError(err)) return null;
+      if (isAccessDeniedError(err)) throw storageAccessError(err);
+      storeLog.error({ err, key }, 'S3 object stat failed');
       return null;
     }
   }

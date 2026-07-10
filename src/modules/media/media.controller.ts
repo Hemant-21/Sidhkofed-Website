@@ -134,6 +134,9 @@ export function serveFile(req: Request, res: Response, next: NextFunction): void
         return;
       }
       res.setHeader('Content-Type', delivery.contentType);
+      if (typeof delivery.contentLength === 'number') {
+        res.setHeader('Content-Length', String(delivery.contentLength));
+      }
       res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(delivery.fileName)}"`);
       // Media bytes are immutable per asset id; allow downstream caching.
       res.setHeader('Cache-Control', 'public, max-age=86400');

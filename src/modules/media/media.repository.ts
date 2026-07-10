@@ -89,7 +89,7 @@ export async function setReplacedBy(oldId: string, newId: string) {
  * Public-visibility check for media delivery (remediation — scheduled-publishing gate). An
  * asset may be served publicly only when it is referenced by at least one PUBLIC parent: a
  * published Document (file), Gallery (cover or image), Video (thumbnail), Event cover, News
- * cover, Programme cover, Toolkit cover, or Institution logo, or an active commodity icon
+ * cover, Programme cover, Toolkit cover, Institution logo, Leadership photo, or an active commodity icon
  * (commodities are public reference masters). Otherwise the public media endpoint returns 403.
  *
  * The parent predicate is the SINGLE shared `publicVisibilityWhere()` used by every content
@@ -117,6 +117,7 @@ export async function isPubliclyLinked(mediaId: string): Promise<boolean> {
     programmeCover,
     toolkitCover,
     institutionLogo,
+    leadershipPhoto,
     commodityIcon,
     serviceIcon,
   ] = await Promise.all([
@@ -129,6 +130,7 @@ export async function isPubliclyLinked(mediaId: string): Promise<boolean> {
     prisma.programmeScheme.count({ where: { coverMediaId: mediaId, ...parent } as Prisma.ProgrammeSchemeWhereInput }),
     prisma.toolkit.count({ where: { coverMediaId: mediaId, ...parent } as Prisma.ToolkitWhereInput }),
     prisma.institution.count({ where: { logoMediaId: mediaId, ...parent } as Prisma.InstitutionWhereInput }),
+    prisma.leadership.count({ where: { photoMediaId: mediaId, ...parent } as Prisma.LeadershipWhereInput }),
     prisma.commodity.count({ where: { iconMediaId: mediaId, isActive: true } }),
     prisma.digitalService.count({ where: { iconMediaId: mediaId, ...parent } as Prisma.DigitalServiceWhereInput }),
   ]);
@@ -142,6 +144,7 @@ export async function isPubliclyLinked(mediaId: string): Promise<boolean> {
       programmeCover +
       toolkitCover +
       institutionLogo +
+      leadershipPhoto +
       commodityIcon +
       serviceIcon >
     0

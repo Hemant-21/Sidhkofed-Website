@@ -13,6 +13,7 @@ import { mediaUsageService } from '@/modules/media/media-usage.service';
 import {
   galleryRepository,
   type GalleryRow,
+  type GallerySummaryRow,
   type GalleryOrderingField,
   type GalleryPublicListFilters,
 } from './gallery.repository';
@@ -46,6 +47,27 @@ async function assertLinkableMedia(mediaId: string): Promise<void> {
 function loaded(row: GalleryRow | null): GalleryRow {
   if (!row) throw new NotFoundError('Gallery not found.');
   return row;
+}
+
+async function toAdminGalleryListItemDto(row: GallerySummaryRow) {
+  const dto = toGalleryListItemDto(row);
+  if (row.coverMedia) dto.cover_media = await mediaService.toAdminMediaDto(row.coverMedia);
+  return dto;
+}
+
+async function toAdminGalleryDto(row: GalleryRow): Promise<GalleryDto> {
+  const dto = toGalleryDto(row);
+  if (row.coverMedia) dto.cover_media = await mediaService.toAdminMediaDto(row.coverMedia);
+  dto.images = await Promise.all(
+    row.images.map(async (img) => ({
+      id: img.id,
+      media: await mediaService.toAdminMediaDto(img.media),
+      display_order: img.displayOrder,
+      caption_en: img.captionEn,
+      caption_hi: img.captionHi,
+    })),
+  );
+  return dto;
 }
 
 export async function create(input: GalleryCreateInput, ctx: AuditContext): Promise<GalleryDto> {
@@ -83,17 +105,17 @@ export async function create(input: GalleryCreateInput, ctx: AuditContext): Prom
 
   await auditService.create(ctx, ENTITY, gallery.id, { title_en: gallery.titleEn, slug: gallery.slug });
   await invalidatePublicCache();
-  return toGalleryDto(gallery);
+  return toAdminGalleryDto(gallery);
 }
 
 export async function list(filters: { publicationState?: 'draft' | 'published' | 'unpublished' | 'archived'; search?: string }, skip: number, take: number) {
   // List returns the lightweight summary (cover + image count) — not every image (Issue 11).
   const { rows, total } = await galleryRepository.list(filters, skip, take, 'desc');
-  return { items: rows.map(toGalleryListItemDto), total };
+  return { items: await Promise.all(rows.map(toAdminGalleryListItemDto)), total };
 }
 
 export async function getById(id: string): Promise<GalleryDto> {
-  return toGalleryDto(loaded(await galleryRepository.findById(id)));
+  return toAdminGalleryDto(loaded(await galleryRepository.findById(id)));
 }
 
 export async function update(id: string, input: GalleryUpdateInput, ctx: AuditContext): Promise<GalleryDto> {
@@ -133,7 +155,7 @@ export async function update(id: string, input: GalleryUpdateInput, ctx: AuditCo
 
   await auditService.update(ctx, ENTITY, id, undefined, { title_en: updated.titleEn });
   await invalidatePublicCache();
-  return toGalleryDto(updated);
+  return toAdminGalleryDto(updated);
 }
 
 export async function lifecycle(id: string, action: LifecycleAction, ctx: AuditContext): Promise<GalleryDto> {
@@ -150,7 +172,7 @@ export async function lifecycle(id: string, action: LifecycleAction, ctx: AuditC
     newState: change.publicationState,
   });
   await invalidatePublicCache();
-  return toGalleryDto(updated);
+  return toAdminGalleryDto(updated);
 }
 
 // ── Images ────────────────────────────────────────────────────────────────────

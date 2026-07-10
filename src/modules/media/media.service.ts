@@ -53,6 +53,18 @@ async function invalidateCache(id: string): Promise<void> {
   }
 }
 
+/**
+ * Admin/CMS responses need previewable media immediately after upload, even before the
+ * media is linked to published public content. For S3-compatible storage, return a
+ * short-lived backend-signed URL. Public DTOs keep the stable `/public/media/:id/file`
+ * URL and remain gated by `openFile`.
+ */
+export async function toAdminMediaDto(asset: MediaAsset): Promise<MediaDto> {
+  const dto = toMediaDto(asset);
+  if (storage.servesThroughApp) return dto;
+  return { ...dto, url: await storage.getUrl(asset.storageKey) };
+}
+
 interface PersistResult {
   asset: MediaAsset;
   scanStatus: string;
@@ -139,7 +151,7 @@ export async function upload(file: UploadFile, meta: UploadMeta, ctx: AuditConte
     summary: 'MEDIA_UPLOAD',
     metadata: { file_name: asset.fileName, mime_type: asset.mimeType, size: Number(asset.fileSizeBytes), scan_status: scanStatus },
   });
-  return dto;
+  return toAdminMediaDto(asset);
 }
 
 export interface BulkUploadResult {
@@ -173,22 +185,24 @@ export interface MediaListQuery {
 
 export async function list(query: MediaListQuery, skip: number, take: number, direction: 'asc' | 'desc') {
   const { rows, total } = await mediaRepository.list(query, skip, take, direction);
-  return { items: rows.map(toMediaDto), total };
+  return { items: await Promise.all(rows.map(toAdminMediaDto)), total };
 }
 
 /** GET /admin/media/:id — cache-first. */
 export async function getById(id: string): Promise<MediaDto> {
-  try {
-    const cached = await redis.get(metaCacheKey(id));
-    if (cached) return JSON.parse(cached) as MediaDto;
-  } catch (err) {
-    mediaLog.warn({ err, id }, 'Media cache read failed');
+  if (storage.servesThroughApp) {
+    try {
+      const cached = await redis.get(metaCacheKey(id));
+      if (cached) return JSON.parse(cached) as MediaDto;
+    } catch (err) {
+      mediaLog.warn({ err, id }, 'Media cache read failed');
+    }
   }
   const asset = await mediaRepository.findById(id);
   if (!asset) throw new NotFoundError('Media asset not found.');
   const dto = toMediaDto(asset);
   await cacheDto(dto);
-  return dto;
+  return toAdminMediaDto(asset);
 }
 
 export async function updateMeta(id: string, meta: UploadMeta, ctx: AuditContext): Promise<MediaDto> {
@@ -205,7 +219,7 @@ export async function updateMeta(id: string, meta: UploadMeta, ctx: AuditContext
     { title: existing.title, alt_text: existing.altText, caption: existing.caption },
     { title: updated.title, alt_text: updated.altText, caption: updated.caption });
   await cacheDto(dto);
-  return dto;
+  return toAdminMediaDto(updated);
 }
 
 /** POST /admin/media/:id/archive — idempotent soft archive. */
@@ -217,7 +231,7 @@ export async function archive(id: string, ctx: AuditContext): Promise<MediaDto> 
   const dto = toMediaDto(updated);
   await auditService.log('MEDIA_ARCHIVE', ctx, { module: 'media', recordId: id, summary: 'MEDIA_ARCHIVE' });
   await cacheDto(dto);
-  return dto;
+  return toAdminMediaDto(updated);
 }
 
 /** POST /admin/media/:id/restore — un-archive. */
@@ -229,7 +243,7 @@ export async function restore(id: string, ctx: AuditContext): Promise<MediaDto> 
   const dto = toMediaDto(updated);
   await auditService.restore(ctx, 'media', id);
   await cacheDto(dto);
-  return dto;
+  return toAdminMediaDto(updated);
 }
 
 /**
@@ -254,7 +268,7 @@ export async function replaceFile(id: string, file: UploadFile, ctx: AuditContex
     summary: 'MEDIA_REPLACE',
     metadata: { replaced_by_id: created.id, scan_status: scanStatus },
   });
-  return { old: toMediaDto(updatedOld), new: toMediaDto(created) };
+  return { old: await toAdminMediaDto(updatedOld), new: await toAdminMediaDto(created) };
 }
 
 /**
@@ -272,8 +286,8 @@ export async function getDeliveryUrl(id: string): Promise<{ url: string }> {
 /** Result of opening a media file for delivery: either a redirect target or in-process bytes. */
 export type MediaDelivery =
   | { kind: 'redirect'; url: string }
-  | { kind: 'stream'; stream: NodeJS.ReadableStream; contentType: string; fileName: string }
-  | { kind: 'buffer'; body: Buffer; contentType: string; fileName: string };
+  | { kind: 'stream'; stream: NodeJS.ReadableStream; contentType: string; fileName: string; contentLength?: number }
+  | { kind: 'buffer'; body: Buffer; contentType: string; fileName: string; contentLength?: number };
 
 /**
  * GET /public/media/:id/file — serve the bytes of a non-archived asset (Issue 2):
@@ -311,10 +325,11 @@ export async function openFile(id: string): Promise<MediaDelivery> {
       stream: storage.createReadStream(asset.storageKey),
       contentType: asset.mimeType,
       fileName: asset.fileName,
+      contentLength: objectMeta.size,
     };
   }
   const body = await storage.get(asset.storageKey);
-  return { kind: 'buffer', body, contentType: asset.mimeType, fileName: asset.fileName };
+  return { kind: 'buffer', body, contentType: asset.mimeType, fileName: asset.fileName, contentLength: objectMeta.size };
 }
 
 /** GET /admin/media/:id/usages — where the asset is referenced. */
@@ -344,6 +359,7 @@ export async function hardDelete(id: string): Promise<void> {
 }
 
 export const mediaService = {
+  toAdminMediaDto,
   upload,
   bulkUpload,
   list,
