@@ -9,7 +9,6 @@ const { repo, storage } = vi.hoisted(() => ({
 
 vi.mock('./media.repository', () => ({ mediaRepository: repo }));
 vi.mock('@/services/storage', () => ({ storage }));
-vi.mock('@/services/redis', () => ({ redis: { get: vi.fn(), set: vi.fn(), del: vi.fn() } }));
 
 import { mediaService } from './media.service';
 import { AppError, PermissionError, NotFoundError } from '@/shared/errors';
@@ -28,6 +27,7 @@ beforeEach(() => {
 describe('mediaService.openFile visibility gate', () => {
   it('uses a backend-signed storage URL for admin/CMS S3 previews', async () => {
     storage.servesThroughApp = false;
+    storage.getUrl.mockResolvedValue('https://storage.example/signed');
 
     const dto = await mediaService.toAdminMediaDto({
       id: 'm1',
@@ -56,6 +56,16 @@ describe('mediaService.openFile visibility gate', () => {
     repo.findById.mockResolvedValue(asset);
     repo.isPubliclyLinked.mockResolvedValue(false);
     await expect(mediaService.openFile('m1')).rejects.toBeInstanceOf(PermissionError);
+  });
+
+  it('serves an unlinked asset through the authenticated admin preview path', async () => {
+    repo.findById.mockResolvedValue(asset);
+    repo.isPubliclyLinked.mockResolvedValue(false);
+
+    const delivery = await mediaService.openAdminFile('m1');
+
+    expect(delivery.kind).toBe('buffer');
+    expect(repo.isPubliclyLinked).not.toHaveBeenCalled();
   });
 
   it('serves the file when it is linked to published public content', async () => {

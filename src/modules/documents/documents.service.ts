@@ -6,7 +6,7 @@
  * master-activation validation, file-asset linkability (reuses the Media service — never
  * duplicates upload logic), media-usage tracking (so a linked file cannot be hard-deleted),
  * the Knowledge-Centre category rule, version/replace-file handling, audit logging, and
- * Redis cache invalidation of public reads.
+ * in-process cache invalidation of public reads.
  *
  * Cross-module dependencies go through SERVICES only (mediaService / mediaUsageService /
  * auditService) — never another module's repository (dependency-graph cross-module rule).
@@ -317,7 +317,7 @@ export async function replaceFile(id: string, newFileAssetId: string, ctx: Audit
   return toDocumentDetailDto(updated);
 }
 
-// ── Public reads (visibility predicate + Redis cache) ──────────────────────────
+// ── Public reads (visibility predicate + in-process cache) ──────────────────────────
 export async function publicList(
   filters: DocumentFilters,
   ordering: { field: DocumentOrderingField; direction: 'asc' | 'desc' },

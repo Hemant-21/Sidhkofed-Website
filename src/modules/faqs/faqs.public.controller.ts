@@ -2,7 +2,7 @@
  * FAQ public controller — `/api/v1/public/faqs` (API spec §5). No authentication; returns only
  * published, publicly-visible, non-archived, due FAQs (the visibility predicate is enforced in the
  * repository), grouped by category/display order. Supports `faq_category` and `search` filters.
- * Responses are Redis-cached and invalidated on any admin write.
+ * Responses are in-process cached and invalidated on any admin write.
  */
 import { createHash } from 'node:crypto';
 import type { Request, Response, NextFunction } from 'express';

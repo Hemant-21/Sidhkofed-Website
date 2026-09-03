@@ -59,11 +59,28 @@ model User {
   updatedToolkitDistributions   ToolkitDistributionSummary[] @relation("ToolkitDistributionUpdatedBy")
   createdToolkits               Toolkit[]                    @relation("ToolkitCreatedBy")
   updatedToolkits               Toolkit[]                    @relation("ToolkitUpdatedBy")
+  refreshSessions               AuthRefreshSession[]
   userRoles                     UserRole[]
   createdVideos                 Video[]                      @relation("VideoCreatedBy")
   updatedVideos                 Video[]                      @relation("VideoUpdatedBy")
 
   @@map("users")
+}
+
+model AuthRefreshSession {
+  sessionId  String    @id @map("session_id") @db.Uuid
+  userId     String    @map("user_id") @db.Uuid
+  currentJti String    @map("current_jti") @db.Uuid
+  expiresAt  DateTime  @map("expires_at")
+  revokedAt  DateTime? @map("revoked_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime  @updatedAt @map("updated_at")
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@index([revokedAt])
+  @@map("auth_refresh_sessions")
 }
 
 model Role {
@@ -157,6 +174,7 @@ model MediaAsset {
   fileSizeBytes    BigInt             @map("file_size_bytes")
   width            Int?
   height           Int?
+  variants         Json?
   title            String?
   altText          String?            @map("alt_text")
   caption          String?

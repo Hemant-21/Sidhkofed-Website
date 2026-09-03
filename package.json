@@ -28,28 +28,24 @@
     "prisma:status": "prisma migrate status",
     "prisma:studio": "prisma studio",
     "prisma:format": "prisma format",
-    "db:up": "docker compose up -d postgres redis",
-    "db:down": "docker compose down",
+    "db:setup": "psql -U postgres -d postgres -v ON_ERROR_STOP=1 -f scripts/db/00-init-dev-db.sql && npm run db:test:create",
     "db:seed": "prisma db seed",
-    "db:test:create": "docker compose exec -T postgres psql -U sidhkofed -d postgres -v ON_ERROR_STOP=1 -f - < scripts/db/01-init-test-db.sql",
+    "db:test:create": "psql -U postgres -d postgres -v ON_ERROR_STOP=1 -f scripts/db/01-init-test-db.sql",
     "db:test:migrate": "tsx scripts/db/with-test-env.ts prisma migrate deploy",
     "db:test:seed": "tsx scripts/db/with-test-env.ts prisma db seed",
     "db:test:setup": "npm run db:test:create && npm run db:test:migrate && npm run db:test:seed",
-    "db:test:reset": "docker compose exec -T postgres psql -U sidhkofed -d postgres -v ON_ERROR_STOP=1 -c \"DROP DATABASE IF EXISTS sidhkofed_test WITH (FORCE);\" && npm run db:test:setup"
+    "db:test:reset": "psql -U postgres -d postgres -v ON_ERROR_STOP=1 -c \"DROP DATABASE IF EXISTS sidhkofed_test WITH (FORCE);\" && npm run db:test:setup",
+    "media:backfill-thumbnails": "tsx scripts/media/backfill-variants.ts"
   },
   "prisma": {
     "schema": "prisma/schema.prisma",
     "seed": "node dist/prisma/seed/index.js"
-  },
-  "overrides": {
-    "ioredis": "^5.4.1"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.637.0",
     "@aws-sdk/s3-request-presigner": "^3.637.0",
     "@prisma/client": "^5.18.0",
     "bcryptjs": "^3.0.3",
-    "bullmq": "^5.12.0",
     "compression": "^1.7.4",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
@@ -57,12 +53,12 @@
     "express": "^4.19.2",
     "fflate": "0.8.2",
     "helmet": "^7.1.0",
-    "ioredis": "^5.4.1",
     "jsonwebtoken": "^9.0.3",
     "multer": "^2.0.1",
     "pino": "^9.3.2",
     "pino-http": "^10.2.0",
     "prisma": "^5.18.0",
+    "sharp": "^0.35.4",
     "tsx": "^4.17.0",
     "zod": "^3.23.8"
   },

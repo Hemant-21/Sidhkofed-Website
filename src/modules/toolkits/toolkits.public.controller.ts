@@ -1,6 +1,6 @@
 /**
  * Toolkit public controller — `/api/v1/public/toolkits/*` (API spec §5). No auth; published only;
- * Redis-cached. The `distribution-summary` endpoint aggregates published per-event distribution
+ * in-process cached. The `distribution-summary` endpoint aggregates published per-event distribution
  * figures for the toolkit (summary figures only — never beneficiary-level data).
  */
 import { createHash } from 'node:crypto';

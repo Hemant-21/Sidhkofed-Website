@@ -69,6 +69,7 @@ mediaRouter.post('/:id/restore', mediaController.restore);
 mediaRouter.post('/:id/replace-file', uploadRateLimit, enforceRequestSizeHeader, single, enforceAggregateUploadSize, mediaController.replaceFile);
 mediaRouter.get('/:id/usages', mediaController.usages);
 mediaRouter.get('/:id/url', mediaController.getUrl);
+mediaRouter.get('/:id/file', mediaController.serveAdminFile);
 
 /**
  * Public media delivery (Issue 2) — `/api/v1/public/media/:id/file`. No auth: the website

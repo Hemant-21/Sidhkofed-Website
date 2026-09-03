@@ -2,7 +2,7 @@
  * Official Communication service — all business logic for the reusable Official Communication
  * operation. No HTTP, no Prisma here (repository owns Prisma; controllers own HTTP). Owns: CRUD +
  * lifecycle, stable slug generation, master-activation + linked-document validation, audit logging,
- * and Redis cache invalidation of public reads.
+ * and in-process cache invalidation of public reads.
  *
  * Key rule (CMS requirements §4.6): an `expiry_date` is INFORMATIONAL ONLY — it NEVER
  * auto-unpublishes or auto-archives the record. The record stays public until a Publisher manually
@@ -202,7 +202,7 @@ export async function lifecycle(
   return toOfficialCommunicationDetailDto(updated);
 }
 
-// ── Public reads (visibility predicate + Redis cache) ──────────────────────────
+// ── Public reads (visibility predicate + in-process cache) ──────────────────────────
 export async function publicList(
   filters: OfficialCommunicationFilters,
   ordering: { field: OfficialCommunicationOrderingField; direction: 'asc' | 'desc' },

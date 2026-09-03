@@ -1,7 +1,7 @@
 /**
  * Leadership service — all business logic for the Leadership operation. No HTTP, no Prisma here
  * (repository owns Prisma; controllers own HTTP). Owns: CRUD + lifecycle, stable slug generation,
- * photo media-usage tracking (so a linked photo cannot be hard-deleted), audit logging, and Redis
+ * photo media-usage tracking (so a linked photo cannot be hard-deleted), audit logging, and in-process cache
  * cache invalidation of public reads.
  *
  * Cross-module dependencies go through SERVICES only (mediaService / mediaUsageService /
@@ -203,7 +203,7 @@ export async function lifecycle(
   return toLeadershipDetailDto(updated);
 }
 
-// ── Public reads (visibility predicate + Redis cache) ──────────────────────────
+// ── Public reads (visibility predicate + in-process cache) ──────────────────────────
 export async function publicList(
   filters: LeadershipFilters,
   ordering: { field: LeadershipOrderingField; direction: 'asc' | 'desc' },

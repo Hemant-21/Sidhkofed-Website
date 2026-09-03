@@ -1,6 +1,10 @@
 # SIDHKOFED CMS — Windows Server Deployment Guide
 
+> Legacy Docker/WSL guide. The active target topology is native IIS + Node.js + PostgreSQL 18 + NFS/SMB storage, with no Docker and no Redis. Use [iis-native-deployment.md](iis-native-deployment.md).
+
 This guide supplements the main [deployment.md](deployment.md). Read that document first for the full deployment flow; this guide covers only the Windows-specific setup steps.
+
+For the planned production setup without Docker or Redis, use [iis-native-deployment.md](iis-native-deployment.md) instead. That runbook covers IIS reverse proxy, native Node services, PostgreSQL 18 on a separate database server, and shared NFS/SMB storage.
 
 ---
 

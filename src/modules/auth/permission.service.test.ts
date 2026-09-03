@@ -1,25 +1,24 @@
 /**
- * Unit tests — permission resolution: multi-role merge, super-admin detection, Redis
+ * Unit tests - permission resolution: multi-role merge, super-admin detection,
  * caching + invalidation, and the pure has-all / has-any helpers.
  */
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 const { store, repo } = vi.hoisted(() => ({
-  store: new Map<string, string>(),
+  store: new Map<string, unknown>(),
   repo: { findRolesAndPermissions: vi.fn() },
 }));
 
-vi.mock('@/services/redis', () => ({
-  redis: {
-    async get(key: string) {
-      return store.has(key) ? store.get(key)! : null;
+vi.mock('@/services/cache', () => ({
+  cacheService: {
+    async getJson<T>(key: string): Promise<T | null> {
+      return store.has(key) ? (store.get(key)! as T) : null;
     },
-    async set(key: string, value: string) {
+    async setJson(key: string, value: unknown) {
       store.set(key, value);
-      return 'OK';
     },
     async del(key: string) {
-      return store.delete(key) ? 1 : 0;
+      store.delete(key);
     },
   },
 }));
@@ -57,7 +56,7 @@ describe('permission.service', () => {
     expect(permissionService.hasAnyRole(authz, ['nonexistent'])).toBe(true);
   });
 
-  it('caches the resolution and serves the second call from Redis', async () => {
+  it('caches the resolution and serves the second call from cache', async () => {
     repo.findRolesAndPermissions.mockResolvedValue({ roleKeys: ['publisher'], permissionKeys: ['content.publish'] });
     await permissionService.getUserAuthorization(USER);
     await permissionService.getUserAuthorization(USER);

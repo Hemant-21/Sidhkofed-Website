@@ -1,10 +1,10 @@
 /**
  * Unit tests for the job runner: actor gating, lock-based skip, result pass-through, and the
- * retry boundary (per-record failures are reported; infra throws propagate for BullMQ retry).
+ * retry boundary (per-record failures are reported; infra throws propagate to the scheduler tick).
  */
 import { describe, it, expect, vi } from 'vitest';
 import { runJob } from './scheduler.runner';
-import type { LockRedis } from './scheduler.lock';
+import type { LockClient } from './scheduler.lock';
 import type { AuditContext } from '@/modules/audit/audit.service';
 import { SCHEDULER_JOBS, emptyResult, type JobRunResult } from './scheduler.types';
 
@@ -14,7 +14,7 @@ const actor: AuditContext = {
 };
 
 /** Lock fake that always grants. */
-function grantingLock(): LockRedis {
+function grantingLock(): LockClient {
   const store = new Map<string, string>();
   return {
     async set(key, value) {
@@ -32,7 +32,7 @@ function grantingLock(): LockRedis {
 }
 
 /** Lock fake that always denies (pretends someone else holds it). */
-const denyingLock: LockRedis = {
+const denyingLock: LockClient = {
   async set() {
     return null;
   },
@@ -76,7 +76,7 @@ describe('runJob', () => {
     expect(handler).not.toHaveBeenCalled();
   });
 
-  it('re-throws infrastructure errors so BullMQ retries the tick', async () => {
+  it('re-throws infrastructure errors so the scheduler tick can log the failure', async () => {
     const handler = vi.fn().mockRejectedValue(new Error('db unreachable'));
     await expect(
       runJob(SCHEDULER_JOBS.dashboardRefresh, handler, { actor, lockClient: grantingLock() }),

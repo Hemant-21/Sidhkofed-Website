@@ -13,7 +13,7 @@ import { authController } from './auth.controller';
 
 export const authRouter = Router();
 
-// Redis-backed rate limiting on the credential endpoints (Issue 5): login 5/15m,
+// Rate limiting on the credential endpoints (Issue 5): login 5/15m,
 // refresh 30/15m, logout 30/15m. Over the limit → 429.
 authRouter.post('/login', loginRateLimit, authController.login);
 authRouter.post('/refresh', refreshRateLimit, authController.refresh);

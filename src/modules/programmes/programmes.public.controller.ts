@@ -1,6 +1,6 @@
 /**
  * Programme public controller — `/api/v1/public/programmes/*` (API spec §5). No auth; published
- * only; Redis-cached.
+ * only; in-process cached.
  */
 import { createHash } from 'node:crypto';
 import type { Request, Response, NextFunction } from 'express';

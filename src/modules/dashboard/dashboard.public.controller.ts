@@ -1,7 +1,7 @@
 /**
  * Public Dashboard controller — `/api/v1/public/dashboard*` (API spec §5). No authentication;
  * returns only active, published, publicly-visible fixed reports and their resolved metrics. Internal
- * datasets, import metadata, and authorship are never exposed. Responses are Redis-cached in the
+ * datasets, import metadata, and authorship are never exposed. Responses are in-process cached in the
  * service and invalidated on any admin write.
  */
 import type { Request, Response, NextFunction } from 'express';

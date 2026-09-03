@@ -1,5 +1,7 @@
 # SIDHKOFED CMS — Backup & Restore
 
+> Legacy Docker backup/restore guide. The active target topology is native IIS + Node.js + PostgreSQL 18 + NFS/SMB storage, with no Docker and no Redis. Use [iis-native-deployment.md](iis-native-deployment.md) for the current backup notes.
+
 ## What is backed up
 
 | Asset | Tool | Format | Default retention |

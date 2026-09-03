@@ -53,10 +53,8 @@ const envSchema = z
     DATABASE_REPLICA_URL: z.string().optional().transform((v) => (v && v.trim() !== '' ? v : undefined)),
     DB_POOL_MAX: intWithDefault(10, 1),
 
-    // ── Redis ────────────────────────────────────────────────────────────────
-    REDIS_URL: z.string().min(1, 'REDIS_URL is required'),
+    // ── in-process cache ────────────────────────────────────────────────────────────────
     CACHE_TTL_SECONDS: intWithDefault(300, 0),
-    QUEUE_PREFIX: z.string().min(1).default('sidhkofed'),
 
     // ── Auth / JWT ───────────────────────────────────────────────────────────
     JWT_SECRET: z.string().min(32, 'JWT_SECRET must be at least 32 characters'),
@@ -123,7 +121,7 @@ const envSchema = z
     ENQUIRY_RATELIMIT_PER_CONTACT_HOUR: intWithDefault(3, 0),
     IP_HASH_SALT: z.string().min(8, 'IP_HASH_SALT should be a random salt'),
 
-    // ── Rate limiting (Redis-backed; pre-Phase-5 audit Issue 5) ───────────────
+    // ── Rate limiting (in-process) ───────────────
     RATE_LIMIT_ENABLED: boolish(true),
     RATE_LIMIT_LOGIN_MAX: intWithDefault(5, 1),
     RATE_LIMIT_LOGIN_WINDOW_SEC: intWithDefault(900, 1),
@@ -141,8 +139,8 @@ const envSchema = z
     // Recurring maintenance jobs (scheduled publishing, highlight expiry, event-status
     // recompute, dashboard cache refresh). The scheduler runs inside the worker boot
     // step; disable it for an API-only process or in tests. Cron strings are standard
-    // 5-field expressions (BullMQ repeatable jobs). Batch size bounds rows processed per
-    // tick; lock TTL guards against overlapping runs across processes.
+    // 5-field expressions. Batch size bounds rows processed per tick; lock TTL
+    // guards against overlapping runs within the API process.
     SCHEDULER_ENABLED: boolish(true),
     SCHEDULER_TIMEZONE: z.string().min(1).default('Asia/Kolkata'),
     // Default cadence: publishing/highlight every 5 min; status every 15 min; dashboard hourly.
@@ -151,8 +149,6 @@ const envSchema = z
     SCHEDULER_EVENT_STATUS_CRON: z.string().min(1).default('*/15 * * * *'),
     SCHEDULER_DASHBOARD_REFRESH_CRON: z.string().min(1).default('0 * * * *'),
     SCHEDULER_BATCH_SIZE: intWithDefault(100, 1),
-    SCHEDULER_JOB_ATTEMPTS: intWithDefault(3, 1),
-    SCHEDULER_JOB_BACKOFF_MS: intWithDefault(5000, 0),
     SCHEDULER_LOCK_TTL_SECONDS: intWithDefault(600, 5),
   })
   // S3 keys required when storage provider is s3.

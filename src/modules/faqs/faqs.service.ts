@@ -1,7 +1,7 @@
 /**
  * FAQ service — all business logic for the FAQ operation. No HTTP, no Prisma here (repository owns
  * Prisma; controllers own HTTP). Owns: CRUD + lifecycle, stable slug generation, FAQ-category
- * activation validation, audit logging, and Redis cache invalidation of public reads.
+ * activation validation, audit logging, and in-process cache invalidation of public reads.
  *
  * Key rules (CMS requirements §4.13): FAQs reuse the FAQ Category master; there are no nested FAQs;
  * public search covers question + answer; ordering follows category + display order.
@@ -145,7 +145,7 @@ export async function lifecycle(id: string, action: LifecycleAction, ctx: AuditC
   return toFaqDetailDto(updated);
 }
 
-// ── Public reads (visibility predicate + Redis cache) ──────────────────────────
+// ── Public reads (visibility predicate + in-process cache) ──────────────────────────
 export async function publicList(
   filters: FaqFilters,
   ordering: { field: FaqOrderingField; direction: 'asc' | 'desc' },

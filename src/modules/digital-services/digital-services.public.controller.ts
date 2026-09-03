@@ -2,7 +2,7 @@
  * Digital Service public controller — `/api/v1/public/digital-services` (API spec §5). No
  * authentication; returns only published, publicly-visible, non-archived, due services (the
  * visibility predicate is enforced in the repository). Each item carries an `external_url` the client
- * opens in a new tab with rel="noopener noreferrer". Responses are Redis-cached and invalidated on
+ * opens in a new tab with rel="noopener noreferrer". Responses are in-process cached and invalidated on
  * any admin write.
  */
 import { createHash } from 'node:crypto';

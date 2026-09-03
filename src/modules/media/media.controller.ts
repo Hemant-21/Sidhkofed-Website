@@ -118,16 +118,28 @@ export function usages(req: Request, res: Response, next: NextFunction): void {
 
 /** GET /admin/media/:id/url — fresh, on-demand delivery URL (signed for S3). */
 export function getUrl(req: Request, res: Response, next: NextFunction): void {
+  let variant;
+  try {
+    variant = mediaService.parseVariant(req.query.variant);
+  } catch (err) {
+    return next(err);
+  }
   mediaService
-    .getDeliveryUrl(req.params.id as string)
+    .getDeliveryUrl(req.params.id as string, variant)
     .then((data) => res.status(200).json(success(data, String(req.id))))
     .catch(next);
 }
 
 /** GET /public/media/:id/file — deliver bytes (local stream) or redirect (S3 signed URL). */
 export function serveFile(req: Request, res: Response, next: NextFunction): void {
+  let variant;
+  try {
+    variant = mediaService.parseVariant(req.query.variant);
+  } catch (err) {
+    return next(err);
+  }
   mediaService
-    .openFile(req.params.id as string)
+    .openFile(req.params.id as string, variant)
     .then((delivery) => {
       if (delivery.kind === 'redirect') {
         res.redirect(302, delivery.url);
@@ -149,6 +161,36 @@ export function serveFile(req: Request, res: Response, next: NextFunction): void
     .catch(next);
 }
 
+/** GET /admin/media/:id/file: authenticated CMS preview/download, including unlinked media. */
+export function serveAdminFile(req: Request, res: Response, next: NextFunction): void {
+  let variant;
+  try {
+    variant = mediaService.parseVariant(req.query.variant);
+  } catch (err) {
+    return next(err);
+  }
+  mediaService
+    .openAdminFile(req.params.id as string, variant)
+    .then((delivery) => {
+      if (delivery.kind === 'redirect') {
+        res.redirect(302, delivery.url);
+        return;
+      }
+      res.setHeader('Content-Type', delivery.contentType);
+      if (typeof delivery.contentLength === 'number') {
+        res.setHeader('Content-Length', String(delivery.contentLength));
+      }
+      res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(delivery.fileName)}"`);
+      res.setHeader('Cache-Control', 'private, max-age=86400');
+      if (delivery.kind === 'stream') {
+        delivery.stream.on('error', next).pipe(res);
+        return;
+      }
+      res.send(delivery.body);
+    })
+    .catch(next);
+}
+
 export const mediaController = {
   upload,
   bulkUpload,
@@ -160,5 +202,6 @@ export const mediaController = {
   replaceFile,
   usages,
   getUrl,
+  serveAdminFile,
   serveFile,
 };

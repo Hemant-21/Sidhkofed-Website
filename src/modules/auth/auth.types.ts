@@ -32,7 +32,7 @@ export interface AccessTokenClaims {
   type: 'access';
 }
 
-/** Refresh-token JWT claims; `jti` rotates on every refresh and is tracked in Redis. */
+/** Refresh-token JWT claims; `jti` rotates on every refresh and is tracked in PostgreSQL. */
 export interface RefreshTokenClaims {
   sub: string;
   sid: string;

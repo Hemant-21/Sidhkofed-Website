@@ -1,7 +1,7 @@
 /**
  * Unit tests — auth service business rules: credential verification, active-user
  * enforcement, generic invalid-credential messaging, token issuance, audit hooks,
- * and idempotent logout. All collaborators are mocked (no DB/Redis).
+ * and idempotent logout. All collaborators are mocked (no DB).
  */
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 

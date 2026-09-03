@@ -7,7 +7,7 @@
  *   Error:           {success:false, error:{code,message}, meta:{}}
  *
  * Tests use the public `/api/v1/` descriptor and the unauthenticated error
- * paths so no database, Redis, or seed data is needed.
+ * paths so no database or seed data is needed.
  */
 import { describe, it, expect } from 'vitest';
 import request from 'supertest';

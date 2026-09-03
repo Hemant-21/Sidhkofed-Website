@@ -2,7 +2,7 @@
  * Digital Service service — all business logic for the Digital Service operation. No HTTP, no Prisma
  * here (repository owns Prisma; controllers own HTTP). Owns: CRUD + lifecycle, stable slug
  * generation, icon media-usage tracking (so a linked icon cannot be hard-deleted), audit logging,
- * and Redis cache invalidation of public reads.
+ * and in-process cache invalidation of public reads.
  *
  * Key rules (CMS requirements §4.14): represents APPROVED external systems only (ERP, MIS,
  * membership, beneficiary/government portals). The CMS never simulates, proxies, or embeds them —
@@ -207,7 +207,7 @@ export async function lifecycle(
   return toDigitalServiceDetailDto(updated);
 }
 
-// ── Public reads (visibility predicate + Redis cache) ──────────────────────────
+// ── Public reads (visibility predicate + in-process cache) ──────────────────────────
 export async function publicList(
   filters: DigitalServiceFilters,
   ordering: { field: DigitalServiceOrderingField; direction: 'asc' | 'desc' },

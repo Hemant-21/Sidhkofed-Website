@@ -1,7 +1,7 @@
 /**
  * Official Communication public controller — `/api/v1/public/official-communications/*` (API spec
  * §5). No authentication; returns only published, publicly-visible, non-archived, due records (the
- * visibility predicate is enforced in the repository). Responses are Redis-cached and invalidated on
+ * visibility predicate is enforced in the repository). Responses are in-process cached and invalidated on
  * any admin write. Expiry is informational only — an expired-but-published communication still lists.
  */
 import { createHash } from 'node:crypto';

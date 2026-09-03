@@ -1,7 +1,7 @@
 /**
  * Page service — all business logic for the Page operation. No HTTP, no Prisma here (repository owns
  * Prisma; controllers own HTTP). Owns: CRUD + lifecycle, stable slug generation, audit logging, and
- * Redis cache invalidation of public reads.
+ * in-process cache invalidation of public reads.
  *
  * Key rules (CMS requirements §4.10): the slug is generated once on create and stays stable; pages
  * are reusable content records. No page builder / drag-and-drop — only page content + page-only SEO
@@ -142,7 +142,7 @@ export async function lifecycle(id: string, action: LifecycleAction, ctx: AuditC
   return toPageDetailDto(updated);
 }
 
-// ── Public read (visibility predicate + Redis cache) ───────────────────────────
+// ── Public read (visibility predicate + in-process cache) ───────────────────────────
 export async function publicDetailBySlug(slug: string): Promise<PublicPageDetailDto> {
   const cacheKey = `${PUBLIC_CACHE_PREFIX}:slug:${slug}`;
   const cached = await cacheService.getJson<PublicPageDetailDto>(cacheKey);

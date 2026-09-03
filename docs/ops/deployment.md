@@ -1,5 +1,7 @@
 # SIDHKOFED CMS — Deployment Guide
 
+> Legacy Docker guide. The active target topology is native IIS + Node.js + PostgreSQL 18 + NFS/SMB storage, with no Docker and no Redis. Use [iis-native-deployment.md](iis-native-deployment.md) for production and [native-postgres-local-setup.md](native-postgres-local-setup.md) for local development.
+
 ## Architecture overview
 
 ```

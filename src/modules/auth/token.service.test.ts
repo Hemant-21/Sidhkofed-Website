@@ -1,29 +1,58 @@
 /**
- * Unit tests — token service. Redis is mocked with an in-memory store so rotation,
+ * Unit tests - token service. Prisma is mocked with an in-memory store so rotation,
  * reuse detection, and revocation are exercised without infrastructure.
  */
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
-const { store } = vi.hoisted(() => ({ store: new Map<string, string>() }));
+interface SessionRow {
+  sessionId: string;
+  userId: string;
+  currentJti: string;
+  expiresAt: Date;
+  revokedAt: Date | null;
+}
 
-vi.mock('@/services/redis', () => ({
-  redis: {
-    async set(key: string, value: string) {
-      store.set(key, value);
-      return 'OK';
-    },
-    async get(key: string) {
-      return store.has(key) ? store.get(key)! : null;
-    },
-    async del(...keys: string[]) {
-      let n = 0;
-      for (const k of keys) if (store.delete(k)) n++;
-      return n;
-    },
-    async scan(_cursor: string, _match: string, pattern: string) {
-      const prefix = pattern.replace(/\*$/, '');
-      const keys = [...store.keys()].filter((k) => k.startsWith(prefix));
-      return ['0', keys] as [string, string[]];
+const { store } = vi.hoisted(() => ({ store: new Map<string, SessionRow>() }));
+
+vi.mock('@/db/prisma', () => ({
+  prisma: {
+    authRefreshSession: {
+      async upsert(args: {
+        where: { sessionId: string };
+        create: SessionRow;
+        update: Partial<SessionRow>;
+      }) {
+        const existing = store.get(args.where.sessionId);
+        if (existing) {
+          store.set(args.where.sessionId, { ...existing, ...args.update });
+          return store.get(args.where.sessionId)!;
+        }
+        store.set(args.where.sessionId, { ...args.create, revokedAt: args.create.revokedAt ?? null });
+        return store.get(args.where.sessionId)!;
+      },
+      async findUnique(args: { where: { sessionId: string } }) {
+        return store.get(args.where.sessionId) ?? null;
+      },
+      async update(args: { where: { sessionId: string }; data: Partial<SessionRow> }) {
+        const existing = store.get(args.where.sessionId);
+        if (!existing) throw new Error('not found');
+        store.set(args.where.sessionId, { ...existing, ...args.data });
+        return store.get(args.where.sessionId)!;
+      },
+      async updateMany(args: {
+        where: { sessionId?: string; userId?: string; revokedAt?: null };
+        data: Partial<SessionRow>;
+      }) {
+        let count = 0;
+        for (const [key, row] of store) {
+          if (args.where.sessionId && row.sessionId !== args.where.sessionId) continue;
+          if (args.where.userId && row.userId !== args.where.userId) continue;
+          if ('revokedAt' in args.where && row.revokedAt !== args.where.revokedAt) continue;
+          store.set(key, { ...row, ...args.data });
+          count += 1;
+        }
+        return { count };
+      },
     },
   },
 }));
@@ -54,7 +83,6 @@ describe('token.service', () => {
     expect(rotated.userId).toBe(USER);
     expect(rotated.sessionId).toBe(first.sessionId);
     expect(rotated.refreshToken).not.toBe(first.refreshToken);
-    // The new refresh token is valid…
     await expect(tokenService.verifyRefreshSession(rotated.refreshToken)).resolves.toMatchObject({
       sub: USER,
     });
@@ -63,11 +91,8 @@ describe('token.service', () => {
   it('detects refresh-token reuse and revokes the session', async () => {
     const first = await tokenService.issueTokens(USER);
     await tokenService.rotateRefreshToken(first.refreshToken);
-    // Replaying the now-superseded token is rejected AND kills the session.
     await expect(tokenService.rotateRefreshToken(first.refreshToken)).rejects.toThrow();
-    // After reuse, even the rotated token is dead (session revoked).
-    const stillThere = [...store.keys()].length;
-    expect(stillThere).toBe(0);
+    expect([...store.values()].filter((s) => !s.revokedAt)).toHaveLength(0);
   });
 
   it('revokes a single session on logout (idempotent for unknown tokens)', async () => {
@@ -75,7 +100,6 @@ describe('token.service', () => {
     const revokedUser = await tokenService.revokeSession(tokens.refreshToken);
     expect(revokedUser).toBe(USER);
     await expect(tokenService.verifyRefreshSession(tokens.refreshToken)).rejects.toThrow();
-    // Idempotent: undefined / invalid tokens are a no-op.
     await expect(tokenService.revokeSession(undefined)).resolves.toBeNull();
     await expect(tokenService.revokeSession('garbage')).resolves.toBeNull();
   });
@@ -83,9 +107,9 @@ describe('token.service', () => {
   it('revokes all sessions for a user', async () => {
     await tokenService.issueTokens(USER);
     await tokenService.issueTokens(USER);
-    expect([...store.keys()].length).toBe(2);
+    expect([...store.values()].filter((s) => !s.revokedAt)).toHaveLength(2);
     const removed = await tokenService.revokeAllSessions(USER);
     expect(removed).toBe(2);
-    expect([...store.keys()].length).toBe(0);
+    expect([...store.values()].filter((s) => !s.revokedAt)).toHaveLength(0);
   });
 });

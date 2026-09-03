@@ -3,7 +3,7 @@
  * (API spec §5). No authentication; returns only published, publicly-visible, non-archived, due
  * memberships (the visibility predicate is enforced in the repository). Institutional directory
  * only — no personal, voting, or dividend data, no internal notes/authorship. Responses are
- * Redis-cached and invalidated on any admin write.
+ * in-process cached and invalidated on any admin write.
  */
 import { createHash } from 'node:crypto';
 import type { Request, Response, NextFunction } from 'express';

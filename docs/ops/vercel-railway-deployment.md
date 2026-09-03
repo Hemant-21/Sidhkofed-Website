@@ -1,5 +1,7 @@
 # SIDHKOFED CMS — Vercel + Railway Deployment Guide
 
+> Legacy alternative deployment guide. The active target topology is native IIS + Node.js + PostgreSQL 18 + NFS/SMB storage, with no Docker and no Redis. Use [iis-native-deployment.md](iis-native-deployment.md).
+
 Alternative to the self-hosted Docker/Nginx stack in [deployment.md](deployment.md). Maps the
 three application processes onto managed platforms instead of a single VM:
 

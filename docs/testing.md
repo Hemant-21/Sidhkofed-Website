@@ -1,70 +1,70 @@
 # Testing
 
-## Unit tests (default — no database)
+## Unit Tests
 
-```bash
-npm test            # vitest run — all unit suites (src/**/*.test.ts) + skipped integration suites
-npm run test:watch  # watch mode
+```powershell
+npm.cmd run test
+npm.cmd run test:watch
 ```
 
-Unit suites are pure and DB-free (mappers, validators, `buildWhere`, status/dynamic-field engines).
-The integration suites under `tests/` self-skip unless `RUN_INTEGRATION=1`, so the default run stays
-green without any infrastructure.
+Unit suites are DB-free. Integration suites under `tests/` self-skip unless `RUN_INTEGRATION=1`, so the default run stays green without infrastructure.
 
-## Integration tests (HTTP + Prisma + Redis against a dedicated test database)
+## Integration Tests
 
-Integration suites (`tests/*.integration.test.ts`) exercise the real Express app, Prisma, and Redis.
-They run against a **dedicated, throwaway** database — never the development database and never a
-remote/shared one.
+Integration suites exercise the real Express app and Prisma against a dedicated local PostgreSQL database. Redis is not required.
 
 | | Development | Integration tests |
-|---|---|---|
+| --- | --- | --- |
 | Database | `sidhkofed_cms` | `sidhkofed_test` |
-| Login role | `sidhkofed` (superuser) | `test` / `test` |
-| Connection | `.env` `DATABASE_URL` | pinned in `vitest.config.ts` → `postgresql://test:test@localhost:5432/sidhkofed_test` |
+| Login role | `sidhkofed` / `sidhkofed_dev_password` | `test` / `test` |
+| Connection | `.env` `DATABASE_URL` | `vitest.config.ts` test `DATABASE_URL` |
 
-### One command
+## Native PostgreSQL Setup
 
-```bash
-npm run db:up                              # start Postgres + Redis (once)
-RUN_INTEGRATION=1 npm run test:integration # create+migrate+seed the test DB, then run the suites
+Install PostgreSQL locally, make sure `psql` is on `PATH`, then run:
+
+```powershell
+npm.cmd run db:setup
 ```
 
-`test:integration` runs `db:test:setup` first, so the test database is created, migrated, and seeded
-automatically — **no manual database edits required**. Without `RUN_INTEGRATION=1` the suites skip
-(but the DB is still prepared).
+That command runs:
 
-### How the test database is created
+```powershell
+psql -U postgres -d postgres -v ON_ERROR_STOP=1 -f scripts/db/00-init-dev-db.sql
+psql -U postgres -d postgres -v ON_ERROR_STOP=1 -f scripts/db/01-init-test-db.sql
+```
 
-- **Fresh Docker volume:** `scripts/db/01-init-test-db.sql` is mounted into
-  `/docker-entrypoint-initdb.d/` (see `docker-compose.yml`) and the Postgres entrypoint runs it once
-  at first init — creating the `test` role and the `sidhkofed_test` database with the correct
-  public-schema ownership.
-- **Existing volume:** `npm run db:test:create` streams the same script into the running container's
-  `psql` over stdin (idempotent — safe to re-run), so you do **not** need to recreate the volume.
+If your local PostgreSQL admin user is not `postgres`, run the two `psql` commands manually with your admin login.
 
-### Migrations & seed isolation
+## Run Integration Tests
 
-`scripts/db/with-test-env.ts` injects `DATABASE_URL`/`DIRECT_URL` for `sidhkofed_test` into the
-Prisma CLI child process. Because `src/config` and Prisma load `.env` with dotenv — which never
-overrides an already-set variable — the injected test URL wins while every other variable (JWT
-secret, seed super-admin, storage URL, …) still comes from `.env`. The wrapper refuses to run unless
-the target URL is a `*_test` database, so a misconfiguration can't point migrations at dev/prod.
+```powershell
+$env:RUN_INTEGRATION='1'
+npm.cmd run test:integration
+```
 
-### Scripts
+`test:integration` runs `db:test:setup` first, so the test database is created, migrated, and seeded before the suites run.
+
+## Scripts
 
 | Script | Purpose |
-|---|---|
-| `db:test:create` | Create the `test` role + `sidhkofed_test` DB (idempotent). |
-| `db:test:migrate` | `prisma migrate deploy` against `sidhkofed_test`. |
+| --- | --- |
+| `db:setup` | Create local dev DB/role, then create the test DB/role. |
+| `db:seed` | Seed the development database from `.env` `DATABASE_URL`. |
+| `db:test:create` | Create the `test` role and `sidhkofed_test` DB. |
+| `db:test:migrate` | Run Prisma migrations against `sidhkofed_test`. |
 | `db:test:seed` | Seed roles/permissions/masters into `sidhkofed_test`. |
-| `db:test:setup` | create → migrate → seed (run by `test:integration`). |
-| `db:test:reset` | Drop and rebuild `sidhkofed_test` from scratch. |
-| `test:integration` | `db:test:setup` then run the suites. |
-| `test:integration:only` | Run the suites without re-preparing the DB. |
+| `db:test:setup` | create -> migrate -> seed. |
+| `db:test:reset` | Drop and rebuild `sidhkofed_test`. |
+| `test:integration` | Prepare the DB, then run integration suites. |
+| `test:integration:only` | Run integration suites without re-preparing the DB. |
 
-### Overriding the connection
+## Overriding The Test URL
 
-If your local Postgres differs, set `TEST_DATABASE_URL` (and keep `vitest.config.ts` in sync) and the
-matching `TEST_DB_*`/admin credentials used by `db:test:create`. The default credentials match
-`docker-compose.yml` (`sidhkofed` superuser) and `vitest.config.ts` (`test` login role).
+`scripts/db/with-test-env.ts` injects:
+
+```text
+postgresql://test:test@localhost:5432/sidhkofed_test?schema=public
+```
+
+Set `TEST_DATABASE_URL` before running the scripts if your local test database uses a different host, port, database, or password. The wrapper refuses to run unless the URL contains `sidhkofed_test`.

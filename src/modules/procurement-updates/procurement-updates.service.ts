@@ -2,7 +2,7 @@
  * Procurement Update service — all business logic for the Procurement Update operation. No HTTP, no
  * Prisma here (repository owns Prisma; controllers own HTTP). Owns: CRUD + lifecycle, stable slug
  * generation, master-activation + block/district + linked-document validation, audit logging, and
- * Redis cache invalidation of public reads.
+ * in-process cache invalidation of public reads.
  *
  * Key rule (CMS requirements §4.8 / non-goals): this module is INFORMATION-ONLY. It stores no
  * procurement transactions, inventory, warehousing, beneficiary, or payment data. Conditional
@@ -229,7 +229,7 @@ export async function lifecycle(
   return toProcurementUpdateDetailDto(updated);
 }
 
-// ── Public reads (visibility predicate + Redis cache) ──────────────────────────
+// ── Public reads (visibility predicate + in-process cache) ──────────────────────────
 export async function publicList(
   filters: ProcurementUpdateFilters,
   ordering: { field: ProcurementUpdateOrderingField; direction: 'asc' | 'desc' },

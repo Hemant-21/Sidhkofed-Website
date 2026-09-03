@@ -2,13 +2,13 @@
  * Shared types for the Phase 14 background scheduler.
  *
  * The scheduler runs a small, fixed set of recurring maintenance jobs (no workflow engine,
- * no distributed queue beyond the existing single BullMQ queue). Every job returns a
+ * no distributed queue beyond the existing in-process scheduler). Every job returns a
  * {@link JobRunResult} so the runner can emit one structured log line per run with the
  * fields the deliverable requires (name, timings, processed/success/failure counts, errors).
  */
 import type { AuditContext } from '@/modules/audit/audit.service';
 
-/** The fixed catalogue of scheduler job names (stable identifiers used as BullMQ job names). */
+/** The fixed catalogue of scheduler job names. */
 export const SCHEDULER_JOBS = {
   scheduledPublishing: 'scheduled-publishing',
   highlightExpiry: 'highlight-expiry',
@@ -46,7 +46,7 @@ export function emptyResult(): JobRunResult {
 
 /**
  * Dependencies every job handler receives. Injecting them (rather than importing singletons
- * inside the handler) keeps the handlers pure and unit-testable with fakes — no live DB/Redis
+ * inside the handler) keeps the handlers pure and unit-testable with fakes — no live DB
  * needed to assert idempotency, batching and error-continuation behaviour.
  */
 export interface JobContext {

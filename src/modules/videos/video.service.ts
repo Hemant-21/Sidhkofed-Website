@@ -170,7 +170,7 @@ export async function lifecycle(id: string, action: LifecycleAction, ctx: AuditC
   return toVideoDto(updated);
 }
 
-// ── Public reads (visibility predicate + Redis cache) ──────────────────────────
+// ── Public reads (visibility predicate + in-process cache) ──────────────────────────
 export interface PublicListResult<T> {
   items: T[];
   total: number;

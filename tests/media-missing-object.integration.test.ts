@@ -8,8 +8,8 @@
  * Fixtures create media through the REAL storage path (storage.put), never fabricating a row whose
  * backing object is absent — the missing-object case is produced explicitly by deleting the object.
  *
- * GUARDED: skipped unless `RUN_INTEGRATION=1` with a reachable DATABASE_URL / REDIS_URL.
- *   RUN_INTEGRATION=1 DATABASE_URL=... REDIS_URL=... npm run test:integration
+ * GUARDED: skipped unless `RUN_INTEGRATION=1` with a reachable DATABASE_URL.
+ *   RUN_INTEGRATION=1 DATABASE_URL=... npm run test:integration
  */
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import request from 'supertest';
@@ -75,7 +75,6 @@ describe.skipIf(!RUN)('public media missing-object handling (integration)', () =
   beforeAll(async () => {
     const { createApp } = await import('@/app');
     const db = await import('@/db/prisma');
-    const { connectRedis } = await import('@/services/redis');
     const { hashPassword } = await import('@/modules/auth/password');
     const { ROLE_KEYS } = await import('@/modules/auth/auth.permissions');
     const storageMod = await import('@/services/storage');
@@ -84,7 +83,6 @@ describe.skipIf(!RUN)('public media missing-object handling (integration)', () =
     prisma = db.prisma;
     storage = storageMod.storage;
     await db.connectDatabase();
-    await connectRedis();
 
     const role = await prisma.role.findUnique({ where: { key: ROLE_KEYS.superAdmin } });
     const email = `it-missing-admin-${STAMP}@sidhkofed.test`;

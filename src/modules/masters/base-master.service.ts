@@ -1,7 +1,7 @@
 /**
  * BaseMasterService (TASK 3) — the single business pipeline shared by all 16 masters.
  * Owns: validation orchestration, duplicate prevention, stable slug generation, audit
- * logging (CREATE/UPDATE/ACTIVATE/DEACTIVATE with old/new values — TASK 20), and Redis
+ * logging (CREATE/UPDATE/ACTIVATE/DEACTIVATE with old/new values — TASK 20), and in-process cache
  * cache invalidation (TASK 21). Nothing master-specific lives here; per-master behavior is
  * read from the `MasterDefinition`.
  */

@@ -1,17 +1,17 @@
-/** Unit tests — settings catalog encode/decode + service (typed accessors, cache, write). */
+/** Unit tests - settings catalog encode/decode + service (typed accessors, cache, write). */
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 const { store, repo, audit } = vi.hoisted(() => ({
-  store: new Map<string, string>(),
+  store: new Map<string, unknown>(),
   repo: { findAll: vi.fn(), findByKey: vi.fn(), upsert: vi.fn() },
   audit: { log: vi.fn() },
 }));
 
-vi.mock('@/services/redis', () => ({
-  redis: {
-    async get(k: string) { return store.has(k) ? store.get(k)! : null; },
-    async set(k: string, v: string) { store.set(k, v); return 'OK'; },
-    async del(k: string) { return store.delete(k) ? 1 : 0; },
+vi.mock('@/services/cache', () => ({
+  cacheService: {
+    async getJson<T>(k: string): Promise<T | null> { return store.has(k) ? (store.get(k)! as T) : null; },
+    async setJson(k: string, v: unknown) { store.set(k, v); },
+    async del(k: string) { store.delete(k); },
   },
 }));
 vi.mock('./settings.repository', () => ({ settingsRepository: repo }));
@@ -33,12 +33,14 @@ describe('settings.catalog', () => {
     expect(valueText).toBe('3');
     expect(decodeStored(def, valueText, null)).toBe(3);
   });
+
   it('round-trips a json array', () => {
     const def = SETTINGS_CATALOG['uploads.allowed_image_types'];
     const enc = encodeForStorage(def, ['image/png']);
     expect(enc.valueJson).toEqual(['image/png']);
     expect(decodeStored(def, null, enc.valueJson)).toEqual(['image/png']);
   });
+
   it('recognizes known and unknown keys', () => {
     expect(isSettingKey('site.name')).toBe(true);
     expect(isSettingKey('nope.nope')).toBe(false);
@@ -57,12 +59,12 @@ describe('settings.service', () => {
   });
 
   it('writes a valid value, audits SETTINGS_CHANGE, and invalidates the cache', async () => {
-    await settingsService.getResolvedMap(); // warm cache
+    await settingsService.getResolvedMap();
     expect(store.size).toBe(1);
     await settingsService.setValue('limits.video_homepage_limit', 2, { userId: 'u1' });
     expect(repo.upsert).toHaveBeenCalledWith('limits.video_homepage_limit', '2', null, 'u1', expect.any(String));
     expect(audit.log).toHaveBeenCalledWith('SETTINGS_CHANGE', expect.anything(), expect.objectContaining({ module: 'settings' }));
-    expect(store.size).toBe(0); // invalidated
+    expect(store.size).toBe(0);
   });
 
   it('rejects an invalid value with a 422', async () => {

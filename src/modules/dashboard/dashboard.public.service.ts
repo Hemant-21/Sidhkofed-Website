@@ -1,7 +1,7 @@
 /**
  * Public Dashboard service (API spec §5). Exposes ONLY active, published, publicly-visible reports
  * and their resolved metrics — never internal datasets, import metadata (`raw_rows`, source file),
- * administrative authorship, or `is_active=false` reports. Responses are Redis-cached and invalidated
+ * administrative authorship, or `is_active=false` reports. Responses are in-process cached and invalidated
  * on any admin write. Reports are the FIXED predefined set; this layer resolves metrics for the
  * requested financial year / reporting period only.
  */

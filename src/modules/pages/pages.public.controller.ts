@@ -1,7 +1,7 @@
 /**
  * Page public controller — `/api/v1/public/pages/{slug}` (API spec §5). No authentication; returns
  * only a published, publicly-visible, non-archived, due page (the visibility predicate is enforced
- * in the repository). The response is Redis-cached and invalidated on any admin write. There is no
+ * in the repository). The response is in-process cached and invalidated on any admin write. There is no
  * public page list — pages are reached by their stable slug.
  */
 import type { Request, Response, NextFunction } from 'express';

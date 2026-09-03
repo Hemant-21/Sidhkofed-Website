@@ -1,7 +1,7 @@
 /**
  * Gallery public controller — `/api/v1/public/galleries/*` (API spec §5). No authentication; returns
  * only published, publicly-visible, non-archived, due galleries (the visibility predicate is enforced
- * in the repository). Responses are Redis-cached and invalidated on any admin write. Public responses
+ * in the repository). Responses are in-process cached and invalidated on any admin write. Public responses
  * never expose publication_state, archived_at, or audit fields.
  */
 import { createHash } from 'node:crypto';

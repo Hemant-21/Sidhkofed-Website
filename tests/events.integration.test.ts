@@ -1,13 +1,13 @@
 /**
  * Integration tests — event CRUD with the controlled dynamic-field engine + relationships,
  * derived status, completion (incl. duplicate-completion guard), cancellation, publish-as-news →
- * derived news, RBAC, and public APIs over HTTP against the real app, Prisma and Redis.
+ * derived news, RBAC, and public APIs over HTTP against the real app, Prisma.
  *
- * GUARDED: skipped unless `RUN_INTEGRATION=1` with a reachable DATABASE_URL / REDIS_URL and the
+ * GUARDED: skipped unless `RUN_INTEGRATION=1` with a reachable DATABASE_URL and the
  * events_programmes_institutions migration applied. Self-seeds disposable users + an event type +
  * a required numeric field definition + a commodity + a district.
  *
- *   RUN_INTEGRATION=1 DATABASE_URL=... REDIS_URL=... npm run test:integration
+ *   RUN_INTEGRATION=1 DATABASE_URL=... npm run test:integration
  */
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import request from 'supertest';
@@ -49,14 +49,12 @@ describe.skipIf(!RUN)('events + news (integration)', () => {
   beforeAll(async () => {
     const { createApp } = await import('@/app');
     const db = await import('@/db/prisma');
-    const { connectRedis } = await import('@/services/redis');
     const { hashPassword } = await import('@/modules/auth/password');
     const { ROLE_KEYS } = await import('@/modules/auth/auth.permissions');
 
     app = createApp();
     prisma = db.prisma;
     await db.connectDatabase();
-    await connectRedis();
 
     async function userWithRole(suffix: string, roleKey: string): Promise<string> {
       const role = await prisma.role.findUnique({ where: { key: roleKey } });

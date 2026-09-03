@@ -1,11 +1,11 @@
 /**
  * Integration tests — public media visibility honours scheduled publishing (remediation).
  *
- * GUARDED: skipped unless `RUN_INTEGRATION=1` with a reachable DATABASE_URL / REDIS_URL and all
+ * GUARDED: skipped unless `RUN_INTEGRATION=1` with a reachable DATABASE_URL and all
  * migrations applied. Proves a document scheduled for the FUTURE does not leak its file through
  * `GET /public/media/:id/file` (403), and that a due/published document does serve (200).
  *
- *   RUN_INTEGRATION=1 DATABASE_URL=... REDIS_URL=... npm run test:integration
+ *   RUN_INTEGRATION=1 DATABASE_URL=... npm run test:integration
  */
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import request from 'supertest';
@@ -76,7 +76,6 @@ describe.skipIf(!RUN)('public media visibility — scheduled publishing (integra
   beforeAll(async () => {
     const { createApp } = await import('@/app');
     const db = await import('@/db/prisma');
-    const { connectRedis } = await import('@/services/redis');
     const { hashPassword } = await import('@/modules/auth/password');
     const { ROLE_KEYS } = await import('@/modules/auth/auth.permissions');
     const storageMod = await import('@/services/storage');
@@ -85,7 +84,6 @@ describe.skipIf(!RUN)('public media visibility — scheduled publishing (integra
     prisma = db.prisma;
     storage = storageMod.storage;
     await db.connectDatabase();
-    await connectRedis();
 
     const role = await prisma.role.findUnique({ where: { key: ROLE_KEYS.superAdmin } });
     const email = `it-vis-admin-${STAMP}@sidhkofed.test`;

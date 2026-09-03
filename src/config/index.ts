@@ -25,10 +25,8 @@ export const dbConfig = {
   poolMax: env.DB_POOL_MAX,
 } as const;
 
-export const redisConfig = {
-  url: env.REDIS_URL,
-  cacheTtlSeconds: env.CACHE_TTL_SECONDS,
-  queuePrefix: env.QUEUE_PREFIX,
+export const cacheConfig = {
+  ttlSeconds: env.CACHE_TTL_SECONDS,
 } as const;
 
 export const jwtConfig = {
@@ -119,16 +117,13 @@ export const localizationConfig = {
 } as const;
 
 /**
- * Background scheduler (Phase 14). Cadence, batch size, retry policy and the cross-process
- * lock TTL for the recurring maintenance jobs. `enabled` is forced off under tests so unit
- * runs never start real BullMQ repeatable jobs.
+ * Background scheduler (Phase 14). Cadence, batch size, and in-process lock TTL for
+ * recurring maintenance jobs. `enabled` is forced off under tests.
  */
 export const schedulerConfig = {
   enabled: env.SCHEDULER_ENABLED && env.NODE_ENV !== 'test',
   timezone: env.SCHEDULER_TIMEZONE,
   batchSize: env.SCHEDULER_BATCH_SIZE,
-  jobAttempts: env.SCHEDULER_JOB_ATTEMPTS,
-  jobBackoffMs: env.SCHEDULER_JOB_BACKOFF_MS,
   lockTtlSeconds: env.SCHEDULER_LOCK_TTL_SECONDS,
   cron: {
     scheduledPublishing: env.SCHEDULER_PUBLISHING_CRON,
@@ -141,7 +136,7 @@ export const schedulerConfig = {
 export const config = {
   app: appConfig,
   db: dbConfig,
-  redis: redisConfig,
+  cache: cacheConfig,
   jwt: jwtConfig,
   seed: seedConfig,
   storage: storageConfig,

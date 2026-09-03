@@ -11,11 +11,9 @@ const parsed = new URL(databaseUrl);
 const database = parsed.pathname.replace(/^\//, '');
 const user = decodeURIComponent(parsed.username || 'sidhkofed');
 const password = decodeURIComponent(parsed.password);
-const transport = process.env.FIXTURE_DB_TRANSPORT ?? 'host';
-const adminUser = process.env.POSTGRES_ADMIN_USER ?? (transport === 'host' ? user : 'sidhkofed');
-const container = process.env.POSTGRES_CONTAINER ?? 'sidhkofed-postgres';
+const adminUser = process.env.POSTGRES_ADMIN_USER ?? user;
 const postgresBin = process.env.POSTGRES_BIN ?? 'C:\\Program Files\\PostgreSQL\\18\\bin';
-const psqlExecutable = transport === 'host' ? path.join(postgresBin, 'psql.exe') : 'docker';
+const psqlExecutable = path.join(postgresBin, 'psql.exe');
 const storageRoot = path.resolve(process.env.FIXTURE_STORAGE_ROOT ?? 'storage/seed-fixtures');
 const artifactDir = path.resolve('artifacts/seed');
 const dumpFile = path.join(artifactDir, 'sidhkofed-seed.sql.gz');
@@ -40,13 +38,10 @@ function run(command: string, args: string[], options: { env?: NodeJS.ProcessEnv
 }
 
 function psql(targetDb: string, sql: string, capture = false, login = user): string {
-  if (transport === 'host') {
-    return run(psqlExecutable, ['-v', 'ON_ERROR_STOP=1', '-h', parsed.hostname, '-p', parsed.port || '5432', '-U', login, '-d', targetDb, '-At', '-c', sql], {
-      capture,
-      env: { ...process.env, PGPASSWORD: password },
-    });
-  }
-  return run('docker', ['exec', container, 'psql', '-v', 'ON_ERROR_STOP=1', '-U', login, '-d', targetDb, '-At', '-c', sql], { capture });
+  return run(psqlExecutable, ['-v', 'ON_ERROR_STOP=1', '-h', parsed.hostname, '-p', parsed.port || '5432', '-U', login, '-d', targetDb, '-At', '-c', sql], {
+    capture,
+    env: { ...process.env, PGPASSWORD: password },
+  });
 }
 
 async function createDatabase(dropFirst: boolean): Promise<void> {
@@ -98,17 +93,10 @@ async function migrateWithPsql(): Promise<void> {
     const file = path.join(migrationRoot, name, 'migration.sql');
     const sql = await readFile(file);
     const checksum = createHash('sha256').update(sql).digest('hex');
-    const containerFile = `/tmp/${name}.sql`;
     try {
-      if (transport === 'host') {
-        run(psqlExecutable, ['-v', 'ON_ERROR_STOP=1', '-h', parsed.hostname, '-p', parsed.port || '5432', '-U', user, '-d', database, '-f', file], { env: { ...process.env, PGPASSWORD: password } });
-      } else {
-        run('docker', ['cp', file, `${container}:${containerFile}`]);
-        run('docker', ['exec', container, 'psql', '-v', 'ON_ERROR_STOP=1', '-U', user, '-d', database, '-f', containerFile]);
-      }
+      run(psqlExecutable, ['-v', 'ON_ERROR_STOP=1', '-h', parsed.hostname, '-p', parsed.port || '5432', '-U', user, '-d', database, '-f', file], { env: { ...process.env, PGPASSWORD: password } });
       psql(database, `INSERT INTO "_prisma_migrations" (id, checksum, finished_at, migration_name, applied_steps_count) VALUES ('${randomUUID()}', '${checksum}', now(), '${name}', 1);`);
     } finally {
-      if (transport !== 'host') run('docker', ['exec', container, 'rm', '-f', containerFile]);
     }
     console.log(`Applied migration ${name}`);
   }
@@ -186,18 +174,11 @@ async function sha256(file: string): Promise<string> {
 async function exportArtifacts(): Promise<void> {
   assertCounts(exactCounts());
   await mkdir(artifactDir, { recursive: true });
-  if (transport === 'host') {
-    const plainDump = path.join(artifactDir, 'sidhkofed-seed.sql');
-    run(path.join(postgresBin, 'pg_dump.exe'), ['-h', parsed.hostname, '-p', parsed.port || '5432', '-U', user, '-d', database, '--clean', '--if-exists', '--no-owner', '--no-privileges', '-f', plainDump], { env: { ...process.env, PGPASSWORD: password } });
-    await writeFile(dumpFile, gzipSync(await readFile(plainDump), { level: 9 }));
-    const { unlink } = await import('node:fs/promises');
-    await unlink(plainDump);
-  } else {
-    const containerDump = '/tmp/sidhkofed-seed.sql.gz';
-    run('docker', ['exec', container, 'sh', '-c', `pg_dump -U ${user} -d ${database} --clean --if-exists --no-owner --no-privileges | gzip -9 > ${containerDump}`]);
-    run('docker', ['cp', `${container}:${containerDump}`, dumpFile]);
-    run('docker', ['exec', container, 'rm', '-f', containerDump]);
-  }
+  const plainDump = path.join(artifactDir, 'sidhkofed-seed.sql');
+  run(path.join(postgresBin, 'pg_dump.exe'), ['-h', parsed.hostname, '-p', parsed.port || '5432', '-U', user, '-d', database, '--clean', '--if-exists', '--no-owner', '--no-privileges', '-f', plainDump], { env: { ...process.env, PGPASSWORD: password } });
+  await writeFile(dumpFile, gzipSync(await readFile(plainDump), { level: 9 }));
+  const { unlink } = await import('node:fs/promises');
+  await unlink(plainDump);
   run('tar', ['-czf', mediaFile, '-C', storageRoot, '.']);
   const counts = exactCounts();
   const manifest = {

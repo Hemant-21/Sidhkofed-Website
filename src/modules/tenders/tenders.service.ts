@@ -1,7 +1,7 @@
 /**
  * Tender service — all business logic for the Tender operation. No HTTP, no Prisma here (repository
  * owns Prisma; controllers own HTTP). Owns: CRUD + lifecycle, stable slug generation,
- * master-activation validation, audit logging, and Redis cache invalidation of public reads.
+ * master-activation validation, audit logging, and in-process cache invalidation of public reads.
  *
  * Key rules (CMS requirements §4.7): the CMS stores tender METADATA + GeM link only — never BOQ,
  * corrigenda, clarifications, award/cancellation notices, tender files or bids. An expired tender
@@ -202,7 +202,7 @@ export async function lifecycle(id: string, action: LifecycleAction, ctx: AuditC
   return toTenderDetailDto(updated);
 }
 
-// ── Public reads (visibility predicate + Redis cache) ──────────────────────────
+// ── Public reads (visibility predicate + in-process cache) ──────────────────────────
 export async function publicList(
   filters: TenderFilters,
   ordering: { field: TenderOrderingField; direction: 'asc' | 'desc' },

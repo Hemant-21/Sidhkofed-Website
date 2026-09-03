@@ -2,7 +2,7 @@
  * Institutional Membership service — all business logic for the membership operation. No HTTP, no
  * Prisma here (repository owns Prisma; controllers own HTTP). Owns: CRUD + lifecycle, stable slug
  * generation, reference/master-activation validation, the District-Union requirement rule, bulk
- * upload (validate-all-rows → one transaction), audit logging, and Redis cache invalidation.
+ * upload (validate-all-rows → one transaction), audit logging, and in-process cache invalidation.
  *
  * Key rules (CMS requirements §4.15 / build-context §8.3): institution-wise membership ONLY;
  * the member and the District Union are existing Institution records (never duplicated); two
@@ -459,7 +459,7 @@ export async function bulkUpload(rows: unknown[], ctx: AuditContext): Promise<Bu
   return { created_count: createdCount, skipped_count: errors.length, errors };
 }
 
-// ── Public reads (visibility predicate + Redis cache) ──────────────────────────
+// ── Public reads (visibility predicate + in-process cache) ──────────────────────────
 export async function publicList(
   filters: MembershipFilters,
   ordering: { field: MembershipOrderingField; direction: 'asc' | 'desc' },

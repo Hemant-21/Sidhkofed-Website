@@ -1,49 +1,59 @@
 /**
- * Redis-backed mutual-exclusion lock for scheduler jobs (concurrency / "prevent duplicate
- * execution", Phase 14).
+ * In-process mutual-exclusion lock for scheduler jobs.
  *
- * Even though BullMQ repeatable jobs are de-duplicated per schedule, a long-running tick could
- * still overlap the next tick, and a horizontally-scaled deployment may run more than one worker
- * process. A short-lived `SET NX EX` lock per job name makes every job safe if started twice: the
- * second caller simply skips. The lock is fail-OPEN on a Redis error for *acquisition* of a
- * read-only/idempotent job would be unsafe, so we instead fail-CLOSED (skip) when we cannot prove
- * we hold the lock — never run two copies. Release is best-effort and value-checked so a tick that
- * overran its TTL cannot delete a lock another worker now holds.
+ * This prevents overlapping ticks within the single API process. If production
+ * later adds multiple app servers, replace this with PostgreSQL advisory locks.
  */
-import { redis as defaultRedis } from '@/services/redis';
 import { logger } from '@/shared/logger';
 
 const lockLog = logger.child({ component: 'scheduler-lock' });
 
-/** Minimal slice of the Redis client the lock needs (so tests can inject a fake). */
-export interface LockRedis {
-  set(
-    key: string,
-    value: string,
-    mode: 'EX',
-    ttl: number,
-    nx: 'NX',
-  ): Promise<'OK' | null>;
+export interface LockClient {
+  set(key: string, value: string, mode: 'EX', ttl: number, nx: 'NX'): Promise<'OK' | null>;
   get(key: string): Promise<string | null>;
   del(key: string): Promise<number>;
 }
 
-const KEY_PREFIX = 'scheduler:lock:';
-
-/** A held lock; call {@link release} (or use {@link withLock}) when done. */
 export interface AcquiredLock {
   key: string;
   token: string;
 }
 
-/**
- * Try to acquire the named lock for `ttlSeconds`. Returns the lock handle on success or `null`
- * when another holder owns it (or Redis is unreachable — fail-closed, never double-run).
- */
+interface StoredLock {
+  token: string;
+  expiresAt: number;
+}
+
+const KEY_PREFIX = 'scheduler:lock:';
+const globalForLocks = globalThis as unknown as { schedulerLocks?: Map<string, StoredLock> };
+const locks = globalForLocks.schedulerLocks ?? new Map<string, StoredLock>();
+globalForLocks.schedulerLocks = locks;
+
+const memoryLockClient: LockClient = {
+  async set(key, value, _mode, ttl, _nx) {
+    const existing = locks.get(key);
+    if (existing && existing.expiresAt > Date.now()) return null;
+    locks.set(key, { token: value, expiresAt: Date.now() + Math.max(1, ttl) * 1000 });
+    return 'OK';
+  },
+  async get(key) {
+    const existing = locks.get(key);
+    if (!existing) return null;
+    if (existing.expiresAt <= Date.now()) {
+      locks.delete(key);
+      return null;
+    }
+    return existing.token;
+  },
+  async del(key) {
+    return locks.delete(key) ? 1 : 0;
+  },
+};
+
 export async function acquireLock(
   name: string,
   ttlSeconds: number,
-  client: LockRedis = defaultRedis as unknown as LockRedis,
+  client: LockClient = memoryLockClient,
 ): Promise<AcquiredLock | null> {
   const key = `${KEY_PREFIX}${name}`;
   const token = `${process.pid}:${Date.now()}:${Math.random().toString(36).slice(2)}`;
@@ -56,36 +66,27 @@ export async function acquireLock(
   }
 }
 
-/**
- * Release a lock we hold. Value-checked: only deletes the key when it still carries our token,
- * so an overran tick never clobbers a successor's lock. Best-effort — a failure is logged, not
- * thrown (the TTL guarantees the lock eventually clears regardless).
- */
 export async function releaseLock(
   lock: AcquiredLock,
-  client: LockRedis = defaultRedis as unknown as LockRedis,
+  client: LockClient = memoryLockClient,
 ): Promise<void> {
   try {
     const current = await client.get(lock.key);
     if (current === lock.token) await client.del(lock.key);
   } catch (err) {
-    lockLog.warn({ err, key: lock.key }, 'lock release failed (will expire via TTL)');
+    lockLog.warn({ err, key: lock.key }, 'lock release failed');
   }
 }
 
-/**
- * Run `fn` only if the lock can be acquired; otherwise skip and return `null`. Guarantees the
- * lock is released even if `fn` throws.
- */
 export async function withLock<T>(
   name: string,
   ttlSeconds: number,
   fn: () => Promise<T>,
-  client: LockRedis = defaultRedis as unknown as LockRedis,
+  client: LockClient = memoryLockClient,
 ): Promise<T | null> {
   const lock = await acquireLock(name, ttlSeconds, client);
   if (!lock) {
-    lockLog.info({ name }, 'scheduler job already running elsewhere; skipping this tick');
+    lockLog.info({ name }, 'scheduler job already running; skipping this tick');
     return null;
   }
   try {

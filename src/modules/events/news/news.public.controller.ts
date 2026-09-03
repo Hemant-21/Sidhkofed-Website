@@ -1,6 +1,6 @@
 /**
  * Event News public controller — `/api/v1/public/news/*` (API spec §5). No auth; published only;
- * Redis-cached.
+ * in-process cached.
  */
 import { createHash } from 'node:crypto';
 import type { Request, Response, NextFunction } from 'express';

@@ -3,7 +3,7 @@
  * owns Prisma; controllers own HTTP). Owns: CRUD, hierarchy integrity (self-parent + cycle
  * prevention, parent/child location consistency), referenced-page + url validation, reorder, the
  * Super-Admin-only confirmed delete (cascade), the public active nested tree, audit logging, and
- * Redis cache invalidation of public reads.
+ * in-process cache invalidation of public reads.
  *
  * Hierarchy rules (CMS requirements §4.11 / API spec §6): the menu tree is self-referencing and must
  * stay ACYCLIC — an item may not be its own parent, nor may its parent be one of its descendants.

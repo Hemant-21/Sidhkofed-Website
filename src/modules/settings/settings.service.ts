@@ -1,13 +1,11 @@
 /**
- * Settings service (TASK 2) — single source of truth + typed accessors + Redis cache.
+ * Settings service (TASK 2) — single source of truth + typed accessors + in-process cache.
  *
  * Resolution = catalog defaults overlaid with stored rows. The resolved map is cached in
- * Redis and invalidated on any write, so the app reads settings without raw JSON lookups
+ * the in-process cache and invalidated on any write, so the app reads settings without raw JSON lookups
  * and without hitting Postgres on every request (TASK 10).
  */
-import { redis } from '@/services/redis';
-import { redisConfig } from '@/config';
-import { logger } from '@/shared/logger';
+import { cacheService } from '@/services/cache';
 import { auditService, type AuditContext } from '@/modules/audit/audit.service';
 import { NotFoundError, ValidationError } from '@/shared/errors';
 import { settingsRepository } from './settings.repository';
@@ -23,7 +21,6 @@ import {
   type SettingValue,
 } from './settings.catalog';
 
-const settingsLog = logger.child({ component: 'settings' });
 const CACHE_KEY = 'settings:resolved';
 
 type ResolvedMap = Record<string, unknown>;
@@ -41,30 +38,18 @@ async function buildResolvedMap(): Promise<ResolvedMap> {
   return map;
 }
 
-/** Get the resolved map, from Redis when warm. Cache failures fall back to the DB. */
+/** Get the resolved map, from the in-process cache when warm. */
 export async function getResolvedMap(): Promise<ResolvedMap> {
-  try {
-    const cached = await redis.get(CACHE_KEY);
-    if (cached) return JSON.parse(cached) as ResolvedMap;
-  } catch (err) {
-    settingsLog.warn({ err }, 'Settings cache read failed; rebuilding from DB');
-  }
+  const cached = await cacheService.getJson<ResolvedMap>(CACHE_KEY);
+  if (cached) return cached;
   const map = await buildResolvedMap();
-  try {
-    await redis.set(CACHE_KEY, JSON.stringify(map), 'EX', redisConfig.cacheTtlSeconds);
-  } catch (err) {
-    settingsLog.warn({ err }, 'Settings cache write failed');
-  }
+  await cacheService.setJson(CACHE_KEY, map);
   return map;
 }
 
 /** Invalidate the cached settings map (after a write). */
 export async function invalidate(): Promise<void> {
-  try {
-    await redis.del(CACHE_KEY);
-  } catch (err) {
-    settingsLog.warn({ err }, 'Settings cache invalidation failed');
-  }
+  await cacheService.del(CACHE_KEY);
 }
 
 /** Typed accessor for a single setting (falls back to the catalog default). */

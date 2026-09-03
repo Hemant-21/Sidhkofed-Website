@@ -2,7 +2,7 @@
  * Leadership public controller — `/api/v1/public/leadership`. No authentication; returns only
  * published, publicly-visible, non-archived, due leadership entries (the visibility predicate is
  * enforced in the repository). This IS the homepage leadership feed — there is no separate listing.
- * Responses are Redis-cached and invalidated on any admin write.
+ * Responses are in-process cached and invalidated on any admin write.
  */
 import { createHash } from 'node:crypto';
 import type { Request, Response, NextFunction } from 'express';

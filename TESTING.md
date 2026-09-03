@@ -20,7 +20,7 @@ and the CI/CD setup for the SIDHKOFED CMS project (backend + admin CMS + public 
 ## Quick Start
 
 ```bash
-# Backend unit + scheduler + shared tests (fast — no DB/Redis needed)
+# Backend unit + scheduler + shared tests (fast — no DB needed)
 npm test
 
 # Backend with coverage report
@@ -32,7 +32,7 @@ cd admin && npm test
 # Public website tests
 cd web && npm test
 
-# Backend integration tests (requires running Postgres + Redis)
+# Backend integration tests (requires native PostgreSQL)
 npm run test:integration
 
 # All backend tests (unit + integration) in one pass
@@ -45,7 +45,7 @@ RUN_INTEGRATION=1 npm run test:integration
 
 ### Unit tests (`src/**/*.test.ts`)
 
-Run in-process with no external dependencies. All Prisma clients, Redis, email
+Run in-process with no external dependencies. All Prisma clients, email
 and storage providers are mocked. The `@/` alias resolves to `src/`.
 
 ```bash
@@ -55,20 +55,20 @@ npx vitest run --coverage         # with coverage report (output: ./coverage/)
 ```
 
 Required environment variables are injected automatically by `vitest.config.ts`
-(`DATABASE_URL`, `REDIS_URL`, `JWT_SECRET`, …) — you do **not** need a `.env`
+(`DATABASE_URL`, `JWT_SECRET`, ...) — you do **not** need a `.env`
 file for unit tests.
 
 ### Integration tests (`tests/**/*.test.ts`)
 
-Hit a real PostgreSQL database and Redis. Each suite:
+Hit a real PostgreSQL database. Each suite:
 1. Creates a disposable user (e.g. `it-admin-<timestamp>@sidhkofed.test`).
 2. Runs HTTP requests against the full Express app via `supertest`.
 3. Cleans up its own records in `afterAll`.
 
 ```bash
 # Prerequisites
-npm run db:up                          # start Docker postgres + redis
-npm run db:test:setup                  # create test DB, run migrations, seed
+npm.cmd run db:setup                    # create local dev/test DB roles
+npm.cmd run db:test:setup               # create test DB, run migrations, seed
 
 # Run integration tests
 RUN_INTEGRATION=1 npm run test:integration:only
@@ -159,7 +159,7 @@ tests/                             # Integration suites (RUN_INTEGRATION=1)
 | What | Approach |
 |---|---|
 | Prisma (DB) | `vi.mock('./module.repository', () => ({ repo: { … } }))` — mock at the repository boundary |
-| Redis / cache | `vi.mock('@/services/cache', ...)` or `vi.mock('@/services/redis', ...)` |
+| Cache | `vi.mock('@/services/cache', ...)` |
 | External email SMTP | `vi.mock('@/services/email', ...)` in service tests; real `sendViaSMTP` guarded by `smtp.host` in unit tests |
 | External CAPTCHA API | `vi.stubGlobal('fetch', fakeFetch)` — intercept at the global fetch boundary |
 | External object storage | `vi.mock('@/services/storage', ...)` |
@@ -220,9 +220,8 @@ Test layout in `web/src/`:
 All unit tests (`npm test` from the repo root, `npm test` in `admin/`, `npm test` in `web/`)
 require **no external services** and are safe to run in any CI environment.
 
-Integration tests require Postgres + Redis and are gated by `RUN_INTEGRATION=1`. They are
-intended to run in a CI stage that provisions the database (e.g., via Docker services in
-GitHub Actions / GitLab CI).
+Integration tests require PostgreSQL and are gated by `RUN_INTEGRATION=1`. They are
+intended to run in a CI stage that provisions the database.
 
 Example GitHub Actions step:
 
@@ -239,14 +238,6 @@ services:
       --health-interval 10s
       --health-timeout 5s
       --health-retries 5
-  redis:
-    image: redis:7
-    options: >-
-      --health-cmd "redis-cli ping"
-      --health-interval 10s
-      --health-timeout 5s
-      --health-retries 5
-
 steps:
   - uses: actions/checkout@v4
   - uses: actions/setup-node@v4
@@ -261,7 +252,6 @@ steps:
     env:
       RUN_INTEGRATION: "1"
       DATABASE_URL: postgresql://sidhkofed:sidhkofed@localhost:5432/sidhkofed_test?schema=public
-      REDIS_URL: redis://localhost:6379
       JWT_SECRET: ci-jwt-secret-at-least-32-characters-long
 ```
 

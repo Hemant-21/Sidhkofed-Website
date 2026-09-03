@@ -1,13 +1,13 @@
 /**
  * Media service (TASK 5) — orchestrates validation → virus-scan → storage write →
- * metadata persistence → audit, with a Redis metadata cache (TASK 10). Depends only on
+ * metadata persistence → audit, with a in-process metadata cache (TASK 10). Depends only on
  * the storage *interface* (dependency inversion) — it never knows where bytes live.
  */
 import { randomUUID } from 'node:crypto';
 import type { MediaAsset } from '@prisma/client';
 import { storage } from '@/services/storage';
-import { redis } from '@/services/redis';
-import { redisConfig, uploadConfig, appConfig } from '@/config';
+import { cacheService } from '@/services/cache';
+import { uploadConfig, appConfig } from '@/config';
 import { logger } from '@/shared/logger';
 import { NotFoundError, ProtectedRecordError, ValidationError, UnsupportedFileTypeError, PermissionError } from '@/shared/errors';
 import { auditService, type AuditContext } from '@/modules/audit/audit.service';
@@ -17,6 +17,13 @@ import { mediaUsageService } from './media-usage.service';
 import { validateUpload, computeChecksum } from './media.validation';
 import { runMalwareScan, securityLog } from './media.scanner';
 import { toMediaDto, type MediaDto } from './media.dto';
+import {
+  generateImageVariants,
+  getStoredVariant,
+  isVariantName,
+  toVariantManifest,
+  type MediaVariantName,
+} from './media.variants';
 
 const mediaLog = logger.child({ component: 'media' });
 
@@ -38,19 +45,15 @@ function deliveryEndpoint(id: string): string {
   return `${appConfig.apiBasePath}/public/media/${id}/file`;
 }
 
+function variantEndpoint(id: string, variant: MediaVariantName): string {
+  return `${deliveryEndpoint(id)}?variant=${variant}`;
+}
+
 async function cacheDto(dto: MediaDto): Promise<void> {
-  try {
-    await redis.set(metaCacheKey(dto.id), JSON.stringify(dto), 'EX', redisConfig.cacheTtlSeconds);
-  } catch (err) {
-    mediaLog.warn({ err, id: dto.id }, 'Media cache write failed');
-  }
+  await cacheService.setJson(metaCacheKey(dto.id), dto);
 }
 async function invalidateCache(id: string): Promise<void> {
-  try {
-    await redis.del(metaCacheKey(id));
-  } catch (err) {
-    mediaLog.warn({ err, id }, 'Media cache invalidation failed');
-  }
+  await cacheService.del(metaCacheKey(id));
 }
 
 /**
@@ -118,9 +121,22 @@ async function persistUpload(file: UploadFile, meta: UploadMeta, ctx: AuditConte
 
   await storage.put({ key: storageKey, body: file.buffer, contentType: validated.mimeType, checksum });
 
+  const generatedVariants = await generateImageVariants(
+    file.buffer,
+    validated.mimeType,
+    (variant) => `media/${year}/variants/${id}-${variant}.webp`,
+    (variant) => variantEndpoint(id, variant),
+  );
+  await Promise.all(
+    generatedVariants.map((variant) =>
+      storage.put({ key: variant.key, body: variant.body, contentType: variant.contentType }),
+    ),
+  );
+
   // Store a STABLE, non-expiring delivery URL — the app's own media-file endpoint — never a
   // time-limited signed URL (Issue 2). Signed URLs are generated on demand at delivery time.
   const url = deliveryEndpoint(id);
+  const variants = toVariantManifest(generatedVariants);
 
   const asset = await mediaRepository.create({
     id,
@@ -131,6 +147,7 @@ async function persistUpload(file: UploadFile, meta: UploadMeta, ctx: AuditConte
     fileSizeBytes: validated.sizeBytes,
     width: validated.width,
     height: validated.height,
+    ...(variants ? { variants } : {}),
     title: meta.title ?? null,
     altText: meta.altText ?? null,
     caption: meta.caption ?? null,
@@ -191,11 +208,11 @@ export async function list(query: MediaListQuery, skip: number, take: number, di
 /** GET /admin/media/:id — cache-first. */
 export async function getById(id: string): Promise<MediaDto> {
   if (storage.servesThroughApp) {
-    try {
-      const cached = await redis.get(metaCacheKey(id));
-      if (cached) return JSON.parse(cached) as MediaDto;
-    } catch (err) {
-      mediaLog.warn({ err, id }, 'Media cache read failed');
+    const cached = await cacheService.getJson<MediaDto>(metaCacheKey(id));
+    if (cached) {
+      const asset = await mediaRepository.findById(id);
+      if (!asset) throw new NotFoundError('Media asset not found.');
+      return toAdminMediaDto(asset);
     }
   }
   const asset = await mediaRepository.findById(id);
@@ -274,12 +291,15 @@ export async function replaceFile(id: string, file: UploadFile, ctx: AuditContex
 /**
  * GET /admin/media/:id/url — resolve a FRESH delivery URL on demand (Issue 2):
  *   - S3: a newly-signed, time-limited GET URL (never persisted).
- *   - local: the app's stable media-file endpoint.
+ *   - local: the configured direct storage URL (`/files/...`) for CMS/admin previews.
  */
-export async function getDeliveryUrl(id: string): Promise<{ url: string }> {
+export async function getDeliveryUrl(id: string, variant?: MediaVariantName): Promise<{ url: string }> {
   const asset = await mediaRepository.findById(id);
   if (!asset || asset.archivedAt) throw new NotFoundError('Media asset not found.');
-  if (storage.servesThroughApp) return { url: asset.url };
+  const storedVariant = variant ? getStoredVariant(asset.variants, variant) : null;
+  if (storedVariant && storage.servesThroughApp) return { url: await storage.getUrl(storedVariant.key) };
+  if (storedVariant) return { url: await storage.getUrl(storedVariant.key) };
+  if (storage.servesThroughApp) return { url: await storage.getUrl(asset.storageKey) };
   return { url: await storage.getUrl(asset.storageKey) };
 }
 
@@ -294,7 +314,7 @@ export type MediaDelivery =
  *   - S3: 302 redirect to a fresh signed URL (offloads bytes to object storage/CDN).
  *   - local: stream the file through the app (local files are not otherwise served).
  */
-export async function openFile(id: string): Promise<MediaDelivery> {
+export async function openFile(id: string, variant?: MediaVariantName): Promise<MediaDelivery> {
   const asset = await mediaRepository.findById(id);
   if (!asset || asset.archivedAt) throw new NotFoundError('Media asset not found.');
 
@@ -305,31 +325,53 @@ export async function openFile(id: string): Promise<MediaDelivery> {
     throw new PermissionError('This media asset is not publicly available.');
   }
 
+  return openStoredFile(asset, variant);
+}
+
+/** Authenticated CMS delivery: previews unlinked/draft media without relaxing public access. */
+export async function openAdminFile(id: string, variant?: MediaVariantName): Promise<MediaDelivery> {
+  const asset = await mediaRepository.findById(id);
+  if (!asset || asset.archivedAt) throw new NotFoundError('Media asset not found.');
+  return openStoredFile(asset, variant);
+}
+
+async function openStoredFile(asset: MediaAsset, variant?: MediaVariantName): Promise<MediaDelivery> {
   // Storage-object existence (round-2 Issue 2): the DB row may reference an object that is missing
   // from the backing store (e.g. a hand-seeded asset that bypassed the upload pipeline, or an
   // object deleted out-of-band). Verify it exists BEFORE creating a redirect/stream/buffer so a
   // missing object becomes a controlled 404 — never a 500 from a raw ENOENT / S3 redirect to a
   // 404 / mid-flight stream error. `stat` is uniform across the local and S3 drivers.
-  const objectMeta = await storage.stat(asset.storageKey);
+  const storedVariant = variant ? getStoredVariant(asset.variants, variant) : null;
+  const storageKey = storedVariant?.key ?? asset.storageKey;
+  const contentType = storedVariant?.mime_type ?? asset.mimeType;
+  const fileName = storedVariant ? `${asset.fileName.replace(/\.[^.]+$/, '')}-${variant}.webp` : asset.fileName;
+
+  const objectMeta = await storage.stat(storageKey);
   if (!objectMeta) {
-    mediaLog.warn({ mediaId: id, storageKey: asset.storageKey }, 'Media object missing from storage');
+    mediaLog.warn({ mediaId: asset.id, storageKey }, 'Media object missing from storage');
     throw new NotFoundError('Media file is no longer available.');
   }
 
   if (!storage.servesThroughApp) {
-    return { kind: 'redirect', url: await storage.getUrl(asset.storageKey) };
+    return { kind: 'redirect', url: await storage.getUrl(storageKey) };
   }
   if (storage.createReadStream) {
     return {
       kind: 'stream',
-      stream: storage.createReadStream(asset.storageKey),
-      contentType: asset.mimeType,
-      fileName: asset.fileName,
+      stream: storage.createReadStream(storageKey),
+      contentType,
+      fileName,
       contentLength: objectMeta.size,
     };
   }
-  const body = await storage.get(asset.storageKey);
-  return { kind: 'buffer', body, contentType: asset.mimeType, fileName: asset.fileName, contentLength: objectMeta.size };
+  const body = await storage.get(storageKey);
+  return { kind: 'buffer', body, contentType, fileName, contentLength: objectMeta.size };
+}
+
+export function parseVariant(value: unknown): MediaVariantName | undefined {
+  if (value === undefined) return undefined;
+  if (isVariantName(value)) return value;
+  throw new ValidationError({ variant: ['Variant must be one of: thumb, card, hero.'] });
 }
 
 /** GET /admin/media/:id/usages — where the asset is referenced. */
@@ -371,4 +413,6 @@ export const mediaService = {
   usages,
   getDeliveryUrl,
   openFile,
+  openAdminFile,
+  parseVariant,
 };

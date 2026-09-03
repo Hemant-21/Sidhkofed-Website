@@ -8,9 +8,9 @@ import { resolve } from 'node:path';
  * - `test.env` injects a minimal, valid environment so `src/config` (which validates
  *   env at import and exits on a missing required var) loads cleanly under test.
  *   Integration suites under `tests/` self-skip unless `RUN_INTEGRATION=1` and a real
- *   DATABASE_URL/REDIS_URL are reachable; unit suites mock Prisma/Redis.
+ *   DATABASE_URL is reachable; unit suites mock Prisma and infrastructure collaborators.
  * - `RATE_LIMIT_ENABLED=false`: the auth/login limiter is keyed by client IP, but every
- *   integration suite logs in from the same loopback IP against one shared Redis, so the
+ *   integration suite logs in from the same loopback IP, so the
  *   per-IP login window would trip `429` across suites and make runs non-deterministic.
  *   It is turned off ONLY in this test process (NODE_ENV=test) via the existing config flag;
  *   production keeps the limiter (default `true`). No integration test asserts rate-limiting,
@@ -45,9 +45,8 @@ export default defineConfig({
         'src/app.ts',
         'src/db/**',
         'src/jobs/scheduler/scheduler.runner.ts',
-        // Infrastructure clients that require live external services (Redis, S3).
+        // Infrastructure clients that require live external services (S3).
         // These can only be meaningfully exercised via integration tests.
-        'src/services/redis.ts',
         'src/services/cache.ts',
         'src/services/storage/s3.storage.ts',
         'src/routes/health.routes.ts',
@@ -80,7 +79,6 @@ export default defineConfig({
       // validated minimum (env.ts) and cuts each hash ~256×. Test-process only; prod uses 12.
       PASSWORD_HASH_ROUNDS: '4',
       DATABASE_URL: 'postgresql://test:test@localhost:5432/sidhkofed_test?schema=public',
-      REDIS_URL: 'redis://localhost:6379',
       JWT_SECRET: 'test_jwt_secret_at_least_32_characters_long_xx',
       JWT_ACCESS_TTL: '900',
       JWT_REFRESH_TTL: '2592000',

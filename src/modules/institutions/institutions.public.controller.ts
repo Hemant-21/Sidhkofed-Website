@@ -2,7 +2,7 @@
  * Institution public controller — `/api/v1/public/institutions/*` and `/public/home/partners`
  * (API spec §5). No authentication; returns only published, publicly-visible, non-archived, due
  * institutions (the visibility predicate is enforced in the repository). Responses are
- * Redis-cached and invalidated on any admin write.
+ * in-process cached and invalidated on any admin write.
  */
 import { createHash } from 'node:crypto';
 import type { Request, Response, NextFunction } from 'express';

@@ -1,19 +1,11 @@
 /**
- * Scheduler bootstrap — wires the Phase 14 recurring jobs onto the existing single BullMQ queue.
+ * Scheduler bootstrap for the single-server native deployment.
  *
- * Deliberately small: ONE queue, ONE worker, a fixed map of job-name → handler, and a repeatable
- * schedule per job (cron from config). No distributed queue, no workflow engine, no per-job queues.
- * The worker dispatches each tick through {@link runJob}, which adds the system actor, the
- * cross-process lock, structured logging and retry semantics.
- *
- * Repeatable schedules are made authoritative on every boot: existing repeatables are cleared and
- * re-added from current config, so changing a cron in env takes effect on restart without leaving
- * orphaned schedules.
+ * Recurring maintenance jobs run in-process without BullMQ/in-process cache. Cron support is
+ * intentionally limited to the minute cadences used by this project.
  */
-import type { Job, Worker } from 'bullmq';
 import { schedulerConfig } from '@/config';
 import { logger } from '@/shared/logger';
-import { createQueue, createWorker } from '../queue';
 import { runJob } from './scheduler.runner';
 import { SCHEDULER_JOBS, type JobHandler, type SchedulerJobName } from './scheduler.types';
 import { runScheduledPublishing } from './jobs/scheduled-publishing.job';
@@ -23,10 +15,10 @@ import { runDashboardRefresh } from './jobs/dashboard-refresh.job';
 
 const schedulerLog = logger.child({ component: 'scheduler' });
 
-/** The single queue all scheduler jobs share. */
-export const SCHEDULER_QUEUE = 'scheduler';
+export interface SchedulerHandle {
+  close(): Promise<void>;
+}
 
-/** job name → (handler, cron). The one place the catalogue is assembled. */
 const JOBS: Array<{ name: SchedulerJobName; handler: JobHandler; cron: string }> = [
   { name: SCHEDULER_JOBS.scheduledPublishing, handler: runScheduledPublishing, cron: schedulerConfig.cron.scheduledPublishing },
   { name: SCHEDULER_JOBS.highlightExpiry, handler: runHighlightExpiry, cron: schedulerConfig.cron.highlightExpiry },
@@ -34,54 +26,51 @@ const JOBS: Array<{ name: SchedulerJobName; handler: JobHandler; cron: string }>
   { name: SCHEDULER_JOBS.dashboardRefresh, handler: runDashboardRefresh, cron: schedulerConfig.cron.dashboardRefresh },
 ];
 
-const HANDLERS = new Map<string, JobHandler>(JOBS.map((j) => [j.name, j.handler]));
+function intervalMsFromCron(cron: string): number {
+  const [minute, hour, dayOfMonth, month, dayOfWeek] = cron.trim().split(/\s+/);
+  if (!minute || !hour || !dayOfMonth || !month || !dayOfWeek) {
+    throw new Error(`Unsupported scheduler cron: ${cron}`);
+  }
+  if (hour !== '*' || dayOfMonth !== '*' || month !== '*' || dayOfWeek !== '*') {
+    throw new Error(`Unsupported scheduler cron: ${cron}`);
+  }
+  if (minute === '*') return 60 * 1000;
+  if (minute === '0') return 60 * 60 * 1000;
+  const every = minute.match(/^\*\/(\d+)$/);
+  if (every) return Number(every[1]) * 60 * 1000;
+  throw new Error(`Unsupported scheduler cron: ${cron}`);
+}
 
-/**
- * Start the scheduler: register repeatable schedules and a worker. No-op (returns null) when the
- * scheduler is disabled (config flag, or under tests). Returns the Worker so the caller can include
- * it in graceful shutdown.
- */
-export async function startScheduler(): Promise<Worker | null> {
+async function runTick(job: { name: SchedulerJobName; handler: JobHandler }): Promise<void> {
+  try {
+    await runJob(job.name, job.handler);
+  } catch (err) {
+    schedulerLog.error({ err, job: job.name }, 'scheduler tick failed');
+  }
+}
+
+export async function startScheduler(): Promise<SchedulerHandle | null> {
   if (!schedulerConfig.enabled) {
     schedulerLog.info('Scheduler disabled (SCHEDULER_ENABLED=false or test env); no jobs registered');
     return null;
   }
 
-  const queue = createQueue(SCHEDULER_QUEUE);
-
-  // Make current config authoritative: clear any prior repeatable schedules, then re-add.
-  const existing = await queue.getRepeatableJobs();
-  await Promise.all(existing.map((r) => queue.removeRepeatableByKey(r.key)));
-
-  for (const job of JOBS) {
-    await queue.add(
-      job.name,
-      {},
-      {
-        repeat: { pattern: job.cron, tz: schedulerConfig.timezone },
-        attempts: schedulerConfig.jobAttempts,
-        backoff: { type: 'exponential', delay: schedulerConfig.jobBackoffMs },
-        removeOnComplete: { age: 3600, count: 100 },
-        removeOnFail: { age: 86400 },
-      },
-    );
-    schedulerLog.info({ job: job.name, cron: job.cron, tz: schedulerConfig.timezone }, 'scheduler job registered');
-  }
-
-  const worker = createWorker(
-    SCHEDULER_QUEUE,
-    async (job: Job) => {
-      const handler = HANDLERS.get(job.name);
-      if (!handler) {
-        schedulerLog.warn({ job: job.name }, 'no handler for scheduler job; ignoring');
-        return;
-      }
-      // runJob applies the lock + actor + structured logging; its result is returned for BullMQ.
-      return runJob(job.name as SchedulerJobName, handler);
-    },
-    { concurrency: 1 },
-  );
+  const timers = JOBS.map((job) => {
+    const intervalMs = intervalMsFromCron(job.cron);
+    const timer = setInterval(() => {
+      void runTick(job);
+    }, intervalMs);
+    timer.unref?.();
+    schedulerLog.info({ job: job.name, cron: job.cron, interval_ms: intervalMs }, 'scheduler job registered');
+    return timer;
+  });
 
   schedulerLog.info({ jobs: JOBS.map((j) => j.name) }, 'Scheduler started');
-  return worker;
+
+  return {
+    async close() {
+      for (const timer of timers) clearInterval(timer);
+      schedulerLog.info('Scheduler stopped');
+    },
+  };
 }

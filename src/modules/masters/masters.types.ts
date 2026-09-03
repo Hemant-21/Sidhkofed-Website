@@ -60,7 +60,7 @@ export interface MasterDefinition {
   hasSlug: boolean;
   /** Whether the table has a `display_order` column (financial_years has none). */
   hasDisplayOrder: boolean;
-  /** Cache the public active list in Redis (TASK 21). */
+  /** Cache the public active list in in-process cache (TASK 21). */
   cacheable: boolean;
   /** Exposed under `/public/masters/{key}` (tags are internal-only). */
   isPublic: boolean;

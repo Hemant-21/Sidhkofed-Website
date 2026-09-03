@@ -2,7 +2,7 @@
  * Institution service — all business logic for the reusable Institution operation. No HTTP, no
  * Prisma here (repository owns Prisma; controllers own HTTP). Owns: CRUD + lifecycle, stable slug
  * generation, master-activation validation, logo media-usage tracking (so a linked logo cannot be
- * hard-deleted), audit logging, and Redis cache invalidation of public reads.
+ * hard-deleted), audit logging, and in-process cache invalidation of public reads.
  *
  * Cross-module dependencies go through SERVICES only (mediaService / mediaUsageService /
  * auditService) — never another module's repository (dependency-graph cross-module rule).
@@ -231,7 +231,7 @@ export async function lifecycle(id: string, action: LifecycleAction, ctx: AuditC
   return toInstitutionDetailDto(updated);
 }
 
-// ── Public reads (visibility predicate + Redis cache) ──────────────────────────
+// ── Public reads (visibility predicate + in-process cache) ──────────────────────────
 export async function publicList(
   filters: InstitutionFilters,
   ordering: { field: InstitutionOrderingField; direction: 'asc' | 'desc' },

@@ -5,6 +5,12 @@ const { sendMock } = vi.hoisted(() => ({
 }));
 
 vi.mock('@/config', () => ({
+  isProduction: true,
+  appConfig: {
+    logLevel: 'silent',
+    name: 'test',
+    env: 'test',
+  },
   storageConfig: {
     signedUrlTtlSeconds: 600,
     s3: {
@@ -19,12 +25,24 @@ vi.mock('@/config', () => ({
 }));
 
 vi.mock('@aws-sdk/client-s3', () => ({
-  S3Client: vi.fn().mockImplementation(() => ({ send: sendMock })),
-  PutObjectCommand: vi.fn().mockImplementation((input) => ({ input, command: 'PutObjectCommand' })),
-  GetObjectCommand: vi.fn().mockImplementation((input) => ({ input, command: 'GetObjectCommand' })),
-  DeleteObjectCommand: vi.fn().mockImplementation((input) => ({ input, command: 'DeleteObjectCommand' })),
-  HeadObjectCommand: vi.fn().mockImplementation((input) => ({ input, command: 'HeadObjectCommand' })),
-  HeadBucketCommand: vi.fn().mockImplementation((input) => ({ input, command: 'HeadBucketCommand' })),
+  S3Client: vi.fn().mockImplementation(function () {
+    return { send: sendMock };
+  }),
+  PutObjectCommand: vi.fn().mockImplementation(function (input) {
+    return { input, command: 'PutObjectCommand' };
+  }),
+  GetObjectCommand: vi.fn().mockImplementation(function (input) {
+    return { input, command: 'GetObjectCommand' };
+  }),
+  DeleteObjectCommand: vi.fn().mockImplementation(function (input) {
+    return { input, command: 'DeleteObjectCommand' };
+  }),
+  HeadObjectCommand: vi.fn().mockImplementation(function (input) {
+    return { input, command: 'HeadObjectCommand' };
+  }),
+  HeadBucketCommand: vi.fn().mockImplementation(function (input) {
+    return { input, command: 'HeadBucketCommand' };
+  }),
 }));
 
 vi.mock('@aws-sdk/s3-request-presigner', () => ({

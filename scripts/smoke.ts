@@ -3,8 +3,7 @@
  *
  * Exercises the infrastructure wiring end-to-end without any business modules:
  *   - PostgreSQL connect ($connect + SELECT 1)
- *   - Redis connect (PING)
- *   - BullMQ connect (queue PING + enqueue/inspect/obliterate a throwaway job)
+ *   - in-process background job bootstrap
  *   - Storage health check
  *   - HTTP app: GET /live and GET /health through the real middleware chain
  *
@@ -15,8 +14,7 @@ import type { Server } from 'node:http';
 import { createApp } from '@/app';
 import { appConfig } from '@/config';
 import { connectDatabase, disconnectDatabase, pingDatabase } from '@/db/prisma';
-import { connectRedis, disconnectRedis, pingRedis } from '@/services/redis';
-import { initJobs, shutdownJobs, createQueue } from '@/jobs';
+import { initJobs, shutdownJobs } from '@/jobs';
 import { checkStorage } from '@/services/storage';
 
 type Result = { name: string; ok: boolean; detail: string };
@@ -42,19 +40,9 @@ async function main(): Promise<void> {
     return 'connected (SELECT 1 ok)';
   });
 
-  await check('Redis', async () => {
-    await connectRedis();
-    const ok = await pingRedis();
-    return ok ? 'connected (PONG)' : 'ping failed';
-  });
-
-  await check('BullMQ', async () => {
+  await check('Background jobs', async () => {
     await initJobs();
-    const queue = createQueue('smoke-test');
-    await queue.add('noop', { at: Date.now() }, { delay: 60_000 });
-    const counts = await queue.getJobCounts('delayed', 'waiting');
-    await queue.obliterate({ force: true });
-    return `connected (enqueue ok, counts ${JSON.stringify(counts)})`;
+    return 'initialized';
   });
 
   await check('Storage', async () => {
@@ -92,7 +80,7 @@ async function main(): Promise<void> {
 
   // Cleanup.
   if (server) await new Promise<void>((resolve) => server!.close(() => resolve()));
-  await Promise.allSettled([shutdownJobs(), disconnectRedis(), disconnectDatabase()]);
+  await Promise.allSettled([shutdownJobs(), disconnectDatabase()]);
 
   const required = results.filter((r) => r.name !== 'PostgreSQL');
   const failed = results.filter((r) => !r.ok);

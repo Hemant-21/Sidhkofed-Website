@@ -1,5 +1,7 @@
 # SIDHKOFED CMS — Operations Manual
 
+> Legacy Docker operations guide. The active target topology is native IIS + Node.js + PostgreSQL 18 + NFS/SMB storage, with no Docker and no Redis. Use [iis-native-deployment.md](iis-native-deployment.md) and [manual-production-reference.md](manual-production-reference.md).
+
 ## System overview
 
 SIDHKOFED CMS is a headless CMS serving the Sidhkofed federation's digital properties. It consists of three application services plus supporting infrastructure:

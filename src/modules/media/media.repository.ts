@@ -15,6 +15,7 @@ export interface MediaCreateInput {
   fileSizeBytes: number;
   width: number | null;
   height: number | null;
+  variants?: Prisma.InputJsonObject;
   title: string | null;
   altText: string | null;
   caption: string | null;

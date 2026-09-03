@@ -1,9 +1,9 @@
 /**
  * Integration tests — enquiry submission and admin management over HTTP (API spec §6 / CMS §4.12).
  *
- * GUARDED: skipped unless `RUN_INTEGRATION=1` and the test database + Redis are reachable.
+ * GUARDED: skipped unless `RUN_INTEGRATION=1` and the test database are reachable.
  *
- *   RUN_INTEGRATION=1 DATABASE_URL=... REDIS_URL=... npm run test:integration
+ *   RUN_INTEGRATION=1 DATABASE_URL=... npm run test:integration
  *
  * Seeds:
  *   - A Publisher user (enquiries.manage access)
@@ -35,14 +35,12 @@ describe.skipIf(!RUN)('enquiries (integration)', () => {
   beforeAll(async () => {
     const { createApp } = await import('@/app');
     const db = await import('@/db/prisma');
-    const { connectRedis } = await import('@/services/redis');
     const { hashPassword } = await import('@/modules/auth/password');
     const { ROLE_KEYS } = await import('@/modules/auth/auth.permissions');
 
     app = createApp();
     prisma = db.prisma;
     await db.connectDatabase();
-    await connectRedis();
 
     const pwHash = await hashPassword(PASSWORD);
 

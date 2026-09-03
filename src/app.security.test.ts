@@ -1,7 +1,7 @@
 /**
  * Security-header regression test (Phase 17.1). Asserts the hardened header set is
  * applied to API responses. Hits the version descriptor (`/api/v1/`) so no database
- * or Redis round-trip is needed.
+ * or in-process cache round-trip is needed.
  */
 import { describe, it, expect } from 'vitest';
 import request from 'supertest';

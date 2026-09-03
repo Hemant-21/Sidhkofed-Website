@@ -8,7 +8,7 @@
  *   - Admin mutations: patch (only notes + spam_state), archive (idempotent).
  *   - Export: maps all rows to EnquiryExportRow.
  *
- * All collaborators are mocked; no DB or Redis required.
+ * All collaborators are mocked; no DB or in-process cache required.
  */
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import type { EnquiryRow } from './enquiries.repository';

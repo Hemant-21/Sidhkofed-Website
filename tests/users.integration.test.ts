@@ -1,13 +1,13 @@
 /**
  * Integration tests — Users administration + self-service profile over HTTP against the real app,
- * Prisma and Redis. Exercises the full RBAC surface the Admin Frontend depends on: list/detail/
+ * Prisma. Exercises the full RBAC surface the Admin Frontend depends on: list/detail/
  * create/update/password/status under `users.manage`, and `/admin/profile*` for any signed-in user.
  *
- * GUARDED: skipped unless `RUN_INTEGRATION=1` with a reachable DATABASE_URL / REDIS_URL and the
+ * GUARDED: skipped unless `RUN_INTEGRATION=1` with a reachable DATABASE_URL and the
  * identity/RBAC schema seeded. Self-seeds disposable Super Admin / Content Editor / Publisher users
  * and cleans up everything it creates afterwards.
  *
- *   RUN_INTEGRATION=1 DATABASE_URL=... REDIS_URL=... npm run test:integration
+ *   RUN_INTEGRATION=1 DATABASE_URL=... npm run test:integration
  */
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import request from 'supertest';
@@ -39,14 +39,12 @@ describe.skipIf(!RUN)('users (integration)', () => {
   beforeAll(async () => {
     const { createApp } = await import('@/app');
     const db = await import('@/db/prisma');
-    const { connectRedis } = await import('@/services/redis');
     const { hashPassword } = await import('@/modules/auth/password');
     const { ROLE_KEYS } = await import('@/modules/auth/auth.permissions');
 
     app = createApp();
     prisma = db.prisma;
     await db.connectDatabase();
-    await connectRedis();
 
     async function userWithRole(suffix: string, roleKey: string): Promise<{ email: string; id: string }> {
       const role = await prisma.role.findUnique({ where: { key: roleKey } });

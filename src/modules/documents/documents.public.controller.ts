@@ -2,7 +2,7 @@
  * Document public controller — `/api/v1/public/documents/*` and `/api/v1/public/knowledge-centre`
  * (API spec §5, TASK 13). No authentication; returns only published, publicly-visible,
  * non-archived, due, is_public documents (the visibility predicate is enforced in the repository).
- * Responses are Redis-cached and invalidated on any admin write (TASK 12).
+ * Responses are in-process cached and invalidated on any admin write (TASK 12).
  */
 import { createHash } from 'node:crypto';
 import type { Request, Response, NextFunction } from 'express';

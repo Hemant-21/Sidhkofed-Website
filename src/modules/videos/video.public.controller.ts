@@ -1,7 +1,7 @@
 /**
  * Video public controller — `/api/v1/public/videos/*` (API spec §5). No authentication; returns only
  * published, publicly-visible, non-archived, due videos (the visibility predicate is enforced in the
- * repository). Responses are Redis-cached and invalidated on any admin write. Public responses expose
+ * repository). Responses are in-process cached and invalidated on any admin write. Public responses expose
  * only the YouTube reference + thumbnail — never a hosted file, publication_state, or audit fields.
  */
 import { createHash } from 'node:crypto';

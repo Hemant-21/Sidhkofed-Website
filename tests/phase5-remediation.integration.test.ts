@@ -1,5 +1,5 @@
 /**
- * Integration tests — Phase 5 remediation, over the real app + Prisma + Redis (HTTP).
+ * Integration tests — Phase 5 remediation, over the real app + Prisma (HTTP).
  *
  * Proves, end-to-end:
  *   Issue 1  visibility propagation — a future-scheduled / unpublished linked Document, Gallery,
@@ -11,10 +11,10 @@
  *   Issue 5  completion / cancellation rules — completing a cancelled event (and cancelling a
  *            completed one) returns 409.
  *
- * GUARDED: skipped unless `RUN_INTEGRATION=1` with a reachable DATABASE_URL / REDIS_URL and all
+ * GUARDED: skipped unless `RUN_INTEGRATION=1` with a reachable DATABASE_URL and all
  * migrations applied (incl. 20260625160000_phase5_remediation).
  *
- *   RUN_INTEGRATION=1 DATABASE_URL=... REDIS_URL=... npm run test:integration
+ *   RUN_INTEGRATION=1 DATABASE_URL=... npm run test:integration
  */
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import request from 'supertest';
@@ -116,7 +116,6 @@ describe.skipIf(!RUN)('phase 5 remediation (integration)', () => {
   beforeAll(async () => {
     const { createApp } = await import('@/app');
     const db = await import('@/db/prisma');
-    const { connectRedis } = await import('@/services/redis');
     const { hashPassword } = await import('@/modules/auth/password');
     const { ROLE_KEYS } = await import('@/modules/auth/auth.permissions');
     const storageMod = await import('@/services/storage');
@@ -125,7 +124,6 @@ describe.skipIf(!RUN)('phase 5 remediation (integration)', () => {
     prisma = db.prisma;
     storage = storageMod.storage;
     await db.connectDatabase();
-    await connectRedis();
 
     const role = await prisma.role.findUnique({ where: { key: ROLE_KEYS.publisher } });
     const email = `it-p5-${STAMP}@sidhkofed.test`;

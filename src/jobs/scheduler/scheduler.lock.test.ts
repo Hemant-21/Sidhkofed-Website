@@ -1,12 +1,12 @@
 /**
- * Unit tests for the scheduler Redis lock (concurrency / duplicate-execution prevention).
- * Uses an in-memory fake that emulates `SET NX EX` semantics — no live Redis needed.
+ * Unit tests for the scheduler lock (concurrency / duplicate-execution prevention).
+ * Uses an in-memory fake that emulates `SET NX EX` semantics.
  */
 import { describe, it, expect, vi } from 'vitest';
-import { acquireLock, releaseLock, withLock, type LockRedis } from './scheduler.lock';
+import { acquireLock, releaseLock, withLock, type LockClient } from './scheduler.lock';
 
 /** Minimal fake honoring SET NX (only sets when absent) and value-checked DEL. */
-function fakeRedis(): LockRedis & { store: Map<string, string> } {
+function fakeLockClient(): LockClient & { store: Map<string, string> } {
   const store = new Map<string, string>();
   return {
     store,
@@ -26,7 +26,7 @@ function fakeRedis(): LockRedis & { store: Map<string, string> } {
 
 describe('scheduler lock', () => {
   it('acquires a free lock and blocks a second acquirer', async () => {
-    const r = fakeRedis();
+    const r = fakeLockClient();
     const first = await acquireLock('job-a', 60, r);
     const second = await acquireLock('job-a', 60, r);
     expect(first).not.toBeNull();
@@ -34,7 +34,7 @@ describe('scheduler lock', () => {
   });
 
   it('releases only when the token still matches (no clobbering a successor)', async () => {
-    const r = fakeRedis();
+    const r = fakeLockClient();
     const lock = await acquireLock('job-b', 60, r);
     expect(lock).not.toBeNull();
     // Simulate a successor overwriting the key after our TTL.
@@ -44,7 +44,7 @@ describe('scheduler lock', () => {
   });
 
   it('withLock runs fn and frees the lock afterward', async () => {
-    const r = fakeRedis();
+    const r = fakeLockClient();
     const fn = vi.fn().mockResolvedValue('done');
     const out = await withLock('job-c', 60, fn, r);
     expect(out).toBe('done');
@@ -54,7 +54,7 @@ describe('scheduler lock', () => {
   });
 
   it('withLock skips (returns null) when contended', async () => {
-    const r = fakeRedis();
+    const r = fakeLockClient();
     await acquireLock('job-d', 60, r); // pre-held
     const fn = vi.fn();
     const out = await withLock('job-d', 60, fn, r);
@@ -63,14 +63,14 @@ describe('scheduler lock', () => {
   });
 
   it('releases the lock even when fn throws', async () => {
-    const r = fakeRedis();
+    const r = fakeLockClient();
     await expect(withLock('job-e', 60, async () => { throw new Error('boom'); }, r)).rejects.toThrow('boom');
     expect(await acquireLock('job-e', 60, r)).not.toBeNull();
   });
 
-  it('fails closed (skips) when Redis errors on acquire', async () => {
-    const r = fakeRedis();
-    r.set = vi.fn().mockRejectedValue(new Error('redis down'));
+  it('fails closed (skips) when lock acquire errors', async () => {
+    const r = fakeLockClient();
+    r.set = vi.fn().mockRejectedValue(new Error('lock down'));
     expect(await acquireLock('job-f', 60, r)).toBeNull();
   });
 });

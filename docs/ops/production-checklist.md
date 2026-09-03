@@ -1,5 +1,7 @@
 # SIDHKOFED CMS — Production Checklist
 
+> Legacy Docker checklist. The active target topology is native IIS + Node.js + PostgreSQL 18 + NFS/SMB storage, with no Docker and no Redis. Use [iis-native-deployment.md](iis-native-deployment.md).
+
 ## Pre-deployment checklist
 
 Complete every item before promoting a release to production.
@@ -23,7 +25,7 @@ Complete every item before promoting a release to production.
 - [ ] `IP_HASH_SALT` is at least 8 characters, random
 - [ ] `POSTGRES_PASSWORD` is a strong random password
 - [ ] `DATABASE_URL` points to the production database with correct credentials
-- [ ] `REDIS_URL` points to the production Redis instance
+- [ ] Redis is not configured; refresh sessions use PostgreSQL and cache/rate limits are in-process
 - [ ] `EMAIL_ENABLED=true` and SMTP credentials verified (send a test email)
 - [ ] `CAPTCHA_PROVIDER` configured if abuse protection is needed
 - [ ] `PUBLIC_WEBSITE_URL` set to the production domain

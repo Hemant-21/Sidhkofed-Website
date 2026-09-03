@@ -5,17 +5,17 @@
  *   - System actor: resolve a real Super Admin identity so jobs run as authorized system
  *     operations (audit attribution + service-layer guards behave exactly as for an HTTP admin;
  *     business validation is NEVER bypassed).
- *   - Concurrency: hold a per-job Redis lock for the whole run (safe if started twice).
+ *   - Concurrency: hold a per-job in-process lock for the whole run.
  *   - Structured logging: emit exactly one log line per run with job name, start/end, duration,
  *     processed/success/failure counts and any captured errors (no sensitive data).
  *   - Retry semantics: a per-record failure is captured and the run continues (and is naturally
- *     retried on the next idempotent tick); only an INFRASTRUCTURE failure (DB/Redis down, actor
- *     unresolvable mid-run) is re-thrown so BullMQ retries the whole tick with backoff.
+ *     retried on the next idempotent tick); only an INFRASTRUCTURE failure (DB down, actor
+ *     unresolvable mid-run) is logged and re-thrown.
  */
 import { schedulerConfig } from '@/config';
 import { logger } from '@/shared/logger';
 import type { AuditContext } from '@/modules/audit/audit.service';
-import { withLock, type LockRedis } from './scheduler.lock';
+import { withLock, type LockClient } from './scheduler.lock';
 import { schedulerRepository } from './scheduler.repository';
 import { emptyResult, type JobHandler, type JobRunResult, type SchedulerJobName } from './scheduler.types';
 
@@ -44,14 +44,14 @@ export interface RunJobOptions {
   lockTtlSeconds?: number;
   /** Inject a system actor (tests); production resolves it via {@link buildSystemActor}. */
   actor?: AuditContext | null;
-  /** Inject a Redis client for the lock (tests); production uses the shared client. */
-  lockClient?: LockRedis;
+  /** Inject a lock client for tests; production uses the in-process client. */
+  lockClient?: LockClient;
 }
 
 /**
  * Execute a scheduler job by name under its lock, logging one structured result line. Returns the
  * {@link JobRunResult}, or `null` when the run was skipped (lock contended or no system actor).
- * Re-throws infrastructure errors so BullMQ applies its retry policy.
+ * Re-throws infrastructure errors so the scheduler tick logs the failure.
  */
 export async function runJob(
   name: SchedulerJobName,
@@ -76,7 +76,7 @@ export async function runJob(
       logResult(name, startedAt, started, result);
       return result;
     } catch (err) {
-      // Infrastructure failure: log and re-throw so BullMQ retries the whole (idempotent) tick.
+      // Infrastructure failure: log and re-throw so the scheduler tick records the failure.
       const finishedAt = new Date();
       runLog.error(
         {

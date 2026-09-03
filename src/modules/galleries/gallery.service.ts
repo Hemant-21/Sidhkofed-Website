@@ -243,7 +243,7 @@ export async function reorderImages(galleryId: string, input: ReorderInput, ctx:
   return getById(galleryId);
 }
 
-// ── Public reads (visibility predicate + Redis cache) ──────────────────────────
+// ── Public reads (visibility predicate + in-process cache) ──────────────────────────
 export interface PublicListResult<T> {
   items: T[];
   total: number;

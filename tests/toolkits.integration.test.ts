@@ -1,12 +1,12 @@
 /**
  * Integration tests — toolkit lifecycle, module-specific RBAC, the content-editor published-edit
  * restriction, and the public-visibility rule that a published toolkit must NOT expose a
- * draft/unpublished linked programme (Issue 7). Runs over the real app, Prisma and Redis.
+ * draft/unpublished linked programme (Issue 7). Runs over the real app, Prisma.
  *
- * GUARDED: skipped unless `RUN_INTEGRATION=1` with a reachable DATABASE_URL / REDIS_URL and the
+ * GUARDED: skipped unless `RUN_INTEGRATION=1` with a reachable DATABASE_URL and the
  * toolkits migration applied.
  *
- *   RUN_INTEGRATION=1 DATABASE_URL=... REDIS_URL=... npm run test:integration
+ *   RUN_INTEGRATION=1 DATABASE_URL=... npm run test:integration
  */
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import request from 'supertest';
@@ -35,14 +35,12 @@ describe.skipIf(!RUN)('toolkits (integration)', () => {
   beforeAll(async () => {
     const { createApp } = await import('@/app');
     const db = await import('@/db/prisma');
-    const { connectRedis } = await import('@/services/redis');
     const { hashPassword } = await import('@/modules/auth/password');
     const { ROLE_KEYS } = await import('@/modules/auth/auth.permissions');
 
     app = createApp();
     prisma = db.prisma;
     await db.connectDatabase();
-    await connectRedis();
 
     async function userWithRole(suffix: string, roleKey: string): Promise<string> {
       const role = await prisma.role.findUnique({ where: { key: roleKey } });

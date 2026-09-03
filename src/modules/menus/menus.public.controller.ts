@@ -1,7 +1,7 @@
 /**
  * Menu public controller — `/api/v1/public/menus?location=header|footer|utility` (API spec §5). No
  * authentication; returns the nested ACTIVE tree for the requested location, with non-public page
- * references dropped. Redis-cached and invalidated on any admin write.
+ * references dropped. in-process cached and invalidated on any admin write.
  */
 import type { Request, Response, NextFunction } from 'express';
 import { success } from '@/shared/envelope';

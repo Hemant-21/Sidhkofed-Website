@@ -1,11 +1,10 @@
 /**
- * Integration tests — full auth flow over HTTP against the real app, Prisma and Redis.
+ * Integration tests — full auth flow over HTTP against the real app and Prisma.
  *
- * GUARDED: this suite is skipped unless `RUN_INTEGRATION=1` and a real DATABASE_URL /
- * REDIS_URL are reachable (the migrations must have been applied). It self-seeds a
+ * GUARDED: this suite is skipped unless `RUN_INTEGRATION=1` and a real DATABASE_URL is reachable (the migrations must have been applied). It self-seeds a
  * disposable Super Admin so it does not depend on `npm run db:seed`.
  *
- *   RUN_INTEGRATION=1 DATABASE_URL=... REDIS_URL=... npm run test:integration
+ *   RUN_INTEGRATION=1 DATABASE_URL=... npm run test:integration
  */
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import request from 'supertest';
@@ -26,14 +25,12 @@ describe.skipIf(!RUN)('auth flow (integration)', () => {
   beforeAll(async () => {
     const { createApp } = await import('@/app');
     const db = await import('@/db/prisma');
-    const { connectRedis } = await import('@/services/redis');
     const { hashPassword } = await import('@/modules/auth/password');
     const { ROLE_KEYS } = await import('@/modules/auth/auth.permissions');
 
     app = createApp();
     prisma = db.prisma;
     await db.connectDatabase();
-    await connectRedis();
 
     const role = await prisma.role.upsert({
       where: { key: ROLE_KEYS.superAdmin },
