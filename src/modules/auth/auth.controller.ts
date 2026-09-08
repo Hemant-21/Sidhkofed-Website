@@ -5,7 +5,7 @@
  */
 import { createHash } from 'node:crypto';
 import type { Request, Response, NextFunction } from 'express';
-import { success } from '@/shared/envelope';
+import { failure, success } from '@/shared/envelope';
 import { AuthenticationError } from '@/shared/errors';
 import { jwtConfig, abuseConfig, appConfig } from '@/config';
 import { authService } from './auth.service';
@@ -63,6 +63,11 @@ export function refresh(req: Request, res: Response, next: NextFunction): void {
     token = resolveRefreshToken(req);
   } catch (err) {
     return next(err);
+  }
+  if (!token) {
+    res.clearCookie(jwtConfig.refreshCookie.name, refreshCookieOptions());
+    res.status(401).json(failure('authentication_required', 'Refresh token is required.', String(req.id)));
+    return;
   }
   authService
     .refresh(token)

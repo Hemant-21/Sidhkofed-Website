@@ -1,12 +1,20 @@
 # SIDHKOFED CMS — Backup & Restore
 
-> Legacy Docker backup/restore guide. The active target topology is native IIS + Node.js + PostgreSQL 18 + NFS/SMB storage, with no Docker and no Redis. Use [iis-native-deployment.md](iis-native-deployment.md) for the current backup notes.
+> Legacy Docker backup/restore guide. The active target topology is native IIS + Node.js + PostgreSQL 18 + NFS/SMB storage, with no Docker and no Redis. Use [go-live-and-update-guide.md](go-live-and-update-guide.md#database-backup-service) for the current Windows-native database backup service.
+
+Current Windows backup script:
+
+```powershell
+cd D:\SIDHKOFED\scripts
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\backup-db-windows.ps1
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\backup-db-windows.ps1 -VerifyLatest
+```
 
 ## What is backed up
 
 | Asset | Tool | Format | Default retention |
 |-------|------|--------|-------------------|
-| PostgreSQL database | `pg_dump` | gzip SQL | 7 days |
+| PostgreSQL database | `pg_dump` | custom `.dump` | 7 days |
 | Media files (local storage) | `tar czf` via Docker | `.tar.gz` | 30 days |
 | Nginx configuration | git-tracked | — | infinite |
 | Environment file | external vault | — | vault policy |

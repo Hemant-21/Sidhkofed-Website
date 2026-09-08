@@ -6,6 +6,8 @@ Use this file when configuring IIS, Windows services, PostgreSQL, and NFS/SMB ma
 
 | Area | File and line |
 | --- | --- |
+| App server prep checklist | `docs/ops/app-server-prep.md` |
+| Go-live and routine update guide | `docs/ops/go-live-and-update-guide.md` |
 | Native IIS/non-Docker runbook | `docs/ops/iis-native-deployment.md` |
 | Native local PostgreSQL setup | `docs/ops/native-postgres-local-setup.md` |
 | Backend production env template | `deploy/env/api.env.production.example` |
@@ -17,7 +19,7 @@ Use this file when configuring IIS, Windows services, PostgreSQL, and NFS/SMB ma
 
 | Setting or behavior | File and line |
 | --- | --- |
-| Production start command: `npm.cmd run start` -> `node dist/server.js` | `package.json:12` |
+| Production start command: `npm.cmd run start` -> `node dist/src/server.js` | `package.json:12` |
 | Build command | `package.json:11` |
 | Prisma migration deploy command | `package.json:23` |
 | Seed command | `package.json:27` |
@@ -71,6 +73,7 @@ Redis is not a production dependency. See `docs/ops/redis-removal.md`.
 | Build command | `../SIDHKOFED_CMS_UI/package.json:9` |
 | Production start command uses port 3001 | `../SIDHKOFED_CMS_UI/package.json:10` |
 | Browser API base path comes from `NEXT_PUBLIC_API_BASE_URL` | `../SIDHKOFED_CMS_UI/src/config/env.ts:14` |
+| CMS deployment base path comes from `NEXT_PUBLIC_BASE_PATH` | `../SIDHKOFED_CMS_UI/src/config/env.ts:16` |
 | API client uses configured base URL | `../SIDHKOFED_CMS_UI/src/lib/api/client.ts:33` |
 | Upload API client uses configured base URL | `../SIDHKOFED_CMS_UI/src/lib/api/client.ts:44` |
 
@@ -91,7 +94,7 @@ Redis is not a production dependency. See `docs/ops/redis-removal.md`.
 
 | Service | Working directory | Command | Expected port |
 | --- | --- | --- | --- |
-| API | `C:\Sites\SIDHKOFED\api` | `npm.cmd run start` | 4000 |
+| API | `C:\Sites\SIDHKOFED\api` | `npm.cmd run start` | 4010 |
 | Admin CMS | `C:\Sites\SIDHKOFED\admin` | `npm.cmd run start` | 3001 |
 | Public website | `C:\Sites\SIDHKOFED\web` | `npm.cmd run start` | 3002 |
 

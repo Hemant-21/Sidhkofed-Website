@@ -7,9 +7,9 @@ Internet
   |
   v
 IIS on App Server
-  |-- /api/*        -> Node API on 127.0.0.1:4000
-  |-- /cms/*        -> Admin Next.js app on 127.0.0.1:3001
-  |-- /*            -> Public Next.js app on 127.0.0.1:3002
+  |-- /api/v1/*     -> Node API on localhost:4010
+  |-- /cms/*        -> Admin Next.js app on localhost:3001
+  |-- /*            -> Public Next.js app on localhost:3002
 
 App Server
   |-- Node.js services: api, admin, web
@@ -201,7 +201,7 @@ Create three services:
 
 | Service | Working directory | Command | Port |
 | --- | --- | --- | --- |
-| `SIDHKOFED API` | `C:\Sites\SIDHKOFED\api` | `npm.cmd run start` | 4000 |
+| `SIDHKOFED API` | `C:\Sites\SIDHKOFED\api` | `npm.cmd run start` | 4010 |
 | `SIDHKOFED Admin` | `C:\Sites\SIDHKOFED\admin` | `npm.cmd run start` | 3001 |
 | `SIDHKOFED Web` | `C:\Sites\SIDHKOFED\web` | `npm.cmd run start` | 3002 |
 
@@ -222,19 +222,19 @@ Suggested routing:
 
 | Incoming path | Target |
 | --- | --- |
-| `/api/{R:1}` | `http://127.0.0.1:4000/api/{R:1}` |
-| `/cms/{R:1}` | `http://127.0.0.1:3001/{R:1}` |
-| `/{R:0}` | `http://127.0.0.1:3002/{R:0}` |
+| `/api/v1/ready` | `http://localhost:4010/ready` |
+| `/api/v1/{R:1}` | `http://localhost:4010/api/v1/{R:1}` |
+| `/cms` | `http://localhost:3001/cms` |
+| `/cms/{R:1}` | `http://localhost:3001/cms/{R:1}` |
+| `/{R:0}` | `http://localhost:3002/{R:0}` |
 
-If the admin app is served under `/cms`, add or verify a Next.js `basePath` for the admin app. The simpler first deployment is an admin subdomain:
+Build the admin app with:
 
 ```text
-cms.<domain> -> 127.0.0.1:3001
-www.<domain> -> 127.0.0.1:3002
-<domain>/api -> 127.0.0.1:4000
+NEXT_PUBLIC_BASE_PATH=/cms
 ```
 
-The subdomain approach avoids rewriting Next.js asset paths under a subdirectory.
+Keep the API on port 4010 for this IIS/ARR deployment; port 4000 caused proxy timeouts on the target app server.
 
 ## Firewall Rules
 
@@ -250,7 +250,7 @@ Allow internally:
 
 Do not expose:
 
-- Backend port 4000.
+- Backend port 4010.
 - Admin port 3001.
 - Web port 3002.
 - Database port 5432 to the internet.
@@ -300,14 +300,16 @@ Rollback steps:
 5. Start services.
 6. Verify `/ready`, admin login, and key public pages.
 
-## Thumbnail System Later
+## Thumbnail System
 
-The least-risk thumbnail plan is:
+The thumbnail system is implemented and runs locally in the API process with the open-source `sharp` package. No paid image service is required.
 
-1. Add derivative keys next to originals, for example `media/2026/<uuid>_thumb.webp`.
-2. Generate image thumbnails in an in-process background task or a manual backfill command.
-3. Store thumbnail metadata either on `media_assets` or in a small derivative table.
-4. Return thumbnails in media DTOs while keeping original file delivery unchanged.
-5. Add a backfill command for existing media.
+Image uploads generate:
 
-Do this after the native hosting path is stable, because it adds filesystem CPU and storage concerns.
+```text
+media/{year}/variants/{media-id}-thumb.webp
+media/{year}/variants/{media-id}-card.webp
+media/{year}/variants/{media-id}-hero.webp
+```
+
+For production, keep `STORAGE_PROVIDER=local` and point `STORAGE_LOCAL_ROOT` at the mounted NFS/SMB path. See [thumbnail-system.md](thumbnail-system.md) for the storage layout and backfill command.
