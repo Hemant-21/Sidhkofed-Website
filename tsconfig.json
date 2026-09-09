@@ -25,5 +25,5 @@
     "removeComments": false
   },
   "include": ["src/**/*.ts"],
-  "exclude": ["node_modules", "dist", "tests", "legacy-prototype", "src/**/*.test.ts", "vitest.config.ts"]
+  "exclude": ["node_modules", "dist", "tests", "src/**/*.test.ts", "vitest.config.ts"]
 }

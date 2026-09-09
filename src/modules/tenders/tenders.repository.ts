@@ -26,7 +26,7 @@ const ORDER_COLUMN: Record<TenderOrderingField, keyof Prisma.TenderOrderByWithRe
   created_at: 'createdAt',
 };
 
-export interface TenderQueryOptions {
+interface TenderQueryOptions {
   public?: boolean;
   ordering: { field: TenderOrderingField; direction: 'asc' | 'desc' };
 }
@@ -70,7 +70,7 @@ export function buildWhere(f: TenderFilters, opts: { public?: boolean }): Prisma
   return where;
 }
 
-export async function slugExists(slug: string, db: Db = prisma): Promise<boolean> {
+async function slugExists(slug: string, db: Db = prisma): Promise<boolean> {
   return (await db.tender.count({ where: { slug } })) > 0;
 }
 
@@ -79,7 +79,7 @@ export async function slugExists(slug: string, db: Db = prisma): Promise<boolean
  * codes). `excludeId` skips the record being updated so a no-op PATCH never collides with itself.
  * The DB unique index is the race-safe backstop; this is the friendly pre-check (Issue 2).
  */
-export async function tenderNumberExists(
+async function tenderNumberExists(
   tenderNumber: string,
   excludeId?: string,
   db: Db = prisma,
@@ -91,24 +91,24 @@ export async function tenderNumberExists(
   );
 }
 
-export async function create(data: Prisma.TenderUncheckedCreateInput, db: Db = prisma): Promise<TenderRow> {
+async function create(data: Prisma.TenderUncheckedCreateInput, db: Db = prisma): Promise<TenderRow> {
   return db.tender.create({ data, include: tenderInclude });
 }
 
-export async function findById(id: string, db: Db = prisma): Promise<TenderRow | null> {
+async function findById(id: string, db: Db = prisma): Promise<TenderRow | null> {
   return db.tender.findUnique({ where: { id }, include: tenderInclude });
 }
 
-export async function findBySlug(slug: string, opts: { public?: boolean } = {}): Promise<TenderRow | null> {
+async function findBySlug(slug: string, opts: { public?: boolean } = {}): Promise<TenderRow | null> {
   if (!opts.public) return prisma.tender.findUnique({ where: { slug }, include: tenderInclude });
   return prisma.tender.findFirst({ where: { ...buildWhere({}, { public: true }), slug }, include: tenderInclude });
 }
 
-export async function update(id: string, data: Prisma.TenderUncheckedUpdateInput, db: Db = prisma): Promise<TenderRow> {
+async function update(id: string, data: Prisma.TenderUncheckedUpdateInput, db: Db = prisma): Promise<TenderRow> {
   return db.tender.update({ where: { id }, data, include: tenderInclude });
 }
 
-export async function list(
+async function list(
   f: TenderFilters,
   skip: number,
   take: number,
@@ -125,16 +125,16 @@ export async function list(
   return { rows, total };
 }
 
-export function transaction<T>(fn: (tx: Prisma.TransactionClient) => Promise<T>): Promise<T> {
+function transaction<T>(fn: (tx: Prisma.TransactionClient) => Promise<T>): Promise<T> {
   return prisma.$transaction(fn);
 }
 
 /** Validate the tender type exists AND is active. Returns field-keyed errors ({} when all valid). */
-export interface TenderRefs {
+interface TenderRefs {
   tenderTypeId?: string;
 }
 
-export async function validateReferences(refs: TenderRefs): Promise<Record<string, string[]>> {
+async function validateReferences(refs: TenderRefs): Promise<Record<string, string[]>> {
   const errors: Record<string, string[]> = {};
   if (refs.tenderTypeId !== undefined) {
     const row = await prisma.tenderType.findUnique({ where: { id: refs.tenderTypeId }, select: { isActive: true } });

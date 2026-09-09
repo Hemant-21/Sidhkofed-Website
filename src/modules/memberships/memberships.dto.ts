@@ -9,7 +9,7 @@
  */
 import type { MembershipRow } from './memberships.repository';
 
-export interface InstitutionRef {
+interface InstitutionRef {
   id: string;
   slug: string;
   name_en: string;
@@ -22,7 +22,7 @@ function institutionRef(
   return { id: i.id, slug: i.slug, name_en: i.nameEn, name_hi: i.nameHi };
 }
 
-export interface MasterRef {
+interface MasterRef {
   id: string;
   slug: string;
   name_en: string;

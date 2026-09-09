@@ -25,13 +25,13 @@ const wrap =
     fn(req).then(({ status, body }) => res.status(status).json(body)).catch(next);
   };
 
-export const create = wrap(async (req) => {
+const create = wrap(async (req) => {
   const input = validateEventCreate(req.body);
   const dto = await eventService.create(input, auditContext(req));
   return { status: 201, body: success(dto, String(req.id), 'Event created.') };
 });
 
-export const list = wrap(async (req) => {
+const list = wrap(async (req) => {
   const page = resolvePageParams(req.query.page, req.query.page_size);
   const filters = parseEventFilters(req, { admin: true });
   const ordering = parseEventOrdering(req, true);
@@ -39,12 +39,12 @@ export const list = wrap(async (req) => {
   return { status: 200, body: paginated(items, buildPagination(total, page), String(req.id)) };
 });
 
-export const detail = wrap(async (req) => {
+const detail = wrap(async (req) => {
   const dto = await eventService.getById(req.params.id as string);
   return { status: 200, body: success(dto, String(req.id)) };
 });
 
-export const patch = wrap(async (req) => {
+const patch = wrap(async (req) => {
   const input = validateEventUpdate(req.body);
   const dto = await eventService.update(req.params.id as string, input, auditContext(req));
   return { status: 200, body: success(dto, String(req.id), 'Event updated.') };
@@ -56,25 +56,25 @@ const lifecycle = (action: LifecycleAction) =>
     return { status: 200, body: success(dto, String(req.id), `Event ${action}ed.`) };
   });
 
-export const publish = lifecycle('publish');
-export const unpublish = lifecycle('unpublish');
-export const archive = lifecycle('archive');
-export const restore = lifecycle('restore');
+const publish = lifecycle('publish');
+const unpublish = lifecycle('unpublish');
+const archive = lifecycle('archive');
+const restore = lifecycle('restore');
 
-export const complete = wrap(async (req) => {
+const complete = wrap(async (req) => {
   const input = validateEventComplete(req.body);
   const dto = await eventService.complete(req.params.id as string, input, auditContext(req));
   return { status: 200, body: success(dto, String(req.id), 'Event completed.') };
 });
 
-export const cancel = wrap(async (req) => {
+const cancel = wrap(async (req) => {
   const input = validateEventCancel(req.body);
   const dto = await eventService.cancel(req.params.id as string, input, auditContext(req));
   return { status: 200, body: success(dto, String(req.id), 'Event cancelled.') };
 });
 
 /** POST /admin/events/{id}/publish-as-news — creates the derived news record (201). */
-export const publishAsNews = wrap(async (req) => {
+const publishAsNews = wrap(async (req) => {
   const input = validatePublishAsNews(req.body);
   const dto = await newsService.publishFromEvent(req.params.id as string, input, auditContext(req));
   return { status: 201, body: success(dto, String(req.id), 'Event published as news.') };

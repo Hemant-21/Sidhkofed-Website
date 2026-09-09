@@ -17,7 +17,7 @@ const wrap =
   };
 
 /** GET /public/home */
-export const home = wrap(async (req) => {
+const home = wrap(async (req) => {
   const data = await homeService.aggregate();
   return { status: 200, body: success(data, String(req.id)) };
 });

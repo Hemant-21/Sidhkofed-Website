@@ -38,7 +38,7 @@ const LIMIT = {
 /** Build the `{ skip, take, page, pageSize }` shape every module `publicList` expects. */
 const firstPage = (take: number) => ({ skip: 0, take, page: 1, pageSize: take });
 
-export interface HomeAggregate {
+interface HomeAggregate {
   kpis: Awaited<ReturnType<typeof dashboardPublicService.kpis>>['kpis'];
   news: Awaited<ReturnType<typeof newsService.publicList>>['items'];
   events: Awaited<ReturnType<typeof eventService.publicList>>['items'];
@@ -54,7 +54,7 @@ export interface HomeAggregate {
  * Aggregate the curated homepage payload. Each section is fetched in parallel through its module's
  * public service so the visibility predicate, DTO shape, and caching stay single-sourced.
  */
-export async function aggregate(): Promise<HomeAggregate> {
+async function aggregate(): Promise<HomeAggregate> {
   const [kpis, news, events, communications, tenders, programmes, partners, digitalServices, videos] =
     await Promise.all([
       dashboardPublicService.kpis({}),

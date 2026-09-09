@@ -38,13 +38,13 @@ function refineOptions(data: { data_type?: string; options?: string[] }, ctx: z.
   }
 }
 
-export const fieldDefinitionCreateSchema = z.object(baseShape).strict().superRefine(refineOptions);
+const fieldDefinitionCreateSchema = z.object(baseShape).strict().superRefine(refineOptions);
 export type FieldDefinitionCreateInput = z.infer<typeof fieldDefinitionCreateSchema>;
 export const validateFieldDefinitionCreate = (p: unknown): FieldDefinitionCreateInput =>
   parseSchema(fieldDefinitionCreateSchema, p);
 
 // PATCH: partial, but if data_type/options are present together they must still be consistent.
-export const fieldDefinitionUpdateSchema = z
+const fieldDefinitionUpdateSchema = z
   .object(baseShape)
   .partial()
   .strict()

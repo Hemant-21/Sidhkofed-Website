@@ -26,7 +26,7 @@ const baseShape = {
   ...workflowShape,
 };
 
-export const toolkitCreateSchema = z
+const toolkitCreateSchema = z
   .object(baseShape)
   .strict()
   .superRefine((data, ctx) => {
@@ -35,7 +35,7 @@ export const toolkitCreateSchema = z
 export type ToolkitCreateInput = z.infer<typeof toolkitCreateSchema>;
 export const validateToolkitCreate = (p: unknown): ToolkitCreateInput => parseSchema(toolkitCreateSchema, p);
 
-export const toolkitUpdateSchema = z
+const toolkitUpdateSchema = z
   .object(baseShape)
   .partial()
   .strict()

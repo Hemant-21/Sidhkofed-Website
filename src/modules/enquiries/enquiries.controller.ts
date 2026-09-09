@@ -39,7 +39,7 @@ const EXPORT_HEADERS: (keyof EnquiryExportRow)[] = [
   'archived_at',
 ];
 
-export const list = wrap(async (req, res) => {
+const list = wrap(async (req, res) => {
   const page = resolvePageParams(req.query.page, req.query.page_size);
   const filters = parseEnquiryFilters(req);
   const ordering = parseEnquiryOrdering(req);
@@ -47,18 +47,18 @@ export const list = wrap(async (req, res) => {
   res.status(200).json(paginated(items, buildPagination(total, page), String(req.id)));
 });
 
-export const detail = wrap(async (req, res) => {
+const detail = wrap(async (req, res) => {
   const dto = await enquiryService.getById(req.params.id as string);
   res.status(200).json(success(dto, String(req.id)));
 });
 
-export const patch = wrap(async (req, res) => {
+const patch = wrap(async (req, res) => {
   const input = validateEnquiryAdminPatch(req.body);
   const dto = await enquiryService.patch(req.params.id as string, input, auditContext(req));
   res.status(200).json(success(dto, String(req.id), 'Enquiry updated.'));
 });
 
-export const archive = wrap(async (req, res) => {
+const archive = wrap(async (req, res) => {
   const dto = await enquiryService.archive(req.params.id as string, auditContext(req));
   res.status(200).json(success(dto, String(req.id), 'Enquiry archived.'));
 });
@@ -69,7 +69,7 @@ export const archive = wrap(async (req, res) => {
  * fast enough for an inline response. The API spec allows a 202 async path for large result
  * sets; a background job queue is not yet wired up for enquiries, so we always stream inline.
  */
-export const exportXlsx = wrap(async (req, res) => {
+const exportXlsx = wrap(async (req, res) => {
   const filters = parseEnquiryFilters(req);
   const rows = await enquiryService.exportRows(filters);
   const grid: string[][] = [

@@ -17,7 +17,7 @@ import { logger } from '@/shared/logger';
 import type { AuditContext } from '@/modules/audit/audit.service';
 import { withLock, type LockClient } from './scheduler.lock';
 import { schedulerRepository } from './scheduler.repository';
-import { emptyResult, type JobHandler, type JobRunResult, type SchedulerJobName } from './scheduler.types';
+import { type JobHandler, type JobRunResult, type SchedulerJobName } from './scheduler.types';
 
 const runLog = logger.child({ component: 'scheduler' });
 
@@ -26,7 +26,7 @@ const runLog = logger.child({ component: 'scheduler' });
  * `isSuperAdmin` so the content-edit/state guards treat it as an allow-all actor. Returns null when
  * the DB has no Super Admin yet (unseeded) — the caller then skips the tick safely.
  */
-export async function buildSystemActor(): Promise<AuditContext | null> {
+async function buildSystemActor(): Promise<AuditContext | null> {
   const userId = await schedulerRepository.findSystemActorId();
   if (!userId) return null;
   return {
@@ -117,5 +117,3 @@ function logResult(
     runLog.info(payload, 'scheduler job completed');
   }
 }
-
-export { emptyResult };

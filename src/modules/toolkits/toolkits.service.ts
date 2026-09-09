@@ -60,7 +60,7 @@ async function assertReferencesValid(refs: Parameters<typeof toolkitRepository.v
 }
 
 // ── Create ────────────────────────────────────────────────────────────────────
-export async function create(input: ToolkitCreateInput, ctx: AuditContext): Promise<ToolkitDetailDto> {
+async function create(input: ToolkitCreateInput, ctx: AuditContext): Promise<ToolkitDetailDto> {
   const userId = requireUser(ctx);
   if (input.cover_media_id) await assertLinkableCover(input.cover_media_id);
   await assertReferencesValid({ programmeSchemeId: input.programme_scheme_id, commodityId: input.commodity_id });
@@ -107,7 +107,7 @@ export async function create(input: ToolkitCreateInput, ctx: AuditContext): Prom
 }
 
 // ── Update ──────────────────────────────────────────────────────────────────────
-export async function update(id: string, input: ToolkitUpdateInput, ctx: AuditContext): Promise<ToolkitDetailDto> {
+async function update(id: string, input: ToolkitUpdateInput, ctx: AuditContext): Promise<ToolkitDetailDto> {
   const userId = requireUser(ctx);
   const existing = loaded(await toolkitRepository.findById(id));
   // Content Editors may edit drafts only; a published/archived toolkit requires a Publisher.
@@ -167,16 +167,16 @@ export async function update(id: string, input: ToolkitUpdateInput, ctx: AuditCo
 }
 
 // ── Read ───────────────────────────────────────────────────────────────────────
-export async function getById(id: string): Promise<ToolkitDetailDto> {
+async function getById(id: string): Promise<ToolkitDetailDto> {
   return toToolkitDetailDto(loaded(await toolkitRepository.findById(id)));
 }
 
-export interface ListResult<T> {
+interface ListResult<T> {
   items: T[];
   total: number;
 }
 
-export async function list(
+async function list(
   filters: ToolkitFilters,
   ordering: { field: ToolkitOrderingField; direction: 'asc' | 'desc' },
   skip: number,
@@ -187,7 +187,7 @@ export async function list(
 }
 
 // ── Lifecycle ──────────────────────────────────────────────────────────────────
-export async function lifecycle(id: string, action: LifecycleAction, ctx: AuditContext): Promise<ToolkitDetailDto> {
+async function lifecycle(id: string, action: LifecycleAction, ctx: AuditContext): Promise<ToolkitDetailDto> {
   const userId = requireUser(ctx);
   const existing = loaded(await toolkitRepository.findById(id));
   const change = applyLifecycle(
@@ -206,7 +206,7 @@ export async function lifecycle(id: string, action: LifecycleAction, ctx: AuditC
 }
 
 /** Resolve a toolkit by id for sub-resources (items). Throws 404 when missing. */
-export async function getRowById(id: string): Promise<ToolkitRow> {
+async function getRowById(id: string): Promise<ToolkitRow> {
   return loaded(await toolkitRepository.findById(id));
 }
 
@@ -214,14 +214,14 @@ export async function getRowById(id: string): Promise<ToolkitRow> {
  * Assert a toolkit is linkable from a per-event distribution (exists and not archived). Throws a
  * `toolkit_id`-keyed ValidationError otherwise. Used by the events toolkit-distributions service.
  */
-export async function assertLinkable(toolkitId: string): Promise<void> {
+async function assertLinkable(toolkitId: string): Promise<void> {
   const row = await toolkitRepository.findById(toolkitId);
   if (!row) throw new ValidationError({ toolkit_id: ['Toolkit not found.'] });
   if (row.archivedAt) throw new ValidationError({ toolkit_id: ['Cannot link an archived toolkit.'] });
 }
 
 // ── Public reads ─────────────────────────────────────────────────────────────
-export async function publicList(
+async function publicList(
   filters: ToolkitFilters,
   ordering: { field: ToolkitOrderingField; direction: 'asc' | 'desc' },
   page: { skip: number; take: number; page: number; pageSize: number },
@@ -235,7 +235,7 @@ export async function publicList(
   return result;
 }
 
-export async function publicDetailBySlug(slug: string): Promise<PublicToolkitDetailDto> {
+async function publicDetailBySlug(slug: string): Promise<PublicToolkitDetailDto> {
   const cacheKey = `${PUBLIC_CACHE_PREFIX}:slug:${slug}`;
   const cached = await cacheService.getJson<PublicToolkitDetailDto>(cacheKey);
   if (cached) return cached;
@@ -247,7 +247,7 @@ export async function publicDetailBySlug(slug: string): Promise<PublicToolkitDet
 }
 
 /** Resolve a published, publicly-visible toolkit by slug (for the distribution-summary endpoint). */
-export async function publicRowBySlug(slug: string): Promise<ToolkitRow> {
+async function publicRowBySlug(slug: string): Promise<ToolkitRow> {
   const row = await toolkitRepository.findBySlug(slug, { public: true });
   if (!row) throw new NotFoundError('Toolkit not found.');
   return row;

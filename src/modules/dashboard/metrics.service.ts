@@ -40,7 +40,7 @@ function asUniqueConflict(err: unknown): ConflictError | null {
   return new ConflictError(DUPLICATE);
 }
 
-export async function create(reportId: string, input: MetricCreateInput, ctx: AuditContext): Promise<MetricDto> {
+async function create(reportId: string, input: MetricCreateInput, ctx: AuditContext): Promise<MetricDto> {
   const userId = requireUser(ctx);
   await assertReportExists(reportId);
   await assertReferencesValid({
@@ -86,7 +86,7 @@ export async function create(reportId: string, input: MetricCreateInput, ctx: Au
   return toMetricDto(created);
 }
 
-export async function update(
+async function update(
   reportId: string,
   id: string,
   input: MetricUpdateInput,
@@ -155,7 +155,7 @@ export async function update(
   return toMetricDto(updated);
 }
 
-export async function remove(reportId: string, id: string, ctx: AuditContext): Promise<void> {
+async function remove(reportId: string, id: string, ctx: AuditContext): Promise<void> {
   await assertReportExists(reportId);
   const existing = loaded(await dashboardRepository.findMetricById(id));
   if (existing.reportId !== reportId) throw new NotFoundError('Dashboard metric not found.');
@@ -167,12 +167,12 @@ export async function remove(reportId: string, id: string, ctx: AuditContext): P
   await invalidateDashboardCache();
 }
 
-export interface MetricListResult {
+interface MetricListResult {
   items: MetricDto[];
   total: number;
 }
 
-export async function list(
+async function list(
   reportId: string,
   filters: MetricFilters,
   ordering: { field: MetricOrderingField; direction: 'asc' | 'desc' },

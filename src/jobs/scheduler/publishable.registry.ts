@@ -1,7 +1,7 @@
 /**
  * Registry of every publishable resource the scheduler maintains.
  *
- * One entry per model carrying the publishing-workflow mixin (16 total). Each entry binds:
+ * One entry per model carrying the publishing-workflow mixin (15 total). Each entry binds:
  *   - `model`: the Prisma delegate name used for generic mixin DISCOVERY (scheduler.repository).
  *   - `publish`: the owning module's `service.lifecycle(id,'publish',ctx)` — so scheduled
  *     publishing REUSES the existing publish service and NEVER duplicates publish logic, audit, or
@@ -24,7 +24,6 @@ import { institutionService } from '@/modules/institutions/institutions.service'
 import { officialCommunicationService } from '@/modules/official-communications/official-communications.service';
 import { tenderService } from '@/modules/tenders/tenders.service';
 import { procurementUpdateService } from '@/modules/procurement-updates/procurement-updates.service';
-import { pageService } from '@/modules/pages/pages.service';
 import { faqService } from '@/modules/faqs/faqs.service';
 import { digitalServiceService } from '@/modules/digital-services/digital-services.service';
 import { membershipService } from '@/modules/memberships/memberships.service';
@@ -53,7 +52,7 @@ function resource(key: string, model: MixinModelName, service: LifecycleService)
 /**
  * Every publishable resource, in dependency-tier order. Covers the modules the Phase 14 spec lists
  * for scheduled publishing (Events, News, Programmes, Toolkits, Institutions, Communications,
- * Tenders, Procurement, Pages, FAQs, Digital Services, Membership, Dashboard Reports) plus the two
+ * Tenders, Procurement, FAQs, Digital Services, Membership, Dashboard Reports) plus the two
  * remaining mixin-bearing media resources (Galleries, Videos) for completeness.
  */
 export const PUBLISHABLE_RESOURCES: readonly PublishableResource[] = [
@@ -68,7 +67,6 @@ export const PUBLISHABLE_RESOURCES: readonly PublishableResource[] = [
   resource('official_communication', 'officialCommunication', officialCommunicationService),
   resource('tender', 'tender', tenderService),
   resource('procurement_update', 'procurementUpdate', procurementUpdateService),
-  resource('page', 'page', pageService),
   resource('faq', 'faq', faqService),
   resource('digital_service', 'digitalService', digitalServiceService),
   resource('institutional_membership', 'institutionalMembership', membershipService),

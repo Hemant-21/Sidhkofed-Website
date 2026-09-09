@@ -15,8 +15,8 @@ import { ValidationError } from '@/shared/errors';
 import { detectFamily } from '@/modules/media/media.validation';
 
 /** Approved template columns (must match dataset-row validator field names). */
-export const REQUIRED_COLUMNS = ['metric_key', 'label_en'] as const;
-export const ALLOWED_COLUMNS = [
+const REQUIRED_COLUMNS = ['metric_key', 'label_en'] as const;
+const ALLOWED_COLUMNS = [
   'metric_key',
   'label_en',
   'label_hi',
@@ -188,7 +188,7 @@ function firstSheetPath(files: Record<string, Uint8Array>): string | null {
   return sheets[0] ?? null;
 }
 
-export function parseXlsx(buffer: Buffer): string[][] {
+function parseXlsx(buffer: Buffer): string[][] {
   let files: Record<string, Uint8Array>;
   try {
     files = unzipSync(new Uint8Array(buffer));

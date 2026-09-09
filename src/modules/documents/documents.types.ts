@@ -32,12 +32,6 @@ export interface DocumentFilters {
   search?: string; // metadata keyword (title/description) — FTS-ready seam
 }
 
-/** The public predicate is always applied for public reads (visibility + is_public). */
-export interface PublicDocumentFilters extends DocumentFilters {
-  /** Forces show_in_knowledge_centre=true (the dedicated Knowledge Centre surface). */
-  knowledgeCentreOnly?: boolean;
-}
-
 /** Allowed ordering fields for admin + public document lists (API spec §5). */
 export const DOCUMENT_ORDERING_FIELDS = [
   'publication_date',

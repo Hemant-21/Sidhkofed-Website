@@ -13,7 +13,7 @@ import { toAuditLogDto } from './audit.dto';
 const ORDERING_ALLOW = ['created_at'] as const;
 
 /** GET /admin/audit-logs — filtered, paginated list. */
-export function list(req: Request, res: Response, next: NextFunction): void {
+function list(req: Request, res: Response, next: NextFunction): void {
   let query;
   try {
     query = validateAuditQuery(req.query);
@@ -46,7 +46,7 @@ export function list(req: Request, res: Response, next: NextFunction): void {
 }
 
 /** GET /admin/audit-logs/:id */
-export function detail(req: Request, res: Response, next: NextFunction): void {
+function detail(req: Request, res: Response, next: NextFunction): void {
   const id = req.params.id as string;
   auditRepository
     .findById(id)

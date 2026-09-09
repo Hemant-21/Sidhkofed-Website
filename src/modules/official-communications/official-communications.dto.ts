@@ -8,7 +8,7 @@
 import { toDocumentRef, toPublicDocumentRef, type DocumentRef } from '@/modules/documents/documents.dto';
 import type { OfficialCommunicationRow } from './official-communications.repository';
 
-export interface MasterRef {
+interface MasterRef {
   id: string;
   slug: string;
   name_en: string;

@@ -38,7 +38,7 @@ const ORDER_COLUMN: Record<
   created_at: 'createdAt',
 };
 
-export interface OfficialCommunicationQueryOptions {
+interface OfficialCommunicationQueryOptions {
   public?: boolean;
   ordering: { field: OfficialCommunicationOrderingField; direction: 'asc' | 'desc' };
 }
@@ -88,22 +88,22 @@ export function buildWhere(
   return where;
 }
 
-export async function slugExists(slug: string, db: Db = prisma): Promise<boolean> {
+async function slugExists(slug: string, db: Db = prisma): Promise<boolean> {
   return (await db.officialCommunication.count({ where: { slug } })) > 0;
 }
 
-export async function create(
+async function create(
   data: Prisma.OfficialCommunicationUncheckedCreateInput,
   db: Db = prisma,
 ): Promise<OfficialCommunicationRow> {
   return db.officialCommunication.create({ data, include: communicationInclude });
 }
 
-export async function findById(id: string, db: Db = prisma): Promise<OfficialCommunicationRow | null> {
+async function findById(id: string, db: Db = prisma): Promise<OfficialCommunicationRow | null> {
   return db.officialCommunication.findUnique({ where: { id }, include: communicationInclude });
 }
 
-export async function findBySlug(
+async function findBySlug(
   slug: string,
   opts: { public?: boolean } = {},
 ): Promise<OfficialCommunicationRow | null> {
@@ -114,7 +114,7 @@ export async function findBySlug(
   });
 }
 
-export async function update(
+async function update(
   id: string,
   data: Prisma.OfficialCommunicationUncheckedUpdateInput,
   db: Db = prisma,
@@ -122,7 +122,7 @@ export async function update(
   return db.officialCommunication.update({ where: { id }, data, include: communicationInclude });
 }
 
-export async function list(
+async function list(
   f: OfficialCommunicationFilters,
   skip: number,
   take: number,
@@ -139,7 +139,7 @@ export async function list(
   return { rows, total };
 }
 
-export function transaction<T>(fn: (tx: Prisma.TransactionClient) => Promise<T>): Promise<T> {
+function transaction<T>(fn: (tx: Prisma.TransactionClient) => Promise<T>): Promise<T> {
   return prisma.$transaction(fn);
 }
 
@@ -148,12 +148,12 @@ export function transaction<T>(fn: (tx: Prisma.TransactionClient) => Promise<T>)
  * optional linked document must exist (FK Restrict guarantees integrity, but we return a clean 422
  * instead of a raw FK error). Returns field-keyed errors ({} when all valid).
  */
-export interface OfficialCommunicationRefs {
+interface OfficialCommunicationRefs {
   communicationTypeId?: string;
   documentId?: string | null;
 }
 
-export async function validateReferences(refs: OfficialCommunicationRefs): Promise<Record<string, string[]>> {
+async function validateReferences(refs: OfficialCommunicationRefs): Promise<Record<string, string[]>> {
   const errors: Record<string, string[]> = {};
   if (refs.communicationTypeId !== undefined) {
     const row = await prisma.communicationType.findUnique({

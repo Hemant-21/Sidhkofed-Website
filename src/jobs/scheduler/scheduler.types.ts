@@ -19,7 +19,7 @@ export const SCHEDULER_JOBS = {
 export type SchedulerJobName = (typeof SCHEDULER_JOBS)[keyof typeof SCHEDULER_JOBS];
 
 /** A single error captured during a run (the job continues past it where safe). */
-export interface JobError {
+interface JobError {
   /** Resource/module key the failure relates to, when applicable. */
   module?: string;
   /** Affected record id, when applicable. */

@@ -31,7 +31,6 @@ const URL_PREFIX: Record<ContentType, string> = {
   official_communication: '/official-communications',
   tender: '/tenders',
   procurement_update: '/procurement-updates',
-  page: '/pages',
 };
 
 export function publicUrlFor(type: ContentType, slug: string): string {

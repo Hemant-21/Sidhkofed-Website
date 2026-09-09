@@ -30,45 +30,45 @@ function resolveDef(req: Request, requirePublic = false): MasterDefinition {
 }
 
 // ── Admin ───────────────────────────────────────────────────────────────────
-export const list = wrap(async (req) => {
+const list = wrap(async (req) => {
   const def = resolveDef(req);
   const page = resolvePageParams(req.query.page, req.query.page_size);
   const { items, total } = await baseMasterService.adminList(def, req.query as Record<string, unknown>, page);
   return { status: 200, body: paginated(items, buildPagination(total, page), String(req.id)) };
 });
 
-export const create = wrap(async (req) => {
+const create = wrap(async (req) => {
   const def = resolveDef(req);
   const dto = await baseMasterService.create(def, req.body, auditContext(req));
   return { status: 201, body: success(dto, String(req.id), `${def.label} created.`) };
 });
 
-export const detail = wrap(async (req) => {
+const detail = wrap(async (req) => {
   const def = resolveDef(req);
   const dto = await baseMasterService.getById(def, req.params.id as string);
   return { status: 200, body: success(dto, String(req.id)) };
 });
 
-export const patch = wrap(async (req) => {
+const patch = wrap(async (req) => {
   const def = resolveDef(req);
   const dto = await baseMasterService.update(def, req.params.id as string, req.body, auditContext(req));
   return { status: 200, body: success(dto, String(req.id), `${def.label} updated.`) };
 });
 
-export const activate = wrap(async (req) => {
+const activate = wrap(async (req) => {
   const def = resolveDef(req);
   const dto = await baseMasterService.setActive(def, req.params.id as string, true, auditContext(req));
   return { status: 200, body: success(dto, String(req.id), `${def.label} activated.`) };
 });
 
-export const deactivate = wrap(async (req) => {
+const deactivate = wrap(async (req) => {
   const def = resolveDef(req);
   const dto = await baseMasterService.setActive(def, req.params.id as string, false, auditContext(req));
   return { status: 200, body: success(dto, String(req.id), `${def.label} deactivated.`) };
 });
 
 // ── Public (active records only; cached) ─────────────────────────────────────
-export const publicList = wrap(async (req) => {
+const publicList = wrap(async (req) => {
   const def = resolveDef(req, true);
   const page = resolvePageParams(req.query.page, req.query.page_size);
   const { items, total } = await baseMasterService.publicList(def, req.query as Record<string, unknown>, page);

@@ -34,7 +34,7 @@ const ORDER_COLUMN: Record<ProcurementUpdateOrderingField, keyof Prisma.Procurem
   created_at: 'createdAt',
 };
 
-export interface ProcurementUpdateQueryOptions {
+interface ProcurementUpdateQueryOptions {
   public?: boolean;
   ordering: { field: ProcurementUpdateOrderingField; direction: 'asc' | 'desc' };
 }
@@ -89,22 +89,22 @@ export function buildWhere(
   return where;
 }
 
-export async function slugExists(slug: string, db: Db = prisma): Promise<boolean> {
+async function slugExists(slug: string, db: Db = prisma): Promise<boolean> {
   return (await db.procurementUpdate.count({ where: { slug } })) > 0;
 }
 
-export async function create(
+async function create(
   data: Prisma.ProcurementUpdateUncheckedCreateInput,
   db: Db = prisma,
 ): Promise<ProcurementUpdateRow> {
   return db.procurementUpdate.create({ data, include: procurementInclude });
 }
 
-export async function findById(id: string, db: Db = prisma): Promise<ProcurementUpdateRow | null> {
+async function findById(id: string, db: Db = prisma): Promise<ProcurementUpdateRow | null> {
   return db.procurementUpdate.findUnique({ where: { id }, include: procurementInclude });
 }
 
-export async function findBySlug(slug: string, opts: { public?: boolean } = {}): Promise<ProcurementUpdateRow | null> {
+async function findBySlug(slug: string, opts: { public?: boolean } = {}): Promise<ProcurementUpdateRow | null> {
   if (!opts.public) return prisma.procurementUpdate.findUnique({ where: { slug }, include: procurementInclude });
   return prisma.procurementUpdate.findFirst({
     where: { ...buildWhere({}, { public: true }), slug },
@@ -112,7 +112,7 @@ export async function findBySlug(slug: string, opts: { public?: boolean } = {}):
   });
 }
 
-export async function update(
+async function update(
   id: string,
   data: Prisma.ProcurementUpdateUncheckedUpdateInput,
   db: Db = prisma,
@@ -120,7 +120,7 @@ export async function update(
   return db.procurementUpdate.update({ where: { id }, data, include: procurementInclude });
 }
 
-export async function list(
+async function list(
   f: ProcurementUpdateFilters,
   skip: number,
   take: number,
@@ -137,7 +137,7 @@ export async function list(
   return { rows, total };
 }
 
-export function transaction<T>(fn: (tx: Prisma.TransactionClient) => Promise<T>): Promise<T> {
+function transaction<T>(fn: (tx: Prisma.TransactionClient) => Promise<T>): Promise<T> {
   return prisma.$transaction(fn);
 }
 
@@ -146,7 +146,7 @@ export function transaction<T>(fn: (tx: Prisma.TransactionClient) => Promise<T>)
  * must be active when set; a block must be active AND belong to the chosen district (when both set);
  * the programme + document must exist when set. Returns field-keyed errors ({} when all valid).
  */
-export interface ProcurementUpdateRefs {
+interface ProcurementUpdateRefs {
   procurementUpdateTypeId?: string;
   commodityId?: string | null;
   districtId?: string | null;
@@ -155,7 +155,7 @@ export interface ProcurementUpdateRefs {
   documentId?: string | null;
 }
 
-export async function validateReferences(refs: ProcurementUpdateRefs): Promise<Record<string, string[]>> {
+async function validateReferences(refs: ProcurementUpdateRefs): Promise<Record<string, string[]>> {
   const errors: Record<string, string[]> = {};
 
   if (refs.procurementUpdateTypeId !== undefined) {

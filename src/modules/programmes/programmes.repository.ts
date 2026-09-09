@@ -33,7 +33,7 @@ const ORDER_COLUMN: Record<ProgrammeOrderingField, keyof Prisma.ProgrammeSchemeO
   created_at: 'createdAt',
 };
 
-export interface ProgrammeQueryOptions {
+interface ProgrammeQueryOptions {
   public?: boolean;
   ordering: { field: ProgrammeOrderingField; direction: 'asc' | 'desc' };
 }
@@ -76,7 +76,7 @@ export function buildWhere(f: ProgrammeFilters, opts: { public?: boolean }): Pri
   return where;
 }
 
-export async function slugExists(slug: string, db: Db = prisma): Promise<boolean> {
+async function slugExists(slug: string, db: Db = prisma): Promise<boolean> {
   return (await db.programmeScheme.count({ where: { slug } })) > 0;
 }
 
@@ -86,7 +86,7 @@ export async function slugExists(slug: string, db: Db = prisma): Promise<boolean
  * programmes named "Health Scheme" would both be created. `excludeId` skips the record being
  * updated. Compares trimmed titles via Postgres case-insensitive equality.
  */
-export async function nameExists(titleEn: string, excludeId: string | undefined, db: Db = prisma): Promise<boolean> {
+async function nameExists(titleEn: string, excludeId: string | undefined, db: Db = prisma): Promise<boolean> {
   return (
     (await db.programmeScheme.count({
       where: {
@@ -97,24 +97,24 @@ export async function nameExists(titleEn: string, excludeId: string | undefined,
   );
 }
 
-export async function create(data: Prisma.ProgrammeSchemeUncheckedCreateInput, db: Db = prisma): Promise<ProgrammeRow> {
+async function create(data: Prisma.ProgrammeSchemeUncheckedCreateInput, db: Db = prisma): Promise<ProgrammeRow> {
   return db.programmeScheme.create({ data, include: programmeInclude });
 }
 
-export async function findById(id: string, db: Db = prisma): Promise<ProgrammeRow | null> {
+async function findById(id: string, db: Db = prisma): Promise<ProgrammeRow | null> {
   return db.programmeScheme.findUnique({ where: { id }, include: programmeInclude });
 }
 
-export async function findBySlug(slug: string, opts: { public?: boolean } = {}): Promise<ProgrammeRow | null> {
+async function findBySlug(slug: string, opts: { public?: boolean } = {}): Promise<ProgrammeRow | null> {
   if (!opts.public) return prisma.programmeScheme.findUnique({ where: { slug }, include: programmeInclude });
   return prisma.programmeScheme.findFirst({ where: { ...buildWhere({}, { public: true }), slug }, include: programmeInclude });
 }
 
-export async function update(id: string, data: Prisma.ProgrammeSchemeUncheckedUpdateInput, db: Db = prisma): Promise<ProgrammeRow> {
+async function update(id: string, data: Prisma.ProgrammeSchemeUncheckedUpdateInput, db: Db = prisma): Promise<ProgrammeRow> {
   return db.programmeScheme.update({ where: { id }, data, include: programmeInclude });
 }
 
-export async function list(
+async function list(
   f: ProgrammeFilters,
   skip: number,
   take: number,
@@ -131,19 +131,19 @@ export async function list(
   return { rows, total };
 }
 
-export function transaction<T>(fn: (tx: Prisma.TransactionClient) => Promise<T>): Promise<T> {
+function transaction<T>(fn: (tx: Prisma.TransactionClient) => Promise<T>): Promise<T> {
   return prisma.$transaction(fn);
 }
 
 // ── Junction writers (called inside the service's transaction) ─────────────────
-export async function setCommodities(programmeSchemeId: string, commodityIds: string[], db: Db): Promise<void> {
+async function setCommodities(programmeSchemeId: string, commodityIds: string[], db: Db): Promise<void> {
   await db.programmeCommodity.deleteMany({ where: { programmeSchemeId } });
   if (commodityIds.length > 0) {
     await db.programmeCommodity.createMany({ data: commodityIds.map((commodityId) => ({ programmeSchemeId, commodityId })) });
   }
 }
 
-export async function setPermittedTrainingTypes(programmeSchemeId: string, trainingTypeIds: string[], db: Db): Promise<void> {
+async function setPermittedTrainingTypes(programmeSchemeId: string, trainingTypeIds: string[], db: Db): Promise<void> {
   await db.programmePermittedTrainingType.deleteMany({ where: { programmeSchemeId } });
   if (trainingTypeIds.length > 0) {
     await db.programmePermittedTrainingType.createMany({
@@ -153,12 +153,12 @@ export async function setPermittedTrainingTypes(programmeSchemeId: string, train
 }
 
 /** Validate referenced masters exist AND are active. Returns field-keyed errors ({} when valid). */
-export interface ProgrammeRefs {
+interface ProgrammeRefs {
   commodityIds?: string[];
   permittedTrainingTypeIds?: string[];
 }
 
-export async function validateReferences(refs: ProgrammeRefs): Promise<Record<string, string[]>> {
+async function validateReferences(refs: ProgrammeRefs): Promise<Record<string, string[]>> {
   const errors: Record<string, string[]> = {};
   await assertActiveSet('commodity_ids', refs.commodityIds, (ids) =>
     prisma.commodity.findMany({ where: { id: { in: ids }, isActive: true }, select: { id: true } }), errors);

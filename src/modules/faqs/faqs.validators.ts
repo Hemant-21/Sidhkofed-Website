@@ -24,7 +24,7 @@ const baseShape = {
   ...workflowShape,
 };
 
-export const faqCreateSchema = z
+const faqCreateSchema = z
   .object(baseShape)
   .strict()
   .superRefine((data, ctx) => {
@@ -33,7 +33,7 @@ export const faqCreateSchema = z
 export type FaqCreateInput = z.infer<typeof faqCreateSchema>;
 export const validateFaqCreate = (p: unknown): FaqCreateInput => parseSchema(faqCreateSchema, p);
 
-export const faqUpdateSchema = z
+const faqUpdateSchema = z
   .object(baseShape)
   .partial()
   .strict()

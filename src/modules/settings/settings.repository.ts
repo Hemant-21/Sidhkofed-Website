@@ -3,22 +3,22 @@
  */
 import { prisma } from '@/db/prisma';
 
-export interface SettingRow {
+interface SettingRow {
   key: string;
   valueText: string | null;
   valueJson: unknown;
 }
 
-export async function findAll(): Promise<SettingRow[]> {
+async function findAll(): Promise<SettingRow[]> {
   return prisma.setting.findMany({ select: { key: true, valueText: true, valueJson: true } });
 }
 
-export async function findByKey(key: string): Promise<SettingRow | null> {
+async function findByKey(key: string): Promise<SettingRow | null> {
   return prisma.setting.findUnique({ where: { key }, select: { key: true, valueText: true, valueJson: true } });
 }
 
 /** Upsert a single setting key (idempotent). */
-export async function upsert(
+async function upsert(
   key: string,
   valueText: string | null,
   valueJson: unknown,

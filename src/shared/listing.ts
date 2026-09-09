@@ -5,7 +5,7 @@
  */
 import { ValidationError } from './errors';
 
-export type SortDirection = 'asc' | 'desc';
+type SortDirection = 'asc' | 'desc';
 
 export interface OrderBy {
   field: string;

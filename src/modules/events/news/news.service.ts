@@ -67,7 +67,7 @@ async function assertLinkableCover(mediaId: string): Promise<void> {
 }
 
 // ── Publish an event as news (POST /admin/events/{id}/publish-as-news) ─────────
-export async function publishFromEvent(eventId: string, input: PublishAsNewsInput, ctx: AuditContext): Promise<NewsDetailDto> {
+async function publishFromEvent(eventId: string, input: PublishAsNewsInput, ctx: AuditContext): Promise<NewsDetailDto> {
   const userId = requireUser(ctx);
   // Source event must exist and be completed (only completed events become news, §4.1).
   const event = await eventService.getById(eventId); // throws NotFound if missing
@@ -137,7 +137,7 @@ export async function publishFromEvent(eventId: string, input: PublishAsNewsInpu
 }
 
 // ── Update (PATCH — never changes the source event link or publication state) ──
-export async function update(id: string, input: NewsUpdateInput, ctx: AuditContext): Promise<NewsDetailDto> {
+async function update(id: string, input: NewsUpdateInput, ctx: AuditContext): Promise<NewsDetailDto> {
   const userId = requireUser(ctx);
   const existing = loaded(await newsRepository.findById(id));
   const coverChanging = input.cover_media_id !== undefined && input.cover_media_id !== existing.coverMediaId;
@@ -188,16 +188,16 @@ export async function update(id: string, input: NewsUpdateInput, ctx: AuditConte
   return toNewsDetailDto(updated);
 }
 
-export async function getById(id: string): Promise<NewsDetailDto> {
+async function getById(id: string): Promise<NewsDetailDto> {
   return toNewsDetailDto(loaded(await newsRepository.findById(id)));
 }
 
-export interface ListResult<T> {
+interface ListResult<T> {
   items: T[];
   total: number;
 }
 
-export async function list(
+async function list(
   filters: NewsFilters,
   ordering: { field: NewsOrderingField; direction: 'asc' | 'desc' },
   skip: number,
@@ -207,7 +207,7 @@ export async function list(
   return { items: rows.map(toNewsSummaryDto), total };
 }
 
-export async function lifecycle(id: string, action: LifecycleAction, ctx: AuditContext): Promise<NewsDetailDto> {
+async function lifecycle(id: string, action: LifecycleAction, ctx: AuditContext): Promise<NewsDetailDto> {
   const userId = requireUser(ctx);
   const existing = loaded(await newsRepository.findById(id));
   const change = applyLifecycle(
@@ -227,7 +227,7 @@ export async function lifecycle(id: string, action: LifecycleAction, ctx: AuditC
   return toNewsDetailDto(updated);
 }
 
-export async function publicList(
+async function publicList(
   filters: NewsFilters,
   ordering: { field: NewsOrderingField; direction: 'asc' | 'desc' },
   page: { skip: number; take: number; page: number; pageSize: number },
@@ -241,7 +241,7 @@ export async function publicList(
   return result;
 }
 
-export async function publicDetailBySlug(slug: string): Promise<PublicNewsDetailDto> {
+async function publicDetailBySlug(slug: string): Promise<PublicNewsDetailDto> {
   const cacheKey = `${PUBLIC_CACHE_PREFIX}:slug:${slug}`;
   const cached = await cacheService.getJson<PublicNewsDetailDto>(cacheKey);
   if (cached) return cached;

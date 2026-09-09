@@ -15,7 +15,7 @@
  */
 import { logger } from '@/shared/logger';
 
-export type ScanStatus = 'clean' | 'infected' | 'unscanned' | 'unconfigured' | 'error';
+type ScanStatus = 'clean' | 'infected' | 'unscanned' | 'unconfigured' | 'error';
 
 export interface ScanResult {
   status: ScanStatus;
@@ -47,7 +47,7 @@ class UnconfiguredScanner implements MalwareScanner {
 }
 
 /** The active scanner. Swap this for a real engine during infra wiring. */
-export let activeScanner: MalwareScanner = new UnconfiguredScanner();
+let activeScanner: MalwareScanner = new UnconfiguredScanner();
 
 /** Test/infra seam to install a real scanner. */
 export function setMalwareScanner(scanner: MalwareScanner): void {

@@ -19,13 +19,13 @@ const wrap =
       .catch(next);
   };
 
-export const create = wrap(async (req) => {
+const create = wrap(async (req) => {
   const input = validateDigitalServiceCreate(req.body);
   const dto = await digitalServiceService.create(input, auditContext(req));
   return { status: 201, body: success(dto, String(req.id), 'Digital service created.') };
 });
 
-export const list = wrap(async (req) => {
+const list = wrap(async (req) => {
   const page = resolvePageParams(req.query.page, req.query.page_size);
   const filters = parseDigitalServiceFilters(req, { admin: true });
   const ordering = parseDigitalServiceOrdering(req);
@@ -33,12 +33,12 @@ export const list = wrap(async (req) => {
   return { status: 200, body: paginated(items, buildPagination(total, page), String(req.id)) };
 });
 
-export const detail = wrap(async (req) => {
+const detail = wrap(async (req) => {
   const dto = await digitalServiceService.getById(req.params.id as string);
   return { status: 200, body: success(dto, String(req.id)) };
 });
 
-export const patch = wrap(async (req) => {
+const patch = wrap(async (req) => {
   const input = validateDigitalServiceUpdate(req.body);
   const dto = await digitalServiceService.update(req.params.id as string, input, auditContext(req));
   return { status: 200, body: success(dto, String(req.id), 'Digital service updated.') };
@@ -50,9 +50,9 @@ const lifecycle = (action: LifecycleAction) =>
     return { status: 200, body: success(dto, String(req.id), `Digital service ${action}ed.`) };
   });
 
-export const publish = lifecycle('publish');
-export const unpublish = lifecycle('unpublish');
-export const archive = lifecycle('archive');
-export const restore = lifecycle('restore');
+const publish = lifecycle('publish');
+const unpublish = lifecycle('unpublish');
+const archive = lifecycle('archive');
+const restore = lifecycle('restore');
 
 export const digitalServiceController = { create, list, detail, patch, publish, unpublish, archive, restore };

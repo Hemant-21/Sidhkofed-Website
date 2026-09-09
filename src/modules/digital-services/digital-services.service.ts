@@ -66,7 +66,7 @@ async function assertLinkableIcon(mediaId: string): Promise<void> {
 }
 
 // ── Create ────────────────────────────────────────────────────────────────────
-export async function create(input: DigitalServiceCreateInput, ctx: AuditContext): Promise<DigitalServiceDetailDto> {
+async function create(input: DigitalServiceCreateInput, ctx: AuditContext): Promise<DigitalServiceDetailDto> {
   const userId = requireUser(ctx);
   if (input.icon_media_id) await assertLinkableIcon(input.icon_media_id);
 
@@ -109,7 +109,7 @@ export async function create(input: DigitalServiceCreateInput, ctx: AuditContext
 }
 
 // ── Update (PATCH — partial; never transitions publication state, never changes slug) ──
-export async function update(
+async function update(
   id: string,
   input: DigitalServiceUpdateInput,
   ctx: AuditContext,
@@ -165,16 +165,16 @@ export async function update(
 }
 
 // ── Read ───────────────────────────────────────────────────────────────────────
-export async function getById(id: string): Promise<DigitalServiceDetailDto> {
+async function getById(id: string): Promise<DigitalServiceDetailDto> {
   return toDigitalServiceDetailDto(loaded(await digitalServiceRepository.findById(id)));
 }
 
-export interface ListResult<T> {
+interface ListResult<T> {
   items: T[];
   total: number;
 }
 
-export async function list(
+async function list(
   filters: DigitalServiceFilters,
   ordering: { field: DigitalServiceOrderingField; direction: 'asc' | 'desc' },
   skip: number,
@@ -185,7 +185,7 @@ export async function list(
 }
 
 // ── Lifecycle ──────────────────────────────────────────────────────────────────
-export async function lifecycle(
+async function lifecycle(
   id: string,
   action: LifecycleAction,
   ctx: AuditContext,
@@ -208,7 +208,7 @@ export async function lifecycle(
 }
 
 // ── Public reads (visibility predicate + in-process cache) ──────────────────────────
-export async function publicList(
+async function publicList(
   filters: DigitalServiceFilters,
   ordering: { field: DigitalServiceOrderingField; direction: 'asc' | 'desc' },
   page: { skip: number; take: number; page: number; pageSize: number },

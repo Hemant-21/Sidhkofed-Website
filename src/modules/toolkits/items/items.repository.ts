@@ -7,14 +7,14 @@ import { prisma } from '@/db/prisma';
 
 type Db = PrismaClient | Prisma.TransactionClient;
 
-export async function listByToolkit(toolkitId: string, db: Db = prisma): Promise<Prisma.ToolkitItemGetPayload<true>[]> {
+async function listByToolkit(toolkitId: string, db: Db = prisma): Promise<Prisma.ToolkitItemGetPayload<true>[]> {
   return db.toolkitItem.findMany({
     where: { toolkitId },
     orderBy: [{ displayOrder: 'asc' }, { createdAt: 'asc' }],
   });
 }
 
-export async function findByIdForToolkit(
+async function findByIdForToolkit(
   id: string,
   toolkitId: string,
   db: Db = prisma,
@@ -23,7 +23,7 @@ export async function findByIdForToolkit(
 }
 
 /** Case-insensitive duplicate-name check within the parent toolkit (optionally excluding one id). */
-export async function nameExists(
+async function nameExists(
   toolkitId: string,
   nameEn: string,
   excludeId: string | undefined,
@@ -39,20 +39,20 @@ export async function nameExists(
   return count > 0;
 }
 
-export async function create(data: Prisma.ToolkitItemUncheckedCreateInput, db: Db = prisma): Promise<Prisma.ToolkitItemGetPayload<true>> {
+async function create(data: Prisma.ToolkitItemUncheckedCreateInput, db: Db = prisma): Promise<Prisma.ToolkitItemGetPayload<true>> {
   return db.toolkitItem.create({ data });
 }
 
-export async function update(id: string, data: Prisma.ToolkitItemUncheckedUpdateInput, db: Db = prisma): Promise<Prisma.ToolkitItemGetPayload<true>> {
+async function update(id: string, data: Prisma.ToolkitItemUncheckedUpdateInput, db: Db = prisma): Promise<Prisma.ToolkitItemGetPayload<true>> {
   return db.toolkitItem.update({ where: { id }, data });
 }
 
-export async function remove(id: string, db: Db = prisma): Promise<void> {
+async function remove(id: string, db: Db = prisma): Promise<void> {
   await db.toolkitItem.delete({ where: { id } });
 }
 
 /** Active item ids for a toolkit — used to validate distribution-item references (cross-module). */
-export async function activeItemIds(toolkitId: string, db: Db = prisma): Promise<Set<string>> {
+async function activeItemIds(toolkitId: string, db: Db = prisma): Promise<Set<string>> {
   const rows = await db.toolkitItem.findMany({ where: { toolkitId, isActive: true }, select: { id: true } });
   return new Set(rows.map((r) => r.id));
 }

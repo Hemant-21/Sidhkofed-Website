@@ -63,7 +63,7 @@ export interface AuditContext {
 }
 
 /** What was affected and how. */
-export interface AuditDetails {
+interface AuditDetails {
   /** Entity/module key, e.g. `settings`, `media`, `galleries`. */
   module: string;
   /** Affected record id (UUID) or null. */
@@ -77,7 +77,7 @@ export interface AuditDetails {
 }
 
 // ── Legacy semantic-action API (Phase 2 compatibility) ───────────────────────
-export type AuditAction =
+type AuditAction =
   | 'create' | 'update' | 'publish' | 'unpublish' | 'archive' | 'restore'
   | 'file_replace' | 'media_archive' | 'user_change' | 'master_change'
   | 'settings_change' | 'login' | 'logout'
@@ -92,7 +92,7 @@ const DB_ACTION_BY_SEMANTIC: Record<AuditAction, PrismaAuditAction> = {
   permission_assigned: 'update', permission_removed: 'update',
 };
 
-export interface AuditEntry {
+interface AuditEntry {
   userId: string | null;
   action: AuditAction;
   module: string;
@@ -154,7 +154,7 @@ async function insert(params: {
 }
 
 /** Legacy semantic-action record (used by the auth module). */
-export async function recordAudit(entry: AuditEntry): Promise<void> {
+async function recordAudit(entry: AuditEntry): Promise<void> {
   try {
     await insert({
       userId: entry.userId,
@@ -173,7 +173,7 @@ export async function recordAudit(entry: AuditEntry): Promise<void> {
 }
 
 /** Generic event-name based audit write (the preferred API for new modules). */
-export async function auditLog(event: AuditEventName, ctx: AuditContext, details: AuditDetails): Promise<void> {
+async function auditLog(event: AuditEventName, ctx: AuditContext, details: AuditDetails): Promise<void> {
   try {
     const metadata: Record<string, unknown> = { event, ...(details.metadata ?? {}) };
     if (details.oldValues) metadata.old_values = details.oldValues;
@@ -200,23 +200,23 @@ const lifecycle =
   (ctx: AuditContext, module: string, recordId: string, opts: Partial<AuditDetails> = {}): Promise<void> =>
     auditLog(event, ctx, { module, recordId, ...opts });
 
-export const auditCreate = (
+const auditCreate = (
   ctx: AuditContext, module: string, recordId: string, newValues?: Record<string, unknown> | null, opts: Partial<AuditDetails> = {},
 ): Promise<void> => auditLog('CREATE', ctx, { module, recordId, newValues, ...opts });
 
-export const auditUpdate = (
+const auditUpdate = (
   ctx: AuditContext, module: string, recordId: string,
   oldValues?: Record<string, unknown> | null, newValues?: Record<string, unknown> | null, opts: Partial<AuditDetails> = {},
 ): Promise<void> => auditLog('UPDATE', ctx, { module, recordId, oldValues, newValues, ...opts });
 
-export const auditDelete = (
+const auditDelete = (
   ctx: AuditContext, module: string, recordId: string, oldValues?: Record<string, unknown> | null, opts: Partial<AuditDetails> = {},
 ): Promise<void> => auditLog('DELETE', ctx, { module, recordId, oldValues, ...opts });
 
-export const auditPublish = lifecycle('PUBLISH');
-export const auditUnpublish = lifecycle('UNPUBLISH');
-export const auditArchive = lifecycle('ARCHIVE');
-export const auditRestore = lifecycle('RESTORE');
+const auditPublish = lifecycle('PUBLISH');
+const auditUnpublish = lifecycle('UNPUBLISH');
+const auditArchive = lifecycle('ARCHIVE');
+const auditRestore = lifecycle('RESTORE');
 
 export const auditService = {
   record: recordAudit,

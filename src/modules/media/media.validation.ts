@@ -9,7 +9,7 @@
 import { createHash } from 'node:crypto';
 import { UnsupportedFileTypeError, ValidationError } from '@/shared/errors';
 
-export type MediaCategory = 'image' | 'document' | 'archive';
+type MediaCategory = 'image' | 'document' | 'archive';
 type Family = 'jpeg' | 'png' | 'gif' | 'webp' | 'svg' | 'pdf' | 'zip' | 'ole' | 'unknown';
 
 interface MediaTypeDef {
@@ -154,18 +154,5 @@ export function validateUpload(input: ValidateUploadInput): ValidatedFile {
   return { mimeType: declaredMime, extension: ext, sizeBytes: size, category: def.category, ...dims };
 }
 
-// ── Integration hook points (TASK 5) ─────────────────────────────────────────
 // NOTE: malware scanning moved to media.scanner.ts (Issue 3) — it now has an honest
 // contract that can never return a false "clean" result.
-
-/** Future image-optimization hook (no-op seam in Phase 3). */
-export async function optimizeImage(buffer: Buffer): Promise<Buffer> {
-  // TODO(media): re-encode/strip metadata/resize variants when an optimizer is added.
-  return buffer;
-}
-
-/** Future thumbnail-generation hook (no-op seam in Phase 3). Returns null = no thumbnail. */
-export async function generateThumbnail(_buffer: Buffer, _mime: string): Promise<Buffer | null> {
-  // TODO(media): generate a thumbnail variant and store it as a derived asset.
-  return null;
-}

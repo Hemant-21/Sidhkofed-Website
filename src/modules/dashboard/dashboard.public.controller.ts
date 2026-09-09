@@ -18,21 +18,21 @@ const wrap =
   };
 
 /** GET /public/dashboard */
-export const dashboard = wrap(async (req) => {
+const dashboard = wrap(async (req) => {
   const filters = parsePublicDashboardFilters(req);
   const data = await dashboardPublicService.dashboard(filters);
   return { status: 200, body: success(data, String(req.id)) };
 });
 
 /** GET /public/dashboard/kpis */
-export const kpis = wrap(async (req) => {
+const kpis = wrap(async (req) => {
   const filters = parsePublicDashboardFilters(req);
   const data = await dashboardPublicService.kpis(filters);
   return { status: 200, body: success(data, String(req.id)) };
 });
 
 /** GET /public/dashboard/{report_key} */
-export const reportByKey = wrap(async (req) => {
+const reportByKey = wrap(async (req) => {
   const filters = parsePublicDashboardFilters(req);
   const dto = await dashboardPublicService.reportByKey(req.params.report_key as string, filters);
   return { status: 200, body: success(dto, String(req.id)) };

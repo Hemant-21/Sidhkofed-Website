@@ -26,12 +26,12 @@ const ORDER_COLUMN: Record<NewsOrderingField, keyof Prisma.EventNewsOrderByWithR
   created_at: 'createdAt',
 };
 
-export interface NewsQueryOptions {
+interface NewsQueryOptions {
   public?: boolean;
   ordering: { field: NewsOrderingField; direction: 'asc' | 'desc' };
 }
 
-export function buildWhere(f: NewsFilters, opts: { public?: boolean }): Prisma.EventNewsWhereInput {
+function buildWhere(f: NewsFilters, opts: { public?: boolean }): Prisma.EventNewsWhereInput {
   const where: Prisma.EventNewsWhereInput = {};
   const and: Prisma.EventNewsWhereInput[] = [];
 
@@ -65,27 +65,27 @@ export function buildWhere(f: NewsFilters, opts: { public?: boolean }): Prisma.E
   return where;
 }
 
-export async function slugExists(slug: string, db: Db = prisma): Promise<boolean> {
+async function slugExists(slug: string, db: Db = prisma): Promise<boolean> {
   return (await db.eventNews.count({ where: { slug } })) > 0;
 }
 /** Duplicate-news guard (Issue 3): an event may be published as news at most once. */
-export async function existsForEvent(eventId: string, db: Db = prisma): Promise<boolean> {
+async function existsForEvent(eventId: string, db: Db = prisma): Promise<boolean> {
   return (await db.eventNews.count({ where: { eventId } })) > 0;
 }
-export async function create(data: Prisma.EventNewsUncheckedCreateInput, db: Db = prisma): Promise<NewsRow> {
+async function create(data: Prisma.EventNewsUncheckedCreateInput, db: Db = prisma): Promise<NewsRow> {
   return db.eventNews.create({ data, include: newsInclude });
 }
-export async function findById(id: string, db: Db = prisma): Promise<NewsRow | null> {
+async function findById(id: string, db: Db = prisma): Promise<NewsRow | null> {
   return db.eventNews.findUnique({ where: { id }, include: newsInclude });
 }
-export async function findBySlug(slug: string, opts: { public?: boolean } = {}): Promise<NewsRow | null> {
+async function findBySlug(slug: string, opts: { public?: boolean } = {}): Promise<NewsRow | null> {
   if (!opts.public) return prisma.eventNews.findUnique({ where: { slug }, include: newsInclude });
   return prisma.eventNews.findFirst({ where: { ...buildWhere({}, { public: true }), slug }, include: newsInclude });
 }
-export async function update(id: string, data: Prisma.EventNewsUncheckedUpdateInput, db: Db = prisma): Promise<NewsRow> {
+async function update(id: string, data: Prisma.EventNewsUncheckedUpdateInput, db: Db = prisma): Promise<NewsRow> {
   return db.eventNews.update({ where: { id }, data, include: newsInclude });
 }
-export async function list(
+async function list(
   f: NewsFilters,
   skip: number,
   take: number,
@@ -99,7 +99,7 @@ export async function list(
   ]);
   return { rows, total };
 }
-export function transaction<T>(fn: (tx: Prisma.TransactionClient) => Promise<T>): Promise<T> {
+function transaction<T>(fn: (tx: Prisma.TransactionClient) => Promise<T>): Promise<T> {
   return prisma.$transaction(fn);
 }
 

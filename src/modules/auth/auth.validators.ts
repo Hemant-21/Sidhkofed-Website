@@ -19,7 +19,7 @@ function parse<T>(schema: z.ZodType<T>, payload: unknown): T {
 }
 
 /** `POST /auth/login` — email normalized (trim + lowercase); password required. */
-export const loginSchema = z.object({
+const loginSchema = z.object({
   email: z
     .string({ required_error: 'This field is required.' })
     .trim()
@@ -38,7 +38,7 @@ export const validateLogin = (payload: unknown): LoginInput => parse(loginSchema
  * HttpOnly cookie (browser) OR `refresh_token` in the body (native client). The body
  * token is therefore optional here; the controller resolves cookie-or-body.
  */
-export const refreshTokenBodySchema = z.object({
+const refreshTokenBodySchema = z.object({
   refresh_token: z.string().trim().min(1).optional(),
 });
 export type RefreshTokenBody = z.infer<typeof refreshTokenBodySchema>;

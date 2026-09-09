@@ -71,7 +71,7 @@ async function assertReferencesValid(refs: Parameters<typeof institutionReposito
 }
 
 // ── Create ────────────────────────────────────────────────────────────────────
-export async function create(input: InstitutionCreateInput, ctx: AuditContext): Promise<InstitutionDetailDto> {
+async function create(input: InstitutionCreateInput, ctx: AuditContext): Promise<InstitutionDetailDto> {
   const userId = requireUser(ctx);
   // Duplicate-name prevention (Issue 4) — case-insensitive + trimmed, independent of slug uniqueness.
   if (await institutionRepository.nameExists(input.name_en, undefined)) {
@@ -125,7 +125,7 @@ export async function create(input: InstitutionCreateInput, ctx: AuditContext): 
 }
 
 // ── Update (PATCH — partial; never transitions publication state) ──────────────
-export async function update(id: string, input: InstitutionUpdateInput, ctx: AuditContext): Promise<InstitutionDetailDto> {
+async function update(id: string, input: InstitutionUpdateInput, ctx: AuditContext): Promise<InstitutionDetailDto> {
   const userId = requireUser(ctx);
   const existing = loaded(await institutionRepository.findById(id));
   // Content Editors may edit drafts only; a published/archived institution requires a Publisher (Issue 3).
@@ -193,16 +193,16 @@ export async function update(id: string, input: InstitutionUpdateInput, ctx: Aud
 }
 
 // ── Read ───────────────────────────────────────────────────────────────────────
-export async function getById(id: string): Promise<InstitutionDetailDto> {
+async function getById(id: string): Promise<InstitutionDetailDto> {
   return toInstitutionDetailDto(loaded(await institutionRepository.findById(id)));
 }
 
-export interface ListResult<T> {
+interface ListResult<T> {
   items: T[];
   total: number;
 }
 
-export async function list(
+async function list(
   filters: InstitutionFilters,
   ordering: { field: InstitutionOrderingField; direction: 'asc' | 'desc' },
   skip: number,
@@ -213,7 +213,7 @@ export async function list(
 }
 
 // ── Lifecycle ──────────────────────────────────────────────────────────────────
-export async function lifecycle(id: string, action: LifecycleAction, ctx: AuditContext): Promise<InstitutionDetailDto> {
+async function lifecycle(id: string, action: LifecycleAction, ctx: AuditContext): Promise<InstitutionDetailDto> {
   const userId = requireUser(ctx);
   const existing = loaded(await institutionRepository.findById(id));
   const change = applyLifecycle(
@@ -232,7 +232,7 @@ export async function lifecycle(id: string, action: LifecycleAction, ctx: AuditC
 }
 
 // ── Public reads (visibility predicate + in-process cache) ──────────────────────────
-export async function publicList(
+async function publicList(
   filters: InstitutionFilters,
   ordering: { field: InstitutionOrderingField; direction: 'asc' | 'desc' },
   page: { skip: number; take: number; page: number; pageSize: number },
@@ -246,7 +246,7 @@ export async function publicList(
   return result;
 }
 
-export async function publicDetailBySlug(slug: string): Promise<PublicInstitutionDetailDto> {
+async function publicDetailBySlug(slug: string): Promise<PublicInstitutionDetailDto> {
   const cacheKey = `${PUBLIC_CACHE_PREFIX}:slug:${slug}`;
   const cached = await cacheService.getJson<PublicInstitutionDetailDto>(cacheKey);
   if (cached) return cached;

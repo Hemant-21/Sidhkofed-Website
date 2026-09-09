@@ -51,7 +51,7 @@ const ORDER_COLUMN: Record<DocumentOrderingField, keyof Prisma.DocumentOrderByWi
   created_at: 'createdAt',
 };
 
-export interface DocumentQueryOptions {
+interface DocumentQueryOptions {
   /** Apply the public visibility predicate. */
   public?: boolean;
   ordering: { field: DocumentOrderingField; direction: 'asc' | 'desc' };
@@ -120,29 +120,29 @@ export function buildWhere(f: DocumentFilters, opts: { public?: boolean }): Pris
   return where;
 }
 
-export async function slugExists(slug: string, db: Db = prisma): Promise<boolean> {
+async function slugExists(slug: string, db: Db = prisma): Promise<boolean> {
   return (await db.document.count({ where: { slug } })) > 0;
 }
 
-export async function create(data: Prisma.DocumentUncheckedCreateInput, db: Db = prisma): Promise<DocumentRow> {
+async function create(data: Prisma.DocumentUncheckedCreateInput, db: Db = prisma): Promise<DocumentRow> {
   return db.document.create({ data, include: documentInclude });
 }
 
-export async function findById(id: string, db: Db = prisma): Promise<DocumentRow | null> {
+async function findById(id: string, db: Db = prisma): Promise<DocumentRow | null> {
   return db.document.findUnique({ where: { id }, include: documentInclude });
 }
 
-export async function findBySlug(slug: string, opts: { public?: boolean } = {}): Promise<DocumentRow | null> {
+async function findBySlug(slug: string, opts: { public?: boolean } = {}): Promise<DocumentRow | null> {
   if (!opts.public) return prisma.document.findUnique({ where: { slug }, include: documentInclude });
   // Public slug lookup still applies the visibility predicate (never expose unpublished).
   return prisma.document.findFirst({ where: { ...buildWhere({}, { public: true }), slug }, include: documentInclude });
 }
 
-export async function update(id: string, data: Prisma.DocumentUncheckedUpdateInput, db: Db = prisma): Promise<DocumentRow> {
+async function update(id: string, data: Prisma.DocumentUncheckedUpdateInput, db: Db = prisma): Promise<DocumentRow> {
   return db.document.update({ where: { id }, data, include: documentInclude });
 }
 
-export async function list(
+async function list(
   f: DocumentFilters,
   skip: number,
   take: number,
@@ -158,24 +158,24 @@ export async function list(
 }
 
 /** Run a function inside a transaction (service orchestrates junction + media-usage writes). */
-export function transaction<T>(fn: (tx: Prisma.TransactionClient) => Promise<T>): Promise<T> {
+function transaction<T>(fn: (tx: Prisma.TransactionClient) => Promise<T>): Promise<T> {
   return prisma.$transaction(fn);
 }
 
 // ── Junction writers (called inside the service's transaction) ─────────────────
-export async function setCommodities(documentId: string, commodityIds: string[], db: Db): Promise<void> {
+async function setCommodities(documentId: string, commodityIds: string[], db: Db): Promise<void> {
   await db.documentCommodity.deleteMany({ where: { documentId } });
   if (commodityIds.length > 0) {
     await db.documentCommodity.createMany({ data: commodityIds.map((commodityId) => ({ documentId, commodityId })) });
   }
 }
-export async function setDistricts(documentId: string, districtIds: string[], db: Db): Promise<void> {
+async function setDistricts(documentId: string, districtIds: string[], db: Db): Promise<void> {
   await db.documentDistrict.deleteMany({ where: { documentId } });
   if (districtIds.length > 0) {
     await db.documentDistrict.createMany({ data: districtIds.map((districtId) => ({ documentId, districtId })) });
   }
 }
-export async function setTags(documentId: string, tagIds: string[], db: Db): Promise<void> {
+async function setTags(documentId: string, tagIds: string[], db: Db): Promise<void> {
   await db.documentTag.deleteMany({ where: { documentId } });
   if (tagIds.length > 0) {
     await db.documentTag.createMany({ data: tagIds.map((tagId) => ({ documentId, tagId })) });
@@ -187,7 +187,7 @@ export async function setTags(documentId: string, tagIds: string[], db: Db): Pro
  * inactive-master references on create/update). FK Restrict already guarantees existence; this
  * adds the active-status gate the FK cannot. Returns field-keyed errors ({} when all valid).
  */
-export interface ReferenceRefs {
+interface ReferenceRefs {
   documentTypeId?: string;
   knowledgeCategoryId?: string | null;
   financialYearId?: string | null;
@@ -196,7 +196,7 @@ export interface ReferenceRefs {
   tagIds?: string[];
 }
 
-export async function validateReferences(refs: ReferenceRefs): Promise<Record<string, string[]>> {
+async function validateReferences(refs: ReferenceRefs): Promise<Record<string, string[]>> {
   const errors: Record<string, string[]> = {};
 
   if (refs.documentTypeId !== undefined) {

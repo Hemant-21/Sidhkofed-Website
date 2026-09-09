@@ -48,7 +48,7 @@ async function assertHomepageCap(excludeId?: string): Promise<void> {
   }
 }
 
-export async function create(input: VideoCreateInput, ctx: AuditContext): Promise<VideoDto> {
+async function create(input: VideoCreateInput, ctx: AuditContext): Promise<VideoDto> {
   const { youtubeId, canonicalUrl } = parseUrlOrThrow(input.youtube_url);
   if (input.thumbnail_media_id) await assertLinkableMedia(input.thumbnail_media_id);
   const slug = await uniqueSlug(input.title_en, videoRepository.slugExists);
@@ -88,18 +88,18 @@ export async function create(input: VideoCreateInput, ctx: AuditContext): Promis
   return toVideoDto(video);
 }
 
-export async function list(filters: { publicationState?: 'draft' | 'published' | 'unpublished' | 'archived'; showOnHomepage?: boolean; search?: string }, skip: number, take: number) {
+async function list(filters: { publicationState?: 'draft' | 'published' | 'unpublished' | 'archived'; showOnHomepage?: boolean; search?: string }, skip: number, take: number) {
   const { rows, total } = await videoRepository.list(filters, skip, take, 'desc');
   return { items: rows.map(toVideoDto), total };
 }
 
-export async function getById(id: string): Promise<VideoDto> {
+async function getById(id: string): Promise<VideoDto> {
   const v = await videoRepository.findById(id);
   if (!v) throw new NotFoundError('Video not found.');
   return toVideoDto(v);
 }
 
-export async function update(id: string, input: VideoUpdateInput, ctx: AuditContext): Promise<VideoDto> {
+async function update(id: string, input: VideoUpdateInput, ctx: AuditContext): Promise<VideoDto> {
   const existing = await videoRepository.findById(id);
   if (!existing) throw new NotFoundError('Video not found.');
 
@@ -148,7 +148,7 @@ export async function update(id: string, input: VideoUpdateInput, ctx: AuditCont
   return toVideoDto(updated);
 }
 
-export async function lifecycle(id: string, action: LifecycleAction, ctx: AuditContext): Promise<VideoDto> {
+async function lifecycle(id: string, action: LifecycleAction, ctx: AuditContext): Promise<VideoDto> {
   const existing = await videoRepository.findById(id);
   if (!existing) throw new NotFoundError('Video not found.');
 
@@ -171,12 +171,12 @@ export async function lifecycle(id: string, action: LifecycleAction, ctx: AuditC
 }
 
 // ── Public reads (visibility predicate + in-process cache) ──────────────────────────
-export interface PublicListResult<T> {
+interface PublicListResult<T> {
   items: T[];
   total: number;
 }
 
-export async function publicList(
+async function publicList(
   filters: VideoPublicListFilters,
   ordering: { field: VideoOrderingField; direction: 'asc' | 'desc' },
   page: { skip: number; take: number },
@@ -190,7 +190,7 @@ export async function publicList(
   return result;
 }
 
-export async function publicDetailBySlug(slug: string): Promise<PublicVideoDto> {
+async function publicDetailBySlug(slug: string): Promise<PublicVideoDto> {
   const cacheKey = `${PUBLIC_CACHE_PREFIX}:slug:${slug}`;
   const cached = await cacheService.getJson<PublicVideoDto>(cacheKey);
   if (cached) return cached;

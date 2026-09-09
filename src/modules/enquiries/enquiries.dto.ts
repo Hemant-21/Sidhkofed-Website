@@ -11,7 +11,7 @@ import type { EnquiryRow } from './enquiries.repository';
 const iso = (d: Date | null | undefined): string | null => (d ? d.toISOString() : null);
 const dateStr = (d: Date | null | undefined): string | null => (d ? d.toISOString().slice(0, 10) : null);
 
-export interface MasterRef {
+interface MasterRef {
   id: string;
   slug: string;
   name_en: string;

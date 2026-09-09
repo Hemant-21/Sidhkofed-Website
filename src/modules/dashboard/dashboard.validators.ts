@@ -66,7 +66,7 @@ const reportBaseShape = {
   ...workflowShape,
 };
 
-export const reportCreateSchema = z
+const reportCreateSchema = z
   .object({ report_key: reportKey, ...reportBaseShape })
   .strict()
   .superRefine((data, ctx) => refineHighlightWindow(data, ctx));
@@ -75,7 +75,7 @@ export const validateReportCreate = (p: unknown): ReportCreateInput =>
   parseSchema(reportCreateSchema, p);
 
 // PATCH is partial and NEVER changes report_key (it is the stable, code-referenced identity).
-export const reportUpdateSchema = z
+const reportUpdateSchema = z
   .object(reportBaseShape)
   .partial()
   .strict()
@@ -99,7 +99,7 @@ const metricBaseShape = {
   display_order: z.number().int().min(0).optional(),
 };
 
-export const metricCreateSchema = z
+const metricCreateSchema = z
   .object(metricBaseShape)
   .strict()
   .superRefine((data, ctx) => refineExactlyOneValue(data, ctx));
@@ -109,7 +109,7 @@ export const validateMetricCreate = (p: unknown): MetricCreateInput =>
 
 // PATCH is partial; if either value field is touched, the exactly-one rule is re-validated against
 // the request (the service re-checks the effective persisted state for a one-field edit).
-export const metricUpdateSchema = z
+const metricUpdateSchema = z
   .object(metricBaseShape)
   .partial()
   .strict()
@@ -151,7 +151,7 @@ const datasetBaseShape = {
 };
 
 /** Manual create: `source` defaults to `manual`; `cms_derived`/`manual` accepted, not `excel`. */
-export const datasetCreateSchema = z
+const datasetCreateSchema = z
   .object({
     source: z.enum(['cms_derived', 'manual']).optional(),
     ...datasetBaseShape,
@@ -167,7 +167,7 @@ export const validateDatasetCreate = (p: unknown): DatasetCreateInput =>
  * strings, so `preview` is parsed from `"true"`/`"false"`. The financial year / reporting period are
  * validated as masters by the service, exactly like the manual route.
  */
-export const datasetUploadFieldsSchema = z
+const datasetUploadFieldsSchema = z
   .object({
     financial_year_id: uuid.optional(),
     reporting_period_id: uuid.optional(),

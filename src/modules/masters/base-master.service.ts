@@ -94,7 +94,7 @@ function loaded(def: MasterDefinition, row: MasterRow | null): MasterRow {
 }
 
 // ── Admin operations ────────────────────────────────────────────────────────
-export async function create(
+async function create(
   def: MasterDefinition,
   body: unknown,
   ctx: AuditContext,
@@ -125,7 +125,7 @@ export async function create(
   return def.serialize(row);
 }
 
-export async function update(
+async function update(
   def: MasterDefinition,
   id: string,
   body: unknown,
@@ -154,7 +154,7 @@ export async function update(
   return def.serialize(row);
 }
 
-export async function setActive(
+async function setActive(
   def: MasterDefinition,
   id: string,
   active: boolean,
@@ -175,16 +175,16 @@ export async function setActive(
   return def.serialize(row);
 }
 
-export async function getById(def: MasterDefinition, id: string): Promise<Record<string, unknown>> {
+async function getById(def: MasterDefinition, id: string): Promise<Record<string, unknown>> {
   return def.serialize(loaded(def, await repo.findById(def, id)));
 }
 
-export interface ListPage {
+interface ListPage {
   skip: number;
   take: number;
 }
 
-export async function adminList(
+async function adminList(
   def: MasterDefinition,
   query: Record<string, unknown>,
   page: ListPage,
@@ -222,7 +222,7 @@ async function activeSerialized(
   return serialized;
 }
 
-export async function publicList(
+async function publicList(
   def: MasterDefinition,
   query: Record<string, unknown>,
   page: ListPage,

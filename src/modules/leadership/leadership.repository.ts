@@ -23,7 +23,7 @@ const ORDER_COLUMN: Record<LeadershipOrderingField, keyof Prisma.LeadershipOrder
   updated_at: 'updatedAt',
 };
 
-export interface LeadershipQueryOptions {
+interface LeadershipQueryOptions {
   public?: boolean;
   ordering: { field: LeadershipOrderingField; direction: 'asc' | 'desc' };
 }
@@ -60,19 +60,19 @@ export function buildWhere(
   return where;
 }
 
-export async function slugExists(slug: string, db: Db = prisma): Promise<boolean> {
+async function slugExists(slug: string, db: Db = prisma): Promise<boolean> {
   return (await db.leadership.count({ where: { slug } })) > 0;
 }
 
-export async function create(data: Prisma.LeadershipUncheckedCreateInput, db: Db = prisma): Promise<LeadershipRow> {
+async function create(data: Prisma.LeadershipUncheckedCreateInput, db: Db = prisma): Promise<LeadershipRow> {
   return db.leadership.create({ data, include: leadershipInclude });
 }
 
-export async function findById(id: string, db: Db = prisma): Promise<LeadershipRow | null> {
+async function findById(id: string, db: Db = prisma): Promise<LeadershipRow | null> {
   return db.leadership.findUnique({ where: { id }, include: leadershipInclude });
 }
 
-export async function update(
+async function update(
   id: string,
   data: Prisma.LeadershipUncheckedUpdateInput,
   db: Db = prisma,
@@ -80,7 +80,7 @@ export async function update(
   return db.leadership.update({ where: { id }, data, include: leadershipInclude });
 }
 
-export async function list(
+async function list(
   f: LeadershipFilters,
   skip: number,
   take: number,
@@ -97,7 +97,7 @@ export async function list(
   return { rows, total };
 }
 
-export function transaction<T>(fn: (tx: Prisma.TransactionClient) => Promise<T>): Promise<T> {
+function transaction<T>(fn: (tx: Prisma.TransactionClient) => Promise<T>): Promise<T> {
   return prisma.$transaction(fn);
 }
 

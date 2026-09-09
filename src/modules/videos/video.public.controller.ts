@@ -27,7 +27,7 @@ function listCacheKey(filters: VideoPublicListFilters, ordering: unknown, page: 
 }
 
 /** GET /public/videos */
-export const list = wrap(async (req) => {
+const list = wrap(async (req) => {
   const page = resolvePageParams(req.query.page, req.query.page_size);
   const filters = parseVideoPublicFilters(req);
   const ordering = parseVideoPublicOrdering(req);
@@ -37,7 +37,7 @@ export const list = wrap(async (req) => {
 });
 
 /** GET /public/videos/{slug} */
-export const detail = wrap(async (req) => {
+const detail = wrap(async (req) => {
   const dto = await videoService.publicDetailBySlug(req.params.slug as string);
   return { status: 200, body: success(dto, String(req.id)) };
 });

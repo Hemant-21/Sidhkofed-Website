@@ -103,18 +103,18 @@ async function buildItemRows(
   });
 }
 
-export async function list(eventId: string): Promise<DistributionSummaryDto[]> {
+async function list(eventId: string): Promise<DistributionSummaryDto[]> {
   await assertEventExists(eventId);
   const rows = await distributionRepository.listByEvent(eventId);
   return rows.map(toDistributionSummaryDto);
 }
 
-export async function getById(eventId: string, id: string): Promise<DistributionSummaryDto> {
+async function getById(eventId: string, id: string): Promise<DistributionSummaryDto> {
   await assertEventExists(eventId);
   return toDistributionSummaryDto(loaded(await distributionRepository.findByIdForEvent(id, eventId)));
 }
 
-export async function create(eventId: string, input: DistributionCreateInput, ctx: AuditContext): Promise<DistributionSummaryDto> {
+async function create(eventId: string, input: DistributionCreateInput, ctx: AuditContext): Promise<DistributionSummaryDto> {
   const userId = requireUser(ctx);
   await assertEventEditable(eventId, ctx);
   await toolkitService.assertLinkable(input.toolkit_id);
@@ -148,7 +148,7 @@ export async function create(eventId: string, input: DistributionCreateInput, ct
   return toDistributionSummaryDto(loaded(await distributionRepository.findById(created.id)));
 }
 
-export async function update(
+async function update(
   eventId: string,
   id: string,
   input: DistributionUpdateInput,
@@ -182,7 +182,7 @@ export async function update(
   return toDistributionSummaryDto(loaded(await distributionRepository.findById(id)));
 }
 
-export async function remove(eventId: string, id: string, ctx: AuditContext): Promise<void> {
+async function remove(eventId: string, id: string, ctx: AuditContext): Promise<void> {
   await assertEventEditable(eventId, ctx);
   const existing = loaded(await distributionRepository.findByIdForEvent(id, eventId));
   await distributionRepository.removeSummary(id);
@@ -197,7 +197,7 @@ export async function remove(eventId: string, id: string, ctx: AuditContext): Pr
  * (Issue 11). The caller supplies the already-resolved public toolkit reference; the API shape is
  * unchanged.
  */
-export async function aggregateForToolkit(toolkit: {
+async function aggregateForToolkit(toolkit: {
   id: string;
   slug: string;
   titleEn: string;

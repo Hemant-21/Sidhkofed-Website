@@ -15,7 +15,7 @@ import type { Document, DocumentType, FinancialYear, MediaAsset } from '@prisma/
 import { isPubliclyVisible } from '@/shared/visibility';
 import type { DocumentRow, DocumentSummaryRow } from './documents.repository';
 
-export interface MasterRef {
+interface MasterRef {
   id: string;
   slug: string;
   name_en: string;
@@ -25,7 +25,7 @@ function masterRef(m: { id: string; slug: string; nameEn: string; nameHi: string
   return { id: m.id, slug: m.slug, name_en: m.nameEn, name_hi: m.nameHi };
 }
 
-export interface FinancialYearRef {
+interface FinancialYearRef {
   id: string;
   label: string;
 }
@@ -34,7 +34,7 @@ function fyRef(fy: FinancialYear | null): FinancialYearRef | null {
 }
 
 /** Public-safe view of the linked file asset — file_url is the stable delivery endpoint. */
-export interface DocumentFileRef {
+interface DocumentFileRef {
   id: string;
   file_url: string;
   file_name: string;

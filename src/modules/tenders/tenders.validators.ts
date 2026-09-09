@@ -44,7 +44,7 @@ function refineDates(
   refineDateOrder(data.publish_date, data.opening_date, 'opening_date', ctx);
 }
 
-export const tenderCreateSchema = z
+const tenderCreateSchema = z
   .object(baseShape)
   .strict()
   .superRefine((data, ctx) => {
@@ -54,7 +54,7 @@ export const tenderCreateSchema = z
 export type TenderCreateInput = z.infer<typeof tenderCreateSchema>;
 export const validateTenderCreate = (p: unknown): TenderCreateInput => parseSchema(tenderCreateSchema, p);
 
-export const tenderUpdateSchema = z
+const tenderUpdateSchema = z
   .object(baseShape)
   .partial()
   .strict()

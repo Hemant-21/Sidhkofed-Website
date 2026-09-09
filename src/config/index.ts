@@ -7,8 +7,6 @@
 import { env } from './env';
 
 export const isProduction = env.NODE_ENV === 'production';
-export const isTest = env.NODE_ENV === 'test';
-export const isDevelopment = env.NODE_ENV === 'development';
 
 export const appConfig = {
   name: env.APP_NAME,
@@ -17,12 +15,6 @@ export const appConfig = {
   apiBasePath: env.API_BASE_PATH,
   publicWebsiteUrl: env.PUBLIC_WEBSITE_URL,
   logLevel: env.LOG_LEVEL,
-} as const;
-
-export const dbConfig = {
-  url: env.DATABASE_URL,
-  replicaUrl: env.DATABASE_REPLICA_URL,
-  poolMax: env.DB_POOL_MAX,
 } as const;
 
 export const cacheConfig = {
@@ -133,19 +125,3 @@ export const schedulerConfig = {
   },
 } as const;
 
-export const config = {
-  app: appConfig,
-  db: dbConfig,
-  cache: cacheConfig,
-  jwt: jwtConfig,
-  seed: seedConfig,
-  storage: storageConfig,
-  upload: uploadConfig,
-  email: emailConfig,
-  abuse: abuseConfig,
-  rateLimit: rateLimitConfig,
-  localization: localizationConfig,
-  scheduler: schedulerConfig,
-} as const;
-
-export type AppConfig = typeof config;

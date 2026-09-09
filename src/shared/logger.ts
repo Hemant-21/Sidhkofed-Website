@@ -37,5 +37,3 @@ if (!isProduction) {
 }
 
 export const logger = pino(options);
-
-export type Logger = typeof logger;

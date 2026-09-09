@@ -10,7 +10,7 @@ import type { MediaAsset } from '@prisma/client';
 import type { DigitalServiceRow } from './digital-services.repository';
 
 /** Compact media reference (API spec §1.4). */
-export interface MediaRef {
+interface MediaRef {
   id: string;
   url: string;
   file_name: string;
@@ -21,7 +21,7 @@ export interface MediaRef {
   width: number | null;
   height: number | null;
 }
-export function mediaRef(a: MediaAsset | null): MediaRef | null {
+function mediaRef(a: MediaAsset | null): MediaRef | null {
   if (!a) return null;
   return {
     id: a.id,

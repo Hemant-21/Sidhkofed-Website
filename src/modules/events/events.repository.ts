@@ -84,7 +84,7 @@ const ORDER_COLUMN: Record<EventOrderingField, keyof Prisma.EventOrderByWithRela
   created_at: 'createdAt',
 };
 
-export interface EventQueryOptions {
+interface EventQueryOptions {
   public?: boolean;
   ordering: { field: EventOrderingField; direction: 'asc' | 'desc' };
 }
@@ -143,30 +143,30 @@ export function buildWhere(f: EventFilters, opts: { public?: boolean }): Prisma.
   return where;
 }
 
-export async function slugExists(slug: string, db: Db = prisma): Promise<boolean> {
+async function slugExists(slug: string, db: Db = prisma): Promise<boolean> {
   return (await db.event.count({ where: { slug } })) > 0;
 }
 
-export async function create(data: Prisma.EventUncheckedCreateInput, db: Db = prisma): Promise<EventRow> {
+async function create(data: Prisma.EventUncheckedCreateInput, db: Db = prisma): Promise<EventRow> {
   return db.event.create({ data, include: eventInclude });
 }
 
-export async function findById(id: string, db: Db = prisma): Promise<EventRow | null> {
+async function findById(id: string, db: Db = prisma): Promise<EventRow | null> {
   return db.event.findUnique({ where: { id }, include: eventInclude });
 }
 
-export async function findBySlug(slug: string, opts: { public?: boolean } = {}): Promise<EventRow | null> {
+async function findBySlug(slug: string, opts: { public?: boolean } = {}): Promise<EventRow | null> {
   if (!opts.public) return prisma.event.findUnique({ where: { slug }, include: eventInclude });
   // Public detail: the event itself must satisfy the predicate AND its linked documents /
   // galleries / news are filtered by the same predicate (publicEventInclude).
   return prisma.event.findFirst({ where: { ...buildWhere({}, { public: true }), slug }, include: publicEventInclude });
 }
 
-export async function update(id: string, data: Prisma.EventUncheckedUpdateInput, db: Db = prisma): Promise<EventRow> {
+async function update(id: string, data: Prisma.EventUncheckedUpdateInput, db: Db = prisma): Promise<EventRow> {
   return db.event.update({ where: { id }, data, include: eventInclude });
 }
 
-export async function list(
+async function list(
   f: EventFilters,
   skip: number,
   take: number,
@@ -181,34 +181,34 @@ export async function list(
   return { rows, total };
 }
 
-export function transaction<T>(fn: (tx: Prisma.TransactionClient) => Promise<T>): Promise<T> {
+function transaction<T>(fn: (tx: Prisma.TransactionClient) => Promise<T>): Promise<T> {
   return prisma.$transaction(fn);
 }
 
 // ── Junction writers (called inside the service's transaction) ─────────────────
-export async function setCommodities(eventId: string, ids: string[], db: Db): Promise<void> {
+async function setCommodities(eventId: string, ids: string[], db: Db): Promise<void> {
   await db.eventCommodity.deleteMany({ where: { eventId } });
   if (ids.length) await db.eventCommodity.createMany({ data: ids.map((commodityId) => ({ eventId, commodityId })) });
 }
-export async function setProgrammes(eventId: string, ids: string[], db: Db): Promise<void> {
+async function setProgrammes(eventId: string, ids: string[], db: Db): Promise<void> {
   await db.eventProgramme.deleteMany({ where: { eventId } });
   if (ids.length) await db.eventProgramme.createMany({ data: ids.map((programmeSchemeId) => ({ eventId, programmeSchemeId })) });
 }
-export async function setInstitutions(eventId: string, ids: string[], db: Db): Promise<void> {
+async function setInstitutions(eventId: string, ids: string[], db: Db): Promise<void> {
   await db.eventInstitution.deleteMany({ where: { eventId } });
   if (ids.length) await db.eventInstitution.createMany({ data: ids.map((institutionId) => ({ eventId, institutionId })) });
 }
-export async function setDocuments(eventId: string, ids: string[], db: Db): Promise<void> {
+async function setDocuments(eventId: string, ids: string[], db: Db): Promise<void> {
   await db.eventDocument.deleteMany({ where: { eventId } });
   if (ids.length) await db.eventDocument.createMany({ data: ids.map((documentId) => ({ eventId, documentId })) });
 }
-export async function setGalleries(eventId: string, ids: string[], db: Db): Promise<void> {
+async function setGalleries(eventId: string, ids: string[], db: Db): Promise<void> {
   await db.eventGallery.deleteMany({ where: { eventId } });
   if (ids.length) await db.eventGallery.createMany({ data: ids.map((galleryId) => ({ eventId, galleryId })) });
 }
 
 // ── Reference / activation validation ──────────────────────────────────────────
-export interface EventRefs {
+interface EventRefs {
   eventTypeId?: string;
   trainingTypeId?: string | null;
   districtId?: string | null;
@@ -220,7 +220,7 @@ export interface EventRefs {
   galleryIds?: string[];
 }
 
-export async function validateReferences(refs: EventRefs): Promise<Record<string, string[]>> {
+async function validateReferences(refs: EventRefs): Promise<Record<string, string[]>> {
   const errors: Record<string, string[]> = {};
 
   if (refs.eventTypeId !== undefined) {
@@ -297,7 +297,7 @@ async function assertExistsSet(
  * be in the union of those permitted sets. Programmes with no declared permitted set don't
  * constrain. Returns a field error map ({} when valid / not applicable).
  */
-export async function validateTrainingTypeAgainstProgrammes(
+async function validateTrainingTypeAgainstProgrammes(
   trainingTypeId: string | null | undefined,
   programmeIds: string[] | undefined,
 ): Promise<Record<string, string[]>> {
@@ -315,7 +315,7 @@ export async function validateTrainingTypeAgainstProgrammes(
 }
 
 // ── Active field definitions (dynamic-field engine) ────────────────────────────
-export async function activeFieldDefinitions(eventTypeId: string): Promise<
+async function activeFieldDefinitions(eventTypeId: string): Promise<
   Array<{ fieldKey: string; labelEn: string; dataType: import('@prisma/client').FieldDataType; isRequired: boolean; options: string[] | null }>
 > {
   const rows = await prisma.eventFieldDefinition.findMany({
@@ -334,7 +334,7 @@ export async function activeFieldDefinitions(eventTypeId: string): Promise<
 
 // ── Scheduled event-status recompute (Phase 14 lifecycle automation) ────────────
 /** A lightweight candidate row for the date-derived status recompute job. */
-export interface StatusCandidate {
+interface StatusCandidate {
   id: string;
   startDate: Date;
   endDate: Date | null;
@@ -348,7 +348,7 @@ export interface StatusCandidate {
  * (override=true) and already-completed events are excluded — they never auto-transition. Bounded
  * by `take`; oldest start first for stable batching.
  */
-export async function findStatusRecomputeCandidates(take: number): Promise<StatusCandidate[]> {
+async function findStatusRecomputeCandidates(take: number): Promise<StatusCandidate[]> {
   return prisma.event.findMany({
     where: { statusOverride: false, completedDate: null, eventStatus: { in: ['scheduled', 'ongoing'] } },
     select: { id: true, startDate: true, endDate: true, eventStatus: true },
@@ -358,7 +358,7 @@ export async function findStatusRecomputeCandidates(take: number): Promise<Statu
 }
 
 /** Minimal status write (no relationship includes) used by the recompute job. */
-export async function updateEventStatus(
+async function updateEventStatus(
   id: string,
   eventStatus: import('@prisma/client').EventStatus,
   userId: string,

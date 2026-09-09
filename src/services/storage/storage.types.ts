@@ -9,7 +9,7 @@
 
 // Only implemented drivers. `gcs` was removed in the pre-Phase-5 audit (Issue 7): an
 // unimplemented provider must fail config validation, not crash at first use.
-export type StorageProvider = 'local' | 's3';
+type StorageProvider = 'local' | 's3';
 
 export interface PutObjectInput {
   /** Object key (path) within the bucket/root, e.g. `media/2026/uuid.jpg`. */

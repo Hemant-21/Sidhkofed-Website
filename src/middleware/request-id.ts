@@ -9,7 +9,7 @@
 import { randomUUID } from 'node:crypto';
 import type { Request, Response, NextFunction } from 'express';
 
-export const REQUEST_ID_HEADER = 'x-request-id';
+const REQUEST_ID_HEADER = 'x-request-id';
 
 function normalizeInbound(value: unknown): string | undefined {
   if (typeof value !== 'string') return undefined;

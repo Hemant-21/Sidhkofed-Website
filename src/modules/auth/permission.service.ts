@@ -33,7 +33,7 @@ async function resolveFromDb(userId: string): Promise<ResolvedAuthorization> {
 /**
  * Resolve a user's authorization, using the in-process cache when available.
  */
-export async function getUserAuthorization(userId: string): Promise<ResolvedAuthorization> {
+async function getUserAuthorization(userId: string): Promise<ResolvedAuthorization> {
   const key = cacheKey(userId);
   const cached = await cacheService.getJson<ResolvedAuthorization>(key);
   if (cached) return cached;
@@ -47,26 +47,26 @@ export async function getUserAuthorization(userId: string): Promise<ResolvedAuth
  * Invalidate a user's cached authorization. Call after any role/permission change
  * for that user (role assigned/removed, permission grant changes).
  */
-export async function invalidateUserAuthorization(userId: string): Promise<void> {
+async function invalidateUserAuthorization(userId: string): Promise<void> {
   await cacheService.del(cacheKey(userId));
 }
 
 /** True when the user holds every one of the required permission keys (super admin bypasses). */
-export function hasAllPermissions(auth: ResolvedAuthorization, required: string[]): boolean {
+function hasAllPermissions(auth: ResolvedAuthorization, required: string[]): boolean {
   if (auth.isSuperAdmin) return true;
   const owned = new Set(auth.permissions);
   return required.every((p) => owned.has(p));
 }
 
 /** True when the user holds ANY of the required permission keys (super admin bypasses). */
-export function hasAnyPermission(auth: ResolvedAuthorization, required: string[]): boolean {
+function hasAnyPermission(auth: ResolvedAuthorization, required: string[]): boolean {
   if (auth.isSuperAdmin) return true;
   const owned = new Set(auth.permissions);
   return required.some((p) => owned.has(p));
 }
 
 /** True when the user holds any of the required role keys (super admin bypasses). */
-export function hasAnyRole(auth: ResolvedAuthorization, required: string[]): boolean {
+function hasAnyRole(auth: ResolvedAuthorization, required: string[]): boolean {
   if (auth.isSuperAdmin) return true;
   const owned = new Set(auth.roles);
   return required.some((r) => owned.has(r));

@@ -41,7 +41,7 @@ const baseShape = {
   ...workflowShape,
 };
 
-export const programmeCreateSchema = z
+const programmeCreateSchema = z
   .object(baseShape)
   .strict()
   .superRefine((data, ctx) => {
@@ -51,7 +51,7 @@ export const programmeCreateSchema = z
 export type ProgrammeCreateInput = z.infer<typeof programmeCreateSchema>;
 export const validateProgrammeCreate = (p: unknown): ProgrammeCreateInput => parseSchema(programmeCreateSchema, p);
 
-export const programmeUpdateSchema = z
+const programmeUpdateSchema = z
   .object(baseShape)
   .partial()
   .strict()

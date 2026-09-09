@@ -11,7 +11,7 @@ export const ENQUIRY_ENTITY = 'enquiry';
 
 /** Valid spam-state values aligned with the Prisma enum. */
 export const SPAM_STATES = ['clean', 'suspected', 'spam'] as const;
-export type SpamStateValue = SpamState;
+type SpamStateValue = SpamState;
 
 /** Admin list filters. All optional; repository only reads known keys. */
 export interface EnquiryFilters {

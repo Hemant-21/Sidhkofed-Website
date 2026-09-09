@@ -10,7 +10,7 @@ import { toDocumentRef, toPublicDocumentRef, type DocumentRef } from '@/modules/
 import { isPubliclyVisible } from '@/shared/visibility';
 import type { ProcurementUpdateRow } from './procurement-updates.repository';
 
-export interface MasterRef {
+interface MasterRef {
   id: string;
   slug: string;
   name_en: string;
@@ -21,7 +21,7 @@ function masterRef(m: { id: string; slug: string; nameEn: string; nameHi: string
 }
 
 /** Programme is a content record (title-based), exposed as a compact reference. */
-export interface ProgrammeRef {
+interface ProgrammeRef {
   id: string;
   slug: string;
   title_en: string;

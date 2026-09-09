@@ -7,7 +7,7 @@
  */
 import type { ErrorCode, FieldErrors } from './errors';
 
-export interface ResponseMeta {
+interface ResponseMeta {
   request_id: string;
   message?: string;
   [key: string]: unknown;

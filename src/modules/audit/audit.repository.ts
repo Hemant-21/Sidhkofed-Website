@@ -6,7 +6,7 @@
 import type { Prisma, AuditAction as PrismaAuditAction } from '@prisma/client';
 import { prisma } from '@/db/prisma';
 
-export interface AuditCreateInput {
+interface AuditCreateInput {
   userId: string | null;
   action: PrismaAuditAction;
   module: string;
@@ -19,11 +19,11 @@ export interface AuditCreateInput {
 }
 
 /** Append one immutable audit row. Throws on failure — the service decides how to react. */
-export async function create(data: AuditCreateInput): Promise<void> {
+async function create(data: AuditCreateInput): Promise<void> {
   await prisma.auditLog.create({ data });
 }
 
-export interface AuditListFilters {
+interface AuditListFilters {
   module?: string;
   recordId?: string;
   userId?: string;
@@ -46,7 +46,7 @@ function buildWhere(f: AuditListFilters): Prisma.AuditLogWhereInput {
   return where;
 }
 
-export async function list(
+async function list(
   filters: AuditListFilters,
   skip: number,
   take: number,
@@ -66,7 +66,7 @@ export async function list(
   return { rows, total };
 }
 
-export async function findById(id: string): Promise<AuditRow | null> {
+async function findById(id: string): Promise<AuditRow | null> {
   return prisma.auditLog.findUnique({
     where: { id },
     include: { user: { select: { id: true, email: true, fullName: true } } },

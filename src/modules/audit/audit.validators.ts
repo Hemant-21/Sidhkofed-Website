@@ -15,7 +15,7 @@ const isoDate = z
   .refine((v) => !Number.isNaN(Date.parse(v)), { message: 'Invalid date.' })
   .transform((v) => new Date(v));
 
-export const auditQuerySchema = z.object({
+const auditQuerySchema = z.object({
   module: z.string().trim().min(1).max(60).optional(),
   record_id: z.string().uuid().optional(),
   user_id: z.string().uuid().optional(),

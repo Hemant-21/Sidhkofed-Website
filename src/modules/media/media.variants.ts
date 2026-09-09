@@ -12,8 +12,6 @@ export interface StoredMediaVariant {
   height: number;
 }
 
-export type StoredMediaVariantMap = Partial<Record<MediaVariantName, StoredMediaVariant>>;
-
 interface VariantSpec {
   name: MediaVariantName;
   width: number;

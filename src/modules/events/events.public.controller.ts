@@ -21,7 +21,7 @@ function listCacheKey(filters: EventFilters, ordering: unknown, page: number, pa
   return `events:public:list:${hash}`;
 }
 
-export const list = wrap(async (req) => {
+const list = wrap(async (req) => {
   const page = resolvePageParams(req.query.page, req.query.page_size);
   const filters = parseEventFilters(req, { admin: false });
   const ordering = parseEventOrdering(req, false);
@@ -35,7 +35,7 @@ export const list = wrap(async (req) => {
   return { status: 200, body: paginated(items, buildPagination(total, page), String(req.id)) };
 });
 
-export const detail = wrap(async (req) => {
+const detail = wrap(async (req) => {
   const dto = await eventService.publicDetailBySlug(req.params.slug as string);
   return { status: 200, body: success(dto, String(req.id)) };
 });

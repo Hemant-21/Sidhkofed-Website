@@ -15,7 +15,7 @@ function parse<T>(schema: z.ZodType<T>, payload: unknown): T {
   throw new ValidationError(fields);
 }
 
-export const videoCreateSchema = z.object({
+const videoCreateSchema = z.object({
   title_en: z.string().trim().min(1, 'This field is required.').max(255),
   title_hi: z.string().trim().max(255).optional(),
   description_en: z.string().trim().optional(),
@@ -29,6 +29,6 @@ export const videoCreateSchema = z.object({
 export type VideoCreateInput = z.infer<typeof videoCreateSchema>;
 export const validateVideoCreate = (p: unknown): VideoCreateInput => parse(videoCreateSchema, p);
 
-export const videoUpdateSchema = videoCreateSchema.partial();
+const videoUpdateSchema = videoCreateSchema.partial();
 export type VideoUpdateInput = z.infer<typeof videoUpdateSchema>;
 export const validateVideoUpdate = (p: unknown): VideoUpdateInput => parse(videoUpdateSchema, p);

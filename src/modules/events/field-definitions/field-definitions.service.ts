@@ -46,13 +46,13 @@ async function assertEventTypeExists(eventTypeId: string): Promise<void> {
   if (!(await fieldDefinitionRepository.eventTypeExists(eventTypeId))) throw new NotFoundError('Event type not found.');
 }
 
-export async function list(eventTypeId: string): Promise<Record<string, unknown>[]> {
+async function list(eventTypeId: string): Promise<Record<string, unknown>[]> {
   await assertEventTypeExists(eventTypeId);
   const rows = await fieldDefinitionRepository.listByEventType(eventTypeId);
   return rows.map(toDto);
 }
 
-export async function create(eventTypeId: string, input: FieldDefinitionCreateInput, ctx: AuditContext): Promise<Record<string, unknown>> {
+async function create(eventTypeId: string, input: FieldDefinitionCreateInput, ctx: AuditContext): Promise<Record<string, unknown>> {
   await assertEventTypeExists(eventTypeId);
   const duplicate = await fieldDefinitionRepository.countByKey(eventTypeId, input.field_key);
   if (duplicate > 0) throw new ConflictError(`A field with key "${input.field_key}" already exists for this event type.`);
@@ -72,7 +72,7 @@ export async function create(eventTypeId: string, input: FieldDefinitionCreateIn
   return toDto(created);
 }
 
-export async function update(
+async function update(
   eventTypeId: string,
   id: string,
   input: FieldDefinitionUpdateInput,
@@ -107,7 +107,7 @@ export async function update(
   return toDto(updated);
 }
 
-export async function setActive(eventTypeId: string, id: string, isActive: boolean, ctx: AuditContext): Promise<Record<string, unknown>> {
+async function setActive(eventTypeId: string, id: string, isActive: boolean, ctx: AuditContext): Promise<Record<string, unknown>> {
   const existing = await fieldDefinitionRepository.findByIdForType(id, eventTypeId);
   if (!existing) throw new NotFoundError('Field definition not found.');
   const updated = await fieldDefinitionRepository.update(id, { isActive });

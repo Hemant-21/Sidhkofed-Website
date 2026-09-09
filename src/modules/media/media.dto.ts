@@ -4,9 +4,9 @@
  */
 import type { MediaAsset } from '@prisma/client';
 
-export type MediaVariantName = 'thumb' | 'card' | 'hero';
+type MediaVariantName = 'thumb' | 'card' | 'hero';
 
-export interface MediaVariantDto {
+interface MediaVariantDto {
   url: string;
   mime_type: string;
   file_size: number;
@@ -14,7 +14,7 @@ export interface MediaVariantDto {
   height: number;
 }
 
-export type MediaVariantMap = Partial<Record<MediaVariantName, MediaVariantDto>>;
+type MediaVariantMap = Partial<Record<MediaVariantName, MediaVariantDto>>;
 
 export interface MediaDto {
   id: string;

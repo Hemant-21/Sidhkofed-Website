@@ -71,7 +71,7 @@ async function assertReferencesValid(
 }
 
 // ── Create ────────────────────────────────────────────────────────────────────
-export async function create(
+async function create(
   input: ProcurementUpdateCreateInput,
   ctx: AuditContext,
 ): Promise<ProcurementUpdateDetailDto> {
@@ -128,7 +128,7 @@ export async function create(
 }
 
 // ── Update (PATCH — partial; never transitions publication state) ──────────────
-export async function update(
+async function update(
   id: string,
   input: ProcurementUpdateUpdateInput,
   ctx: AuditContext,
@@ -187,16 +187,16 @@ export async function update(
 }
 
 // ── Read ───────────────────────────────────────────────────────────────────────
-export async function getById(id: string): Promise<ProcurementUpdateDetailDto> {
+async function getById(id: string): Promise<ProcurementUpdateDetailDto> {
   return toProcurementUpdateDetailDto(loaded(await procurementUpdateRepository.findById(id)));
 }
 
-export interface ListResult<T> {
+interface ListResult<T> {
   items: T[];
   total: number;
 }
 
-export async function list(
+async function list(
   filters: ProcurementUpdateFilters,
   ordering: { field: ProcurementUpdateOrderingField; direction: 'asc' | 'desc' },
   skip: number,
@@ -207,7 +207,7 @@ export async function list(
 }
 
 // ── Lifecycle ──────────────────────────────────────────────────────────────────
-export async function lifecycle(
+async function lifecycle(
   id: string,
   action: LifecycleAction,
   ctx: AuditContext,
@@ -230,7 +230,7 @@ export async function lifecycle(
 }
 
 // ── Public reads (visibility predicate + in-process cache) ──────────────────────────
-export async function publicList(
+async function publicList(
   filters: ProcurementUpdateFilters,
   ordering: { field: ProcurementUpdateOrderingField; direction: 'asc' | 'desc' },
   page: { skip: number; take: number; page: number; pageSize: number },
@@ -248,7 +248,7 @@ export async function publicList(
   return result;
 }
 
-export async function publicDetailBySlug(slug: string): Promise<PublicProcurementUpdateDetailDto> {
+async function publicDetailBySlug(slug: string): Promise<PublicProcurementUpdateDetailDto> {
   const cacheKey = `${PUBLIC_CACHE_PREFIX}:slug:${slug}`;
   const cached = await cacheService.getJson<PublicProcurementUpdateDetailDto>(cacheKey);
   if (cached) return cached;

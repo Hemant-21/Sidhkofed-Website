@@ -46,7 +46,7 @@ async function assertReferencesValid(refs: Parameters<typeof faqRepository.valid
 }
 
 // ── Create ────────────────────────────────────────────────────────────────────
-export async function create(input: FaqCreateInput, ctx: AuditContext): Promise<FaqDetailDto> {
+async function create(input: FaqCreateInput, ctx: AuditContext): Promise<FaqDetailDto> {
   const userId = requireUser(ctx);
   await assertReferencesValid({ faqCategoryId: input.faq_category_id ?? null });
 
@@ -76,7 +76,7 @@ export async function create(input: FaqCreateInput, ctx: AuditContext): Promise<
 }
 
 // ── Update (PATCH — partial; never transitions publication state, never changes slug) ──
-export async function update(id: string, input: FaqUpdateInput, ctx: AuditContext): Promise<FaqDetailDto> {
+async function update(id: string, input: FaqUpdateInput, ctx: AuditContext): Promise<FaqDetailDto> {
   const userId = requireUser(ctx);
   const existing = loaded(await faqRepository.findById(id));
   assertEditableByActor(ctx.authz, existing.publicationState, PUBLISH_PERMISSION);
@@ -107,16 +107,16 @@ export async function update(id: string, input: FaqUpdateInput, ctx: AuditContex
 }
 
 // ── Read ───────────────────────────────────────────────────────────────────────
-export async function getById(id: string): Promise<FaqDetailDto> {
+async function getById(id: string): Promise<FaqDetailDto> {
   return toFaqDetailDto(loaded(await faqRepository.findById(id)));
 }
 
-export interface ListResult<T> {
+interface ListResult<T> {
   items: T[];
   total: number;
 }
 
-export async function list(
+async function list(
   filters: FaqFilters,
   ordering: { field: FaqOrderingField; direction: 'asc' | 'desc' },
   skip: number,
@@ -127,7 +127,7 @@ export async function list(
 }
 
 // ── Lifecycle ──────────────────────────────────────────────────────────────────
-export async function lifecycle(id: string, action: LifecycleAction, ctx: AuditContext): Promise<FaqDetailDto> {
+async function lifecycle(id: string, action: LifecycleAction, ctx: AuditContext): Promise<FaqDetailDto> {
   const userId = requireUser(ctx);
   const existing = loaded(await faqRepository.findById(id));
   const change = applyLifecycle(
@@ -146,7 +146,7 @@ export async function lifecycle(id: string, action: LifecycleAction, ctx: AuditC
 }
 
 // ── Public reads (visibility predicate + in-process cache) ──────────────────────────
-export async function publicList(
+async function publicList(
   filters: FaqFilters,
   ordering: { field: FaqOrderingField; direction: 'asc' | 'desc' },
   page: { skip: number; take: number; page: number; pageSize: number },

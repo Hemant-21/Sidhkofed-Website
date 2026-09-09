@@ -13,7 +13,7 @@ import type { SearchFilters } from './search.types';
 import { searchRepository } from './search.repository';
 import { toSearchResultDto, type SearchResultDto } from './search.dto';
 
-export interface SearchPage {
+interface SearchPage {
   items: SearchResultDto[];
   total: number;
 }

@@ -50,7 +50,7 @@ const baseShape = {
   ...workflowShape,
 };
 
-export const membershipCreateSchema = z
+const membershipCreateSchema = z
   .object(baseShape)
   .strict()
   .superRefine((data, ctx) => {
@@ -63,7 +63,7 @@ export const validateMembershipCreate = (p: unknown): MembershipCreateInput =>
 
 // PATCH is partial; the DU rule is only enforced when `membership_level` is being set to
 // `district_union` in the same request (the service re-checks the persisted level on partial edits).
-export const membershipUpdateSchema = z
+const membershipUpdateSchema = z
   .object(baseShape)
   .partial()
   .strict()
@@ -103,7 +103,7 @@ export const membershipBulkRowSchema = z
   .superRefine((data, ctx) => refineDistrictUnion(data, ctx));
 export type MembershipBulkRowInput = z.infer<typeof membershipBulkRowSchema>;
 
-export const membershipBulkUploadSchema = z
+const membershipBulkUploadSchema = z
   .object({ rows: z.array(z.unknown()).min(1, 'At least one row is required.').max(5000) })
   .strict();
 export const validateMembershipBulkUpload = (p: unknown): { rows: unknown[] } =>

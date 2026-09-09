@@ -9,7 +9,7 @@ import { storage } from '@/services/storage';
 import { cacheService } from '@/services/cache';
 import { uploadConfig, appConfig } from '@/config';
 import { logger } from '@/shared/logger';
-import { NotFoundError, ProtectedRecordError, ValidationError, UnsupportedFileTypeError, PermissionError } from '@/shared/errors';
+import { NotFoundError, ValidationError, UnsupportedFileTypeError, PermissionError } from '@/shared/errors';
 import { auditService, type AuditContext } from '@/modules/audit/audit.service';
 import { settingsService } from '@/modules/settings/settings.service';
 import { mediaRepository } from './media.repository';
@@ -32,7 +32,7 @@ export interface UploadFile {
   originalName: string;
   declaredMime: string;
 }
-export interface UploadMeta {
+interface UploadMeta {
   title?: string | null;
   altText?: string | null;
   caption?: string | null;
@@ -62,7 +62,7 @@ async function invalidateCache(id: string): Promise<void> {
  * short-lived backend-signed URL. Public DTOs keep the stable `/public/media/:id/file`
  * URL and remain gated by `openFile`.
  */
-export async function toAdminMediaDto(asset: MediaAsset): Promise<MediaDto> {
+async function toAdminMediaDto(asset: MediaAsset): Promise<MediaDto> {
   const dto = toMediaDto(asset);
   if (storage.servesThroughApp) return dto;
   return { ...dto, url: await storage.getUrl(asset.storageKey) };
@@ -158,7 +158,7 @@ async function persistUpload(file: UploadFile, meta: UploadMeta, ctx: AuditConte
 }
 
 /** POST /admin/media — single upload. */
-export async function upload(file: UploadFile, meta: UploadMeta, ctx: AuditContext): Promise<MediaDto> {
+async function upload(file: UploadFile, meta: UploadMeta, ctx: AuditContext): Promise<MediaDto> {
   const { asset, scanStatus } = await persistUpload(file, meta, ctx);
   const dto = toMediaDto(asset);
   await cacheDto(dto);
@@ -171,13 +171,13 @@ export async function upload(file: UploadFile, meta: UploadMeta, ctx: AuditConte
   return toAdminMediaDto(asset);
 }
 
-export interface BulkUploadResult {
+interface BulkUploadResult {
   accepted: MediaDto[];
   rejected: Array<{ file_name: string; error: string }>;
 }
 
 /** POST /admin/media/bulk-upload — best-effort per file. */
-export async function bulkUpload(files: UploadFile[], ctx: AuditContext): Promise<BulkUploadResult> {
+async function bulkUpload(files: UploadFile[], ctx: AuditContext): Promise<BulkUploadResult> {
   if (files.length === 0) throw new ValidationError({ files: ['At least one file is required.'] });
   if (files.length > uploadConfig.bulkMaxFiles) {
     throw new ValidationError({ files: [`A maximum of ${uploadConfig.bulkMaxFiles} files may be uploaded at once.`] });
@@ -193,20 +193,20 @@ export async function bulkUpload(files: UploadFile[], ctx: AuditContext): Promis
   return result;
 }
 
-export interface MediaListQuery {
+interface MediaListQuery {
   mimeType?: string;
   archived?: boolean;
   search?: string;
   usedBy?: string;
 }
 
-export async function list(query: MediaListQuery, skip: number, take: number, direction: 'asc' | 'desc') {
+async function list(query: MediaListQuery, skip: number, take: number, direction: 'asc' | 'desc') {
   const { rows, total } = await mediaRepository.list(query, skip, take, direction);
   return { items: await Promise.all(rows.map(toAdminMediaDto)), total };
 }
 
 /** GET /admin/media/:id — cache-first. */
-export async function getById(id: string): Promise<MediaDto> {
+async function getById(id: string): Promise<MediaDto> {
   if (storage.servesThroughApp) {
     const cached = await cacheService.getJson<MediaDto>(metaCacheKey(id));
     if (cached) {
@@ -222,7 +222,7 @@ export async function getById(id: string): Promise<MediaDto> {
   return toAdminMediaDto(asset);
 }
 
-export async function updateMeta(id: string, meta: UploadMeta, ctx: AuditContext): Promise<MediaDto> {
+async function updateMeta(id: string, meta: UploadMeta, ctx: AuditContext): Promise<MediaDto> {
   const existing = await mediaRepository.findById(id);
   if (!existing) throw new NotFoundError('Media asset not found.');
   const updated = await mediaRepository.updateMeta(id, {
@@ -240,7 +240,7 @@ export async function updateMeta(id: string, meta: UploadMeta, ctx: AuditContext
 }
 
 /** POST /admin/media/:id/archive — idempotent soft archive. */
-export async function archive(id: string, ctx: AuditContext): Promise<MediaDto> {
+async function archive(id: string, ctx: AuditContext): Promise<MediaDto> {
   const existing = await mediaRepository.findById(id);
   if (!existing) throw new NotFoundError('Media asset not found.');
   const updated = existing.archivedAt ? existing : await mediaRepository.setArchived(id, new Date());
@@ -252,7 +252,7 @@ export async function archive(id: string, ctx: AuditContext): Promise<MediaDto> 
 }
 
 /** POST /admin/media/:id/restore — un-archive. */
-export async function restore(id: string, ctx: AuditContext): Promise<MediaDto> {
+async function restore(id: string, ctx: AuditContext): Promise<MediaDto> {
   const existing = await mediaRepository.findById(id);
   if (!existing) throw new NotFoundError('Media asset not found.');
   const updated = existing.archivedAt ? await mediaRepository.setArchived(id, null) : existing;
@@ -267,7 +267,7 @@ export async function restore(id: string, ctx: AuditContext): Promise<MediaDto> 
  * POST /admin/media/:id/replace-file — create a NEW asset and chain the old one
  * (`replaced_by_id`); the old asset is retained (API spec §7.5). Returns both refs.
  */
-export async function replaceFile(id: string, file: UploadFile, ctx: AuditContext): Promise<{ old: MediaDto; new: MediaDto }> {
+async function replaceFile(id: string, file: UploadFile, ctx: AuditContext): Promise<{ old: MediaDto; new: MediaDto }> {
   const old = await mediaRepository.findById(id);
   if (!old) throw new NotFoundError('Media asset not found.');
 
@@ -293,7 +293,7 @@ export async function replaceFile(id: string, file: UploadFile, ctx: AuditContex
  *   - S3: a newly-signed, time-limited GET URL (never persisted).
  *   - local: the configured direct storage URL (`/files/...`) for CMS/admin previews.
  */
-export async function getDeliveryUrl(id: string, variant?: MediaVariantName): Promise<{ url: string }> {
+async function getDeliveryUrl(id: string, variant?: MediaVariantName): Promise<{ url: string }> {
   const asset = await mediaRepository.findById(id);
   if (!asset || asset.archivedAt) throw new NotFoundError('Media asset not found.');
   const storedVariant = variant ? getStoredVariant(asset.variants, variant) : null;
@@ -304,7 +304,7 @@ export async function getDeliveryUrl(id: string, variant?: MediaVariantName): Pr
 }
 
 /** Result of opening a media file for delivery: either a redirect target or in-process bytes. */
-export type MediaDelivery =
+type MediaDelivery =
   | { kind: 'redirect'; url: string }
   | { kind: 'stream'; stream: NodeJS.ReadableStream; contentType: string; fileName: string; contentLength?: number }
   | { kind: 'buffer'; body: Buffer; contentType: string; fileName: string; contentLength?: number };
@@ -314,7 +314,7 @@ export type MediaDelivery =
  *   - S3: 302 redirect to a fresh signed URL (offloads bytes to object storage/CDN).
  *   - local: stream the file through the app (local files are not otherwise served).
  */
-export async function openFile(id: string, variant?: MediaVariantName): Promise<MediaDelivery> {
+async function openFile(id: string, variant?: MediaVariantName): Promise<MediaDelivery> {
   const asset = await mediaRepository.findById(id);
   if (!asset || asset.archivedAt) throw new NotFoundError('Media asset not found.');
 
@@ -329,7 +329,7 @@ export async function openFile(id: string, variant?: MediaVariantName): Promise<
 }
 
 /** Authenticated CMS delivery: previews unlinked/draft media without relaxing public access. */
-export async function openAdminFile(id: string, variant?: MediaVariantName): Promise<MediaDelivery> {
+async function openAdminFile(id: string, variant?: MediaVariantName): Promise<MediaDelivery> {
   const asset = await mediaRepository.findById(id);
   if (!asset || asset.archivedAt) throw new NotFoundError('Media asset not found.');
   return openStoredFile(asset, variant);
@@ -368,14 +368,14 @@ async function openStoredFile(asset: MediaAsset, variant?: MediaVariantName): Pr
   return { kind: 'buffer', body, contentType, fileName, contentLength: objectMeta.size };
 }
 
-export function parseVariant(value: unknown): MediaVariantName | undefined {
+function parseVariant(value: unknown): MediaVariantName | undefined {
   if (value === undefined) return undefined;
   if (isVariantName(value)) return value;
   throw new ValidationError({ variant: ['Variant must be one of: thumb, card, hero.'] });
 }
 
 /** GET /admin/media/:id/usages — where the asset is referenced. */
-export async function usages(id: string) {
+async function usages(id: string) {
   const asset = await mediaRepository.findById(id);
   if (!asset) throw new NotFoundError('Media asset not found.');
   const used = await mediaUsageService.whereUsed(id);
@@ -385,19 +385,6 @@ export async function usages(id: string) {
     field: u.field,
     created_at: u.createdAt.toISOString(),
   }));
-}
-
-/**
- * Hard delete — only permitted for an UNUSED, archived asset (build-context rule).
- * Not a routed endpoint; provided for completeness / future admin tooling.
- */
-export async function hardDelete(id: string): Promise<void> {
-  const asset = await mediaRepository.findById(id);
-  if (!asset) throw new NotFoundError('Media asset not found.');
-  if (await mediaUsageService.isUsed(id)) {
-    throw new ProtectedRecordError('This media asset is in use and cannot be deleted.');
-  }
-  throw new ProtectedRecordError('Hard delete is disabled; archive media instead.');
 }
 
 export const mediaService = {

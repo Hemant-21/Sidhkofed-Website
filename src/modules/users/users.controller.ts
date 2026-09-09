@@ -25,7 +25,7 @@ const wrap =
   };
 
 // ── Admin user management ──────────────────────────────────────────────────────
-export const list = wrap(async (req) => {
+const list = wrap(async (req) => {
   const page = resolvePageParams(req.query.page, req.query.page_size);
   const filters = parseUserFilters(req);
   const ordering = parseUserOrdering(req);
@@ -33,43 +33,43 @@ export const list = wrap(async (req) => {
   return { status: 200, body: paginated(items, buildPagination(total, page), String(req.id)) };
 });
 
-export const detail = wrap(async (req) => {
+const detail = wrap(async (req) => {
   const dto = await userService.getById(req.params.id as string);
   return { status: 200, body: success(dto, String(req.id)) };
 });
 
-export const create = wrap(async (req) => {
+const create = wrap(async (req) => {
   const input = validateUserCreate(req.body);
   const dto = await userService.create(input, auditContext(req));
   return { status: 201, body: success(dto, String(req.id), 'User created.') };
 });
 
-export const patch = wrap(async (req) => {
+const patch = wrap(async (req) => {
   const input = validateUserUpdate(req.body);
   const dto = await userService.update(req.params.id as string, input, auditContext(req));
   return { status: 200, body: success(dto, String(req.id), 'User updated.') };
 });
 
-export const password = wrap(async (req) => {
+const password = wrap(async (req) => {
   const input = validateUserPassword(req.body);
   await userService.resetPassword(req.params.id as string, input, auditContext(req));
   return { status: 200, body: success({ id: req.params.id }, String(req.id), 'Password reset.') };
 });
 
-export const status = wrap(async (req) => {
+const status = wrap(async (req) => {
   const input = validateUserStatus(req.body);
   const dto = await userService.setStatus(req.params.id as string, input, auditContext(req));
   return { status: 200, body: success(dto, String(req.id), 'User status updated.') };
 });
 
 // ── Self-service profile ───────────────────────────────────────────────────────
-export const profileUpdate = wrap(async (req) => {
+const profileUpdate = wrap(async (req) => {
   const input = validateProfileUpdate(req.body);
   const dto = await userService.updateOwnProfile(input, auditContext(req));
   return { status: 200, body: success(dto, String(req.id), 'Profile updated.') };
 });
 
-export const profilePassword = wrap(async (req) => {
+const profilePassword = wrap(async (req) => {
   const input = validateProfilePassword(req.body);
   await userService.changeOwnPassword(input, auditContext(req));
   return { status: 200, body: success({ id: req.user?.id }, String(req.id), 'Password changed.') };

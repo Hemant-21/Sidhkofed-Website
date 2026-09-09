@@ -29,14 +29,14 @@ const baseShape = {
   ...workflowShape,
 };
 
-export const institutionCreateSchema = z
+const institutionCreateSchema = z
   .object(baseShape)
   .strict()
   .superRefine((data, ctx) => refineHighlightWindow(data, ctx));
 export type InstitutionCreateInput = z.infer<typeof institutionCreateSchema>;
 export const validateInstitutionCreate = (p: unknown): InstitutionCreateInput => parseSchema(institutionCreateSchema, p);
 
-export const institutionUpdateSchema = z
+const institutionUpdateSchema = z
   .object(baseShape)
   .partial()
   .strict()

@@ -38,7 +38,7 @@ function sweepExpired(now: number): void {
   }
 }
 
-export function rateLimit(options: RateLimitOptions) {
+function rateLimit(options: RateLimitOptions) {
   return (req: Request, res: Response, next: NextFunction): void => {
     if (!rateLimitConfig.enabled || options.max <= 0) return next();
 

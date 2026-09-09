@@ -450,28 +450,6 @@ async function seedCoreContent(userId: string, media: MediaFixture[]) {
     }
   }
 
-  const pageIds = Array.from({ length: 12 }, (_, i) => fixtureId('page', i));
-  for (let i = 0; i < pageIds.length; i += 1) {
-    await upsert(db.page, pageIds[i], {
-      titleEn: `Demo Institutional Page ${i + 1}`, titleHi: i % 2 === 0 ? `डेमो पृष्ठ ${i + 1}` : null,
-      bodyEn: 'Fictional institutional page content for CMS editing, SEO, menus, and public detail testing.',
-      bodyHi: i % 2 === 0 ? 'यह केवल परीक्षण के लिए काल्पनिक पृष्ठ है।' : null,
-      metaTitleEn: `Demo Page ${i + 1} | SIDHKOFED`, metaDescriptionEn: 'Fictional SEO fixture.',
-      slug: `demo-page-${i + 1}`, ...publication(i, 12, 0), createdById: userId, updatedById: userId,
-    });
-  }
-  const menuIds = Array.from({ length: 24 }, (_, i) => fixtureId('menu', i));
-  for (let i = 0; i < menuIds.length; i += 1) {
-    await upsert(db.menuItem, menuIds[i], {
-      labelEn: `Demo Menu ${i + 1}`, labelHi: i % 2 === 0 ? `डेमो मेनू ${i + 1}` : null,
-      location: i < 12 ? 'header' : i < 20 ? 'footer' : 'utility',
-      url: i % 4 === 0 ? `https://example.test/menu/${i + 1}` : null,
-      pageId: i % 4 === 0 ? null : pageIds[i % pageIds.length],
-      parentId: i >= 6 && i < 12 ? menuIds[i % 6] : null,
-      opensNewTab: i % 4 === 0, displayOrder: i + 1, isActive: i !== 23, createdById: userId, updatedById: userId,
-    });
-  }
-
   for (let i = 0; i < 12; i += 1) {
     await upsert(db.faq, fixtureId('faq', i), {
       faqCategoryId: faqCategories[i % faqCategories.length].id,
@@ -527,7 +505,7 @@ async function seedCoreContent(userId: string, media: MediaFixture[]) {
     });
   }
 
-  return { institutionIds, programmeIds, toolkitIds, documentIds, galleryIds, eventIds, pageIds };
+  return { institutionIds, programmeIds, toolkitIds, documentIds, galleryIds, eventIds };
 }
 
 async function seedDashboard(userId: string, media: MediaFixture[]) {

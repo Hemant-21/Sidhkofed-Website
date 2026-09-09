@@ -7,7 +7,7 @@
  */
 import type { FaqRow } from './faqs.repository';
 
-export interface MasterRef {
+interface MasterRef {
   id: string;
   slug: string;
   name_en: string;

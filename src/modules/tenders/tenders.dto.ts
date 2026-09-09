@@ -7,7 +7,7 @@
  */
 import type { TenderRow } from './tenders.repository';
 
-export interface MasterRef {
+interface MasterRef {
   id: string;
   slug: string;
   name_en: string;

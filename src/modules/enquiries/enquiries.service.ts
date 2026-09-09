@@ -51,7 +51,7 @@ function loaded(row: EnquiryRow | null): EnquiryRow {
  * Submit a public enquiry.
  * `ipHash` is the privacy-safe hashed IP from the controller (never the raw IP).
  */
-export async function submit(
+async function submit(
   input: EnquirySubmitInput,
   ipHash: string | null,
 ): Promise<EnquirySubmitDto> {
@@ -118,12 +118,12 @@ export async function submit(
 
 // ── Admin reads ────────────────────────────────────────────────────────────────
 
-export interface ListResult {
+interface ListResult {
   items: EnquirySummaryDto[];
   total: number;
 }
 
-export async function list(
+async function list(
   filters: EnquiryFilters,
   ordering: { field: EnquiryOrderingField; direction: 'asc' | 'desc' },
   skip: number,
@@ -133,14 +133,14 @@ export async function list(
   return { items: rows.map(toEnquirySummaryDto), total };
 }
 
-export async function getById(id: string): Promise<EnquiryDetailDto> {
+async function getById(id: string): Promise<EnquiryDetailDto> {
   return toEnquiryDetailDto(loaded(await enquiryRepository.findById(id)));
 }
 
 // ── Admin mutation ─────────────────────────────────────────────────────────────
 
 /** PATCH — only internal_notes and spam_state may be changed (API spec §6). */
-export async function patch(
+async function patch(
   id: string,
   input: EnquiryAdminPatchInput,
   ctx: AuditContext,
@@ -158,7 +158,7 @@ export async function patch(
 }
 
 /** Archive — idempotent; archived enquiry is hidden from default listings. */
-export async function archive(id: string, ctx: AuditContext): Promise<EnquiryDetailDto> {
+async function archive(id: string, ctx: AuditContext): Promise<EnquiryDetailDto> {
   const existing = loaded(await enquiryRepository.findById(id));
   if (existing.archivedAt) return toEnquiryDetailDto(existing); // already archived → no-op
   const updated = await enquiryRepository.update(id, { archivedAt: new Date() });
@@ -169,7 +169,7 @@ export async function archive(id: string, ctx: AuditContext): Promise<EnquiryDet
 // ── Export ─────────────────────────────────────────────────────────────────────
 
 /** Fetch all enquiry rows for XLSX export (API spec §6 — only enquiries export). */
-export async function exportRows(filters: EnquiryFilters): Promise<EnquiryExportRow[]> {
+async function exportRows(filters: EnquiryFilters): Promise<EnquiryExportRow[]> {
   const rows = await enquiryRepository.listAll(filters);
   return rows.map(toEnquiryExportRow);
 }

@@ -28,7 +28,7 @@ function listCacheKey(filters: DigitalServiceFilters, ordering: unknown, page: n
 }
 
 /** GET /public/digital-services */
-export const list = wrap(async (req) => {
+const list = wrap(async (req) => {
   const page = resolvePageParams(req.query.page, req.query.page_size);
   const filters = parseDigitalServiceFilters(req, { admin: false });
   const ordering = parseDigitalServiceOrdering(req);

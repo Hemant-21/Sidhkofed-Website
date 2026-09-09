@@ -18,7 +18,7 @@ function toUploadFile(f: MulterFile): UploadFile {
 }
 
 /** POST /admin/media  (and alias /admin/media/upload) */
-export function upload(req: Request, res: Response, next: NextFunction): void {
+function upload(req: Request, res: Response, next: NextFunction): void {
   const file = (req as Request & { file?: MulterFile }).file;
   if (!file) return next(new ValidationError({ file: ['A file is required.'] }));
   let meta;
@@ -36,7 +36,7 @@ export function upload(req: Request, res: Response, next: NextFunction): void {
 }
 
 /** POST /admin/media/bulk-upload */
-export function bulkUpload(req: Request, res: Response, next: NextFunction): void {
+function bulkUpload(req: Request, res: Response, next: NextFunction): void {
   const files = (req as Request & { files?: MulterFile[] }).files;
   if (!files || files.length === 0) return next(new ValidationError({ files: ['At least one file is required.'] }));
   mediaService
@@ -46,7 +46,7 @@ export function bulkUpload(req: Request, res: Response, next: NextFunction): voi
 }
 
 /** GET /admin/media */
-export function list(req: Request, res: Response, next: NextFunction): void {
+function list(req: Request, res: Response, next: NextFunction): void {
   let query;
   try {
     query = validateMediaQuery(req.query);
@@ -61,7 +61,7 @@ export function list(req: Request, res: Response, next: NextFunction): void {
 }
 
 /** GET /admin/media/:id */
-export function detail(req: Request, res: Response, next: NextFunction): void {
+function detail(req: Request, res: Response, next: NextFunction): void {
   mediaService
     .getById(req.params.id as string)
     .then((dto) => res.status(200).json(success(dto, String(req.id))))
@@ -69,7 +69,7 @@ export function detail(req: Request, res: Response, next: NextFunction): void {
 }
 
 /** PATCH /admin/media/:id */
-export function patch(req: Request, res: Response, next: NextFunction): void {
+function patch(req: Request, res: Response, next: NextFunction): void {
   let meta;
   try {
     meta = validateMediaMeta(req.body);
@@ -83,7 +83,7 @@ export function patch(req: Request, res: Response, next: NextFunction): void {
 }
 
 /** POST /admin/media/:id/archive */
-export function archive(req: Request, res: Response, next: NextFunction): void {
+function archive(req: Request, res: Response, next: NextFunction): void {
   mediaService
     .archive(req.params.id as string, auditContext(req))
     .then((dto) => res.status(200).json(success(dto, String(req.id), 'Media archived.')))
@@ -91,7 +91,7 @@ export function archive(req: Request, res: Response, next: NextFunction): void {
 }
 
 /** POST /admin/media/:id/restore */
-export function restore(req: Request, res: Response, next: NextFunction): void {
+function restore(req: Request, res: Response, next: NextFunction): void {
   mediaService
     .restore(req.params.id as string, auditContext(req))
     .then((dto) => res.status(200).json(success(dto, String(req.id), 'Media restored.')))
@@ -99,7 +99,7 @@ export function restore(req: Request, res: Response, next: NextFunction): void {
 }
 
 /** POST /admin/media/:id/replace-file */
-export function replaceFile(req: Request, res: Response, next: NextFunction): void {
+function replaceFile(req: Request, res: Response, next: NextFunction): void {
   const file = (req as Request & { file?: MulterFile }).file;
   if (!file) return next(new ValidationError({ file: ['A replacement file is required.'] }));
   mediaService
@@ -109,7 +109,7 @@ export function replaceFile(req: Request, res: Response, next: NextFunction): vo
 }
 
 /** GET /admin/media/:id/usages */
-export function usages(req: Request, res: Response, next: NextFunction): void {
+function usages(req: Request, res: Response, next: NextFunction): void {
   mediaService
     .usages(req.params.id as string)
     .then((rows) => res.status(200).json(success(rows, String(req.id))))
@@ -117,7 +117,7 @@ export function usages(req: Request, res: Response, next: NextFunction): void {
 }
 
 /** GET /admin/media/:id/url — fresh, on-demand delivery URL (signed for S3). */
-export function getUrl(req: Request, res: Response, next: NextFunction): void {
+function getUrl(req: Request, res: Response, next: NextFunction): void {
   let variant;
   try {
     variant = mediaService.parseVariant(req.query.variant);
@@ -131,7 +131,7 @@ export function getUrl(req: Request, res: Response, next: NextFunction): void {
 }
 
 /** GET /public/media/:id/file — deliver bytes (local stream) or redirect (S3 signed URL). */
-export function serveFile(req: Request, res: Response, next: NextFunction): void {
+function serveFile(req: Request, res: Response, next: NextFunction): void {
   let variant;
   try {
     variant = mediaService.parseVariant(req.query.variant);
@@ -162,7 +162,7 @@ export function serveFile(req: Request, res: Response, next: NextFunction): void
 }
 
 /** GET /admin/media/:id/file: authenticated CMS preview/download, including unlinked media. */
-export function serveAdminFile(req: Request, res: Response, next: NextFunction): void {
+function serveAdminFile(req: Request, res: Response, next: NextFunction): void {
   let variant;
   try {
     variant = mediaService.parseVariant(req.query.variant);

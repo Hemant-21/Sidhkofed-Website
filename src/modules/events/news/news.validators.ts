@@ -19,7 +19,7 @@ const editableShape = {
 };
 
 /** Body of POST /admin/events/{id}/publish-as-news — all optional overrides. */
-export const publishAsNewsSchema = z
+const publishAsNewsSchema = z
   .object(editableShape)
   .strict()
   .superRefine((data, ctx) => refineHighlightWindow(data, ctx));
@@ -27,7 +27,7 @@ export type PublishAsNewsInput = z.infer<typeof publishAsNewsSchema>;
 export const validatePublishAsNews = (p: unknown): PublishAsNewsInput => parseSchema(publishAsNewsSchema, p);
 
 /** PATCH /admin/news/{id}. */
-export const newsUpdateSchema = z
+const newsUpdateSchema = z
   .object(editableShape)
   .strict()
   .superRefine((data, ctx) => refineHighlightWindow(data, ctx));

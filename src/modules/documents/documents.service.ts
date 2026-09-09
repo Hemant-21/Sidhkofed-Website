@@ -86,7 +86,7 @@ function requireUser(ctx: AuditContext): string {
 }
 
 // ── Create ────────────────────────────────────────────────────────────────────
-export async function create(input: DocumentCreateInput, ctx: AuditContext): Promise<DocumentDetailDto> {
+async function create(input: DocumentCreateInput, ctx: AuditContext): Promise<DocumentDetailDto> {
   const userId = requireUser(ctx);
 
   // Business rules: file must exist + be document-like; masters active; KC rule.
@@ -154,7 +154,7 @@ export async function create(input: DocumentCreateInput, ctx: AuditContext): Pro
 }
 
 // ── Update (PATCH — partial; never transitions publication state) ──────────────
-export async function update(id: string, input: DocumentUpdateInput, ctx: AuditContext): Promise<DocumentDetailDto> {
+async function update(id: string, input: DocumentUpdateInput, ctx: AuditContext): Promise<DocumentDetailDto> {
   const userId = requireUser(ctx);
   const existing = loaded(await documentRepository.findById(id));
 
@@ -229,16 +229,16 @@ export async function update(id: string, input: DocumentUpdateInput, ctx: AuditC
 }
 
 // ── Read ───────────────────────────────────────────────────────────────────────
-export async function getById(id: string): Promise<DocumentDetailDto> {
+async function getById(id: string): Promise<DocumentDetailDto> {
   return toDocumentDetailDto(loaded(await documentRepository.findById(id)));
 }
 
-export interface ListResult<T> {
+interface ListResult<T> {
   items: T[];
   total: number;
 }
 
-export async function list(
+async function list(
   filters: DocumentFilters,
   ordering: { field: DocumentOrderingField; direction: 'asc' | 'desc' },
   skip: number,
@@ -249,7 +249,7 @@ export async function list(
 }
 
 // ── Lifecycle (publish / unpublish / archive / restore) ────────────────────────
-export async function lifecycle(id: string, action: LifecycleAction, ctx: AuditContext): Promise<DocumentDetailDto> {
+async function lifecycle(id: string, action: LifecycleAction, ctx: AuditContext): Promise<DocumentDetailDto> {
   const userId = requireUser(ctx);
   const existing = loaded(await documentRepository.findById(id));
 
@@ -284,7 +284,7 @@ export async function lifecycle(id: string, action: LifecycleAction, ctx: AuditC
  * is moved to the new asset, and the replacement is audited as `media_replace` with the prior
  * asset id recorded for version history.
  */
-export async function replaceFile(id: string, newFileAssetId: string, ctx: AuditContext): Promise<DocumentDetailDto> {
+async function replaceFile(id: string, newFileAssetId: string, ctx: AuditContext): Promise<DocumentDetailDto> {
   const userId = requireUser(ctx);
   const existing = loaded(await documentRepository.findById(id));
 
@@ -318,7 +318,7 @@ export async function replaceFile(id: string, newFileAssetId: string, ctx: Audit
 }
 
 // ── Public reads (visibility predicate + in-process cache) ──────────────────────────
-export async function publicList(
+async function publicList(
   filters: DocumentFilters,
   ordering: { field: DocumentOrderingField; direction: 'asc' | 'desc' },
   page: { skip: number; take: number; page: number; pageSize: number },
@@ -333,7 +333,7 @@ export async function publicList(
   return result;
 }
 
-export async function publicDetailBySlug(slug: string): Promise<PublicDocumentDetailDto> {
+async function publicDetailBySlug(slug: string): Promise<PublicDocumentDetailDto> {
   const cacheKey = `${PUBLIC_CACHE_PREFIX}:slug:${slug}`;
   const cached = await cacheService.getJson<PublicDocumentDetailDto>(cacheKey);
   if (cached) return cached;

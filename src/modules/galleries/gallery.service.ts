@@ -70,7 +70,7 @@ async function toAdminGalleryDto(row: GalleryRow): Promise<GalleryDto> {
   return dto;
 }
 
-export async function create(input: GalleryCreateInput, ctx: AuditContext): Promise<GalleryDto> {
+async function create(input: GalleryCreateInput, ctx: AuditContext): Promise<GalleryDto> {
   if (input.cover_media_id) await assertLinkableMedia(input.cover_media_id);
   const slug = await uniqueSlug(input.title_en, galleryRepository.slugExists);
   const userId = ctx.userId ?? null;
@@ -108,17 +108,17 @@ export async function create(input: GalleryCreateInput, ctx: AuditContext): Prom
   return toAdminGalleryDto(gallery);
 }
 
-export async function list(filters: { publicationState?: 'draft' | 'published' | 'unpublished' | 'archived'; search?: string }, skip: number, take: number) {
+async function list(filters: { publicationState?: 'draft' | 'published' | 'unpublished' | 'archived'; search?: string }, skip: number, take: number) {
   // List returns the lightweight summary (cover + image count) — not every image (Issue 11).
   const { rows, total } = await galleryRepository.list(filters, skip, take, 'desc');
   return { items: await Promise.all(rows.map(toAdminGalleryListItemDto)), total };
 }
 
-export async function getById(id: string): Promise<GalleryDto> {
+async function getById(id: string): Promise<GalleryDto> {
   return toAdminGalleryDto(loaded(await galleryRepository.findById(id)));
 }
 
-export async function update(id: string, input: GalleryUpdateInput, ctx: AuditContext): Promise<GalleryDto> {
+async function update(id: string, input: GalleryUpdateInput, ctx: AuditContext): Promise<GalleryDto> {
   const existing = loaded(await galleryRepository.findById(id));
 
   // Cover change → re-point media usage.
@@ -158,7 +158,7 @@ export async function update(id: string, input: GalleryUpdateInput, ctx: AuditCo
   return toAdminGalleryDto(updated);
 }
 
-export async function lifecycle(id: string, action: LifecycleAction, ctx: AuditContext): Promise<GalleryDto> {
+async function lifecycle(id: string, action: LifecycleAction, ctx: AuditContext): Promise<GalleryDto> {
   const existing = loaded(await galleryRepository.findById(id));
   const change = applyLifecycle(
     { publicationState: existing.publicationState as 'draft', publishedAt: existing.publishedAt, archivedAt: existing.archivedAt },
@@ -176,7 +176,7 @@ export async function lifecycle(id: string, action: LifecycleAction, ctx: AuditC
 }
 
 // ── Images ────────────────────────────────────────────────────────────────────
-export async function addImage(galleryId: string, input: GalleryImageInput, ctx: AuditContext): Promise<GalleryDto> {
+async function addImage(galleryId: string, input: GalleryImageInput, ctx: AuditContext): Promise<GalleryDto> {
   loaded(await galleryRepository.findById(galleryId));
   await assertLinkableMedia(input.media_id);
 
@@ -201,7 +201,7 @@ export async function addImage(galleryId: string, input: GalleryImageInput, ctx:
   return getById(galleryId);
 }
 
-export async function updateImage(galleryId: string, imageId: string, input: GalleryImageUpdateInput, ctx: AuditContext): Promise<GalleryDto> {
+async function updateImage(galleryId: string, imageId: string, input: GalleryImageUpdateInput, ctx: AuditContext): Promise<GalleryDto> {
   loaded(await galleryRepository.findById(galleryId));
   const image = await galleryRepository.findImage(galleryId, imageId);
   if (!image) throw new NotFoundError('Gallery image not found.');
@@ -215,7 +215,7 @@ export async function updateImage(galleryId: string, imageId: string, input: Gal
   return getById(galleryId);
 }
 
-export async function removeImage(galleryId: string, imageId: string, ctx: AuditContext): Promise<GalleryDto> {
+async function removeImage(galleryId: string, imageId: string, ctx: AuditContext): Promise<GalleryDto> {
   loaded(await galleryRepository.findById(galleryId));
   const image = await galleryRepository.findImage(galleryId, imageId);
   if (!image) throw new NotFoundError('Gallery image not found.');
@@ -229,7 +229,7 @@ export async function removeImage(galleryId: string, imageId: string, ctx: Audit
   return getById(galleryId);
 }
 
-export async function reorderImages(galleryId: string, input: ReorderInput, ctx: AuditContext): Promise<GalleryDto> {
+async function reorderImages(galleryId: string, input: ReorderInput, ctx: AuditContext): Promise<GalleryDto> {
   loaded(await galleryRepository.findById(galleryId));
   await galleryRepository.transaction(async (tx) => {
     for (const item of input.order) {
@@ -244,12 +244,12 @@ export async function reorderImages(galleryId: string, input: ReorderInput, ctx:
 }
 
 // ── Public reads (visibility predicate + in-process cache) ──────────────────────────
-export interface PublicListResult<T> {
+interface PublicListResult<T> {
   items: T[];
   total: number;
 }
 
-export async function publicList(
+async function publicList(
   filters: GalleryPublicListFilters,
   ordering: { field: GalleryOrderingField; direction: 'asc' | 'desc' },
   page: { skip: number; take: number },
@@ -263,7 +263,7 @@ export async function publicList(
   return result;
 }
 
-export async function publicDetailBySlug(slug: string): Promise<PublicGalleryDetailDto> {
+async function publicDetailBySlug(slug: string): Promise<PublicGalleryDetailDto> {
   const cacheKey = `${PUBLIC_CACHE_PREFIX}:slug:${slug}`;
   const cached = await cacheService.getJson<PublicGalleryDetailDto>(cacheKey);
   if (cached) return cached;

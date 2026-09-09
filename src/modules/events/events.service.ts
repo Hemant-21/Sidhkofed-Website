@@ -81,7 +81,7 @@ function resolveStatus(args: {
 }
 
 // ── Create ────────────────────────────────────────────────────────────────────
-export async function create(input: EventCreateInput, ctx: AuditContext): Promise<EventDetailDto> {
+async function create(input: EventCreateInput, ctx: AuditContext): Promise<EventDetailDto> {
   const userId = requireUser(ctx);
   if (input.cover_media_id) await assertLinkableCover(input.cover_media_id);
   await assertReferencesValid({
@@ -162,7 +162,7 @@ export async function create(input: EventCreateInput, ctx: AuditContext): Promis
 }
 
 // ── Update (PATCH — never transitions publication state) ───────────────────────
-export async function update(id: string, input: EventUpdateInput, ctx: AuditContext): Promise<EventDetailDto> {
+async function update(id: string, input: EventUpdateInput, ctx: AuditContext): Promise<EventDetailDto> {
   const userId = requireUser(ctx);
   const existing = loaded(await eventRepository.findById(id));
 
@@ -278,16 +278,16 @@ export async function update(id: string, input: EventUpdateInput, ctx: AuditCont
 }
 
 // ── Read ───────────────────────────────────────────────────────────────────────
-export async function getById(id: string): Promise<EventDetailDto> {
+async function getById(id: string): Promise<EventDetailDto> {
   return toEventDetailDto(loaded(await eventRepository.findById(id)));
 }
 
-export interface ListResult<T> {
+interface ListResult<T> {
   items: T[];
   total: number;
 }
 
-export async function list(
+async function list(
   filters: EventFilters,
   ordering: { field: EventOrderingField; direction: 'asc' | 'desc' },
   skip: number,
@@ -298,7 +298,7 @@ export async function list(
 }
 
 // ── Lifecycle ──────────────────────────────────────────────────────────────────
-export async function lifecycle(id: string, action: LifecycleAction, ctx: AuditContext): Promise<EventDetailDto> {
+async function lifecycle(id: string, action: LifecycleAction, ctx: AuditContext): Promise<EventDetailDto> {
   const userId = requireUser(ctx);
   const existing = loaded(await eventRepository.findById(id));
   const change = applyLifecycle(
@@ -317,7 +317,7 @@ export async function lifecycle(id: string, action: LifecycleAction, ctx: AuditC
 }
 
 // ── Complete (capture outcome fields; guard against duplicate completion) ──────
-export async function complete(id: string, input: EventCompleteInput, ctx: AuditContext): Promise<EventDetailDto> {
+async function complete(id: string, input: EventCompleteInput, ctx: AuditContext): Promise<EventDetailDto> {
   const userId = requireUser(ctx);
   const existing = loaded(await eventRepository.findById(id));
   if (existing.completedDate) {
@@ -375,7 +375,7 @@ export async function complete(id: string, input: EventCompleteInput, ctx: Audit
 }
 
 // ── Cancel (manual override; retains original date, supports revised date) ─────
-export async function cancel(id: string, input: EventCancelInput, ctx: AuditContext): Promise<EventDetailDto> {
+async function cancel(id: string, input: EventCancelInput, ctx: AuditContext): Promise<EventDetailDto> {
   const userId = requireUser(ctx);
   const existing = loaded(await eventRepository.findById(id));
   if (existing.eventStatus === 'cancelled') throw new ConflictError('Event is already cancelled.');
@@ -402,7 +402,7 @@ export async function cancel(id: string, input: EventCancelInput, ctx: AuditCont
 }
 
 // ── Public reads ─────────────────────────────────────────────────────────────
-export async function publicList(
+async function publicList(
   filters: EventFilters,
   ordering: { field: EventOrderingField; direction: 'asc' | 'desc' },
   page: { skip: number; take: number; page: number; pageSize: number },
@@ -416,7 +416,7 @@ export async function publicList(
   return result;
 }
 
-export async function publicDetailBySlug(slug: string): Promise<PublicEventDetailDto> {
+async function publicDetailBySlug(slug: string): Promise<PublicEventDetailDto> {
   const cacheKey = `${PUBLIC_CACHE_PREFIX}:slug:${slug}`;
   const cached = await cacheService.getJson<PublicEventDetailDto>(cacheKey);
   if (cached) return cached;
@@ -430,7 +430,7 @@ export async function publicDetailBySlug(slug: string): Promise<PublicEventDetai
 }
 
 // ── Scheduled event-status recompute (Phase 14 lifecycle automation) ────────────
-export interface StatusRecomputeResult {
+interface StatusRecomputeResult {
   processed: number;
   updated: number;
   errors: Array<{ recordId: string; message: string }>;
@@ -445,7 +445,7 @@ export interface StatusRecomputeResult {
  * the public cache is invalidated once when anything changed. Idempotent: a record already in its
  * derived state is skipped.
  */
-export async function recomputeScheduledStatuses(
+async function recomputeScheduledStatuses(
   ctx: AuditContext,
   batchSize: number,
   now: Date = new Date(),

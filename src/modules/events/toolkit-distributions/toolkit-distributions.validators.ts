@@ -54,7 +54,7 @@ const baseShape = {
   items: z.array(itemShape).max(200).optional(),
 };
 
-export const distributionCreateSchema = z
+const distributionCreateSchema = z
   .object(baseShape)
   .strict()
   .superRefine((data, ctx) => refineDistinctItems(data.items, ctx));
@@ -72,7 +72,7 @@ const updateShape = {
   remarks_hi: baseShape.remarks_hi,
   items: baseShape.items,
 };
-export const distributionUpdateSchema = z
+const distributionUpdateSchema = z
   .object(updateShape)
   .partial()
   .strict()

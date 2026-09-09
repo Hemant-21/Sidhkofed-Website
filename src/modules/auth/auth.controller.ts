@@ -45,7 +45,7 @@ function resolveRefreshToken(req: Request): string | undefined {
 }
 
 /** `POST /auth/login` — issue tokens, set the refresh cookie, return the session. */
-export function login(req: Request, res: Response, next: NextFunction): void {
+function login(req: Request, res: Response, next: NextFunction): void {
   const input = validateLogin(req.body);
   authService
     .login(input, { ipHash: ipHash(req) })
@@ -57,7 +57,7 @@ export function login(req: Request, res: Response, next: NextFunction): void {
 }
 
 /** `POST /auth/refresh` — rotate the refresh token and return a fresh session. */
-export function refresh(req: Request, res: Response, next: NextFunction): void {
+function refresh(req: Request, res: Response, next: NextFunction): void {
   let token: string | undefined;
   try {
     token = resolveRefreshToken(req);
@@ -79,7 +79,7 @@ export function refresh(req: Request, res: Response, next: NextFunction): void {
 }
 
 /** `POST /auth/logout` — revoke the session, clear the cookie. Idempotent → 204. */
-export function logout(req: Request, res: Response, next: NextFunction): void {
+function logout(req: Request, res: Response, next: NextFunction): void {
   let token: string | undefined;
   try {
     token = resolveRefreshToken(req);
@@ -96,7 +96,7 @@ export function logout(req: Request, res: Response, next: NextFunction): void {
 }
 
 /** `GET /auth/me` — return the authenticated user's profile + roles/permissions. */
-export function me(req: Request, res: Response, next: NextFunction): void {
+function me(req: Request, res: Response, next: NextFunction): void {
   if (!req.user) {
     return next(new AuthenticationError('Authentication required.'));
   }

@@ -62,7 +62,7 @@ async function assertLinkablePhoto(mediaId: string): Promise<void> {
 }
 
 // ── Create ────────────────────────────────────────────────────────────────────
-export async function create(input: LeadershipCreateInput, ctx: AuditContext): Promise<LeadershipDetailDto> {
+async function create(input: LeadershipCreateInput, ctx: AuditContext): Promise<LeadershipDetailDto> {
   const userId = requireUser(ctx);
   if (input.photo_media_id) await assertLinkablePhoto(input.photo_media_id);
 
@@ -105,7 +105,7 @@ export async function create(input: LeadershipCreateInput, ctx: AuditContext): P
 }
 
 // ── Update (PATCH — partial; never transitions publication state, never changes slug) ──
-export async function update(
+async function update(
   id: string,
   input: LeadershipUpdateInput,
   ctx: AuditContext,
@@ -161,16 +161,16 @@ export async function update(
 }
 
 // ── Read ───────────────────────────────────────────────────────────────────────
-export async function getById(id: string): Promise<LeadershipDetailDto> {
+async function getById(id: string): Promise<LeadershipDetailDto> {
   return toLeadershipDetailDto(loaded(await leadershipRepository.findById(id)));
 }
 
-export interface ListResult<T> {
+interface ListResult<T> {
   items: T[];
   total: number;
 }
 
-export async function list(
+async function list(
   filters: LeadershipFilters,
   ordering: { field: LeadershipOrderingField; direction: 'asc' | 'desc' },
   skip: number,
@@ -181,7 +181,7 @@ export async function list(
 }
 
 // ── Lifecycle ──────────────────────────────────────────────────────────────────
-export async function lifecycle(
+async function lifecycle(
   id: string,
   action: LifecycleAction,
   ctx: AuditContext,
@@ -204,7 +204,7 @@ export async function lifecycle(
 }
 
 // ── Public reads (visibility predicate + in-process cache) ──────────────────────────
-export async function publicList(
+async function publicList(
   filters: LeadershipFilters,
   ordering: { field: LeadershipOrderingField; direction: 'asc' | 'desc' },
   page: { skip: number; take: number; page: number; pageSize: number },

@@ -7,7 +7,6 @@
  * generic and read everything they need from the definition registry.
  */
 import type { ZodTypeAny } from 'zod';
-import type { AuditContext } from '@/modules/audit/audit.service';
 
 /** A master row as returned by Prisma — kept structural so the framework stays generic. */
 export type MasterRow = Record<string, unknown>;
@@ -36,7 +35,7 @@ export interface MasterValidationContext {
 }
 
 /** A resolved list filter: the Prisma `where` fragment plus a cache-key suffix. */
-export interface MasterFilter {
+interface MasterFilter {
   where: Record<string, unknown>;
   cacheSuffix: string;
 }
@@ -93,6 +92,3 @@ export interface MasterDefinition {
   /** Optional list filter resolver (e.g. blocks by district). */
   resolveFilter?(query: Record<string, unknown>): MasterFilter;
 }
-
-/** Re-exported for service signatures. */
-export type { AuditContext };

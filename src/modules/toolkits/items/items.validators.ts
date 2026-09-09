@@ -42,7 +42,7 @@ function refineGroupSize(
   }
 }
 
-export const toolkitItemCreateSchema = z
+const toolkitItemCreateSchema = z
   .object(baseShape)
   .strict()
   .superRefine((data, ctx) => refineGroupSize(data, ctx));
@@ -51,6 +51,6 @@ export const validateToolkitItemCreate = (p: unknown): ToolkitItemCreateInput =>
 
 // No group-size refinement on update: a PATCH carries partial fields, so the basis↔group-size
 // consistency must be checked against the MERGED state in the service.
-export const toolkitItemUpdateSchema = z.object(baseShape).partial().strict();
+const toolkitItemUpdateSchema = z.object(baseShape).partial().strict();
 export type ToolkitItemUpdateInput = z.infer<typeof toolkitItemUpdateSchema>;
 export const validateToolkitItemUpdate = (p: unknown): ToolkitItemUpdateInput => parseSchema(toolkitItemUpdateSchema, p);

@@ -2,9 +2,8 @@
  * Event DTOs + mappers (API spec §5/§6, Appendix A.1/A.2). Shapes: admin summary/detail, public
  * summary/detail. List responses are lightweight (no dynamic_values / relationships); detail
  * returns all common fields, dynamic_values, completion fields, every linked master/relationship,
- * and the news link when published as news. `toEventRef` is the compact cross-module reference.
+ * and the news link when published as news.
  */
-import type { Event } from '@prisma/client';
 import { mediaRef, type MediaRef, type MasterRef } from '@/modules/institutions/institutions.dto';
 import type { EventRow, EventSummaryRow } from './events.repository';
 
@@ -17,18 +16,6 @@ const iso = (d: Date | null): string | null => (d ? d.toISOString() : null);
 const dateOnly = (d: Date | null): string | null => (d ? d.toISOString().slice(0, 10) : null);
 const dynamic = (v: unknown): Record<string, unknown> =>
   v && typeof v === 'object' && !Array.isArray(v) ? (v as Record<string, unknown>) : {};
-
-// ── Compact references ─────────────────────────────────────────────────────────
-export interface EventRef {
-  id: string;
-  slug: string;
-  title_en: string;
-  title_hi: string | null;
-  event_status: string;
-}
-export function toEventRef(e: Event): EventRef {
-  return { id: e.id, slug: e.slug, title_en: e.titleEn, title_hi: e.titleHi, event_status: e.eventStatus };
-}
 
 interface DocumentLinkRef {
   id: string;

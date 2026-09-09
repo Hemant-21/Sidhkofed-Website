@@ -20,7 +20,7 @@ function auditContext(req: Request): AuditContext {
 }
 
 /** GET /admin/settings — all settings, grouped by category. */
-export function listAll(req: Request, res: Response, next: NextFunction): void {
+function listAll(req: Request, res: Response, next: NextFunction): void {
   settingsService
     .getAllWithMeta()
     .then((items) => {
@@ -34,7 +34,7 @@ export function listAll(req: Request, res: Response, next: NextFunction): void {
 }
 
 /** GET /admin/settings/:key */
-export function getOne(req: Request, res: Response, next: NextFunction): void {
+function getOne(req: Request, res: Response, next: NextFunction): void {
   settingsService
     .getKeyWithMeta(req.params.key as string)
     .then((item) => res.status(200).json(success(item, String(req.id))))
@@ -42,7 +42,7 @@ export function getOne(req: Request, res: Response, next: NextFunction): void {
 }
 
 /** PUT /admin/settings/:key — body `{ value }`. */
-export function putOne(req: Request, res: Response, next: NextFunction): void {
+function putOne(req: Request, res: Response, next: NextFunction): void {
   const body = req.body as { value?: unknown } | undefined;
   if (!body || !Object.prototype.hasOwnProperty.call(body, 'value')) {
     return next(new ValidationError({ value: ['This field is required.'] }));

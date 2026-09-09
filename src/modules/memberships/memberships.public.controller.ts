@@ -33,7 +33,7 @@ function listCacheKey(
 }
 
 /** GET /public/memberships */
-export const list = wrap(async (req) => {
+const list = wrap(async (req) => {
   const page = resolvePageParams(req.query.page, req.query.page_size);
   const filters = parseMembershipFilters(req, { admin: false });
   const ordering = parseMembershipOrdering(req, false);
@@ -48,7 +48,7 @@ export const list = wrap(async (req) => {
 });
 
 /** GET /public/memberships/{slug} */
-export const detail = wrap(async (req) => {
+const detail = wrap(async (req) => {
   const dto = await membershipService.publicDetailBySlug(req.params.slug as string);
   return { status: 200, body: success(dto, String(req.id)) };
 });

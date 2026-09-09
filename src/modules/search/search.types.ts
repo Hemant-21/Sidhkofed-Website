@@ -16,7 +16,6 @@ export const CONTENT_TYPES = [
   'official_communication',
   'tender',
   'procurement_update',
-  'page',
 ] as const;
 
 export type ContentType = (typeof CONTENT_TYPES)[number];

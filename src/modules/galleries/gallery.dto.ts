@@ -4,7 +4,7 @@
 import type { GalleryRow, GallerySummaryRow } from './gallery.repository';
 import { toMediaDto } from '@/modules/media/media.dto';
 
-export interface GalleryImageDto {
+interface GalleryImageDto {
   id: string;
   media: ReturnType<typeof toMediaDto>;
   display_order: number;

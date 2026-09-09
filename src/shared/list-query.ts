@@ -14,7 +14,7 @@ import { z } from 'zod';
 import { ValidationError, type FieldErrors } from './errors';
 import type { PublicationState } from './publishing';
 
-export const PUBLICATION_STATES = ['draft', 'published', 'unpublished', 'archived'] as const;
+const PUBLICATION_STATES = ['draft', 'published', 'unpublished', 'archived'] as const;
 
 const publicationStateSchema = z.enum(PUBLICATION_STATES).optional();
 const booleanFlagSchema = z.enum(['true', 'false']).optional();
@@ -64,7 +64,7 @@ export function parseSearch(value: unknown): string | undefined {
 }
 
 /** Pagination keys every list endpoint accepts (validated by resolvePageParams). */
-export const COMMON_LIST_QUERY_KEYS = ['page', 'page_size', 'ordering', 'search'] as const;
+const COMMON_LIST_QUERY_KEYS = ['page', 'page_size', 'ordering', 'search'] as const;
 
 /**
  * Reject unknown query parameters with a `422` (API spec §1.4: "Reject unknown filters and

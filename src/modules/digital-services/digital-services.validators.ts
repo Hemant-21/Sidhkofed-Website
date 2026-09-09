@@ -26,7 +26,7 @@ const createShape = {
   ...workflowShape,
 };
 
-export const digitalServiceCreateSchema = z
+const digitalServiceCreateSchema = z
   .object(createShape)
   .strict()
   .superRefine((data, ctx) => {
@@ -37,7 +37,7 @@ export const validateDigitalServiceCreate = (p: unknown): DigitalServiceCreateIn
   parseSchema(digitalServiceCreateSchema, p);
 
 // PATCH is partial — external_url stays HTTPS-validated when present, but is not required.
-export const digitalServiceUpdateSchema = z
+const digitalServiceUpdateSchema = z
   .object({ ...createShape, external_url: httpsUrl.optional() })
   .partial()
   .strict()

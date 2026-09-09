@@ -74,7 +74,7 @@ async function assertTenderNumberUnique(tenderNumber: string | null | undefined,
 }
 
 // ── Create ────────────────────────────────────────────────────────────────────
-export async function create(input: TenderCreateInput, ctx: AuditContext): Promise<TenderDetailDto> {
+async function create(input: TenderCreateInput, ctx: AuditContext): Promise<TenderDetailDto> {
   const userId = requireUser(ctx);
   await assertReferencesValid({ tenderTypeId: input.tender_type_id });
   await assertTenderNumberUnique(input.tender_number);
@@ -118,7 +118,7 @@ export async function create(input: TenderCreateInput, ctx: AuditContext): Promi
 }
 
 // ── Update (PATCH — partial; never transitions publication state) ──────────────
-export async function update(id: string, input: TenderUpdateInput, ctx: AuditContext): Promise<TenderDetailDto> {
+async function update(id: string, input: TenderUpdateInput, ctx: AuditContext): Promise<TenderDetailDto> {
   const userId = requireUser(ctx);
   const existing = loaded(await tenderRepository.findById(id));
   assertEditableByActor(ctx.authz, existing.publicationState, PUBLISH_PERMISSION);
@@ -164,16 +164,16 @@ export async function update(id: string, input: TenderUpdateInput, ctx: AuditCon
 }
 
 // ── Read ───────────────────────────────────────────────────────────────────────
-export async function getById(id: string): Promise<TenderDetailDto> {
+async function getById(id: string): Promise<TenderDetailDto> {
   return toTenderDetailDto(loaded(await tenderRepository.findById(id)));
 }
 
-export interface ListResult<T> {
+interface ListResult<T> {
   items: T[];
   total: number;
 }
 
-export async function list(
+async function list(
   filters: TenderFilters,
   ordering: { field: TenderOrderingField; direction: 'asc' | 'desc' },
   skip: number,
@@ -184,7 +184,7 @@ export async function list(
 }
 
 // ── Lifecycle ──────────────────────────────────────────────────────────────────
-export async function lifecycle(id: string, action: LifecycleAction, ctx: AuditContext): Promise<TenderDetailDto> {
+async function lifecycle(id: string, action: LifecycleAction, ctx: AuditContext): Promise<TenderDetailDto> {
   const userId = requireUser(ctx);
   const existing = loaded(await tenderRepository.findById(id));
   const change = applyLifecycle(
@@ -203,7 +203,7 @@ export async function lifecycle(id: string, action: LifecycleAction, ctx: AuditC
 }
 
 // ── Public reads (visibility predicate + in-process cache) ──────────────────────────
-export async function publicList(
+async function publicList(
   filters: TenderFilters,
   ordering: { field: TenderOrderingField; direction: 'asc' | 'desc' },
   page: { skip: number; take: number; page: number; pageSize: number },
@@ -217,7 +217,7 @@ export async function publicList(
   return result;
 }
 
-export async function publicDetailBySlug(slug: string): Promise<PublicTenderDetailDto> {
+async function publicDetailBySlug(slug: string): Promise<PublicTenderDetailDto> {
   const cacheKey = `${PUBLIC_CACHE_PREFIX}:slug:${slug}`;
   const cached = await cacheService.getJson<PublicTenderDetailDto>(cacheKey);
   if (cached) return cached;

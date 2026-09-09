@@ -25,13 +25,13 @@ const wrap =
       .catch(next);
   };
 
-export const create = wrap(async (req) => {
+const create = wrap(async (req) => {
   const input = validateOfficialCommunicationCreate(req.body);
   const dto = await officialCommunicationService.create(input, auditContext(req));
   return { status: 201, body: success(dto, String(req.id), 'Official communication created.') };
 });
 
-export const list = wrap(async (req) => {
+const list = wrap(async (req) => {
   const page = resolvePageParams(req.query.page, req.query.page_size);
   const filters = parseOfficialCommunicationFilters(req, { admin: true });
   const ordering = parseOfficialCommunicationOrdering(req, true);
@@ -39,12 +39,12 @@ export const list = wrap(async (req) => {
   return { status: 200, body: paginated(items, buildPagination(total, page), String(req.id)) };
 });
 
-export const detail = wrap(async (req) => {
+const detail = wrap(async (req) => {
   const dto = await officialCommunicationService.getById(req.params.id as string);
   return { status: 200, body: success(dto, String(req.id)) };
 });
 
-export const patch = wrap(async (req) => {
+const patch = wrap(async (req) => {
   const input = validateOfficialCommunicationUpdate(req.body);
   const dto = await officialCommunicationService.update(req.params.id as string, input, auditContext(req));
   return { status: 200, body: success(dto, String(req.id), 'Official communication updated.') };
@@ -56,10 +56,10 @@ const lifecycle = (action: LifecycleAction) =>
     return { status: 200, body: success(dto, String(req.id), `Official communication ${action}ed.`) };
   });
 
-export const publish = lifecycle('publish');
-export const unpublish = lifecycle('unpublish');
-export const archive = lifecycle('archive');
-export const restore = lifecycle('restore');
+const publish = lifecycle('publish');
+const unpublish = lifecycle('unpublish');
+const archive = lifecycle('archive');
+const restore = lifecycle('restore');
 
 export const officialCommunicationController = {
   create,

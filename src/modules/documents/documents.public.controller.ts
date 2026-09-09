@@ -40,13 +40,13 @@ async function listSurface(req: Request, surface: 'documents' | 'knowledge-centr
 }
 
 /** GET /public/documents */
-export const list = wrap((req) => listSurface(req, 'documents', {}));
+const list = wrap((req) => listSurface(req, 'documents', {}));
 
 /** GET /public/knowledge-centre — only documents explicitly tagged for the Knowledge Centre. */
-export const knowledgeCentre = wrap((req) => listSurface(req, 'knowledge-centre', { knowledgeCentre: true }));
+const knowledgeCentre = wrap((req) => listSurface(req, 'knowledge-centre', { knowledgeCentre: true }));
 
 /** GET /public/documents/{slug} */
-export const detail = wrap(async (req) => {
+const detail = wrap(async (req) => {
   const dto = await documentService.publicDetailBySlug(req.params.slug as string);
   return { status: 200, body: success(dto, String(req.id)) };
 });

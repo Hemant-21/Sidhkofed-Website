@@ -30,7 +30,7 @@ export const dateString = z
   .regex(/^\d{4}-\d{2}-\d{2}$/, 'Must be a date in YYYY-MM-DD format.');
 
 /** The common writable shape shared by name-based masters. */
-export const baseCreateShape = {
+const baseCreateShape = {
   name_en: nameEn,
   name_hi: nameHi,
   slug: optionalSlug,

@@ -27,7 +27,7 @@ function listCacheKey(filters: ProcurementUpdateFilters, ordering: unknown, page
 }
 
 /** GET /public/procurement-updates */
-export const list = wrap(async (req) => {
+const list = wrap(async (req) => {
   const page = resolvePageParams(req.query.page, req.query.page_size);
   const filters = parseProcurementUpdateFilters(req, { admin: false });
   const ordering = parseProcurementUpdateOrdering(req);
@@ -42,7 +42,7 @@ export const list = wrap(async (req) => {
 });
 
 /** GET /public/procurement-updates/{slug} */
-export const detail = wrap(async (req) => {
+const detail = wrap(async (req) => {
   const dto = await procurementUpdateService.publicDetailBySlug(req.params.slug as string);
   return { status: 200, body: success(dto, String(req.id)) };
 });

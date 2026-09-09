@@ -39,7 +39,7 @@ async function buildResolvedMap(): Promise<ResolvedMap> {
 }
 
 /** Get the resolved map, from the in-process cache when warm. */
-export async function getResolvedMap(): Promise<ResolvedMap> {
+async function getResolvedMap(): Promise<ResolvedMap> {
   const cached = await cacheService.getJson<ResolvedMap>(CACHE_KEY);
   if (cached) return cached;
   const map = await buildResolvedMap();
@@ -48,18 +48,18 @@ export async function getResolvedMap(): Promise<ResolvedMap> {
 }
 
 /** Invalidate the cached settings map (after a write). */
-export async function invalidate(): Promise<void> {
+async function invalidate(): Promise<void> {
   await cacheService.del(CACHE_KEY);
 }
 
 /** Typed accessor for a single setting (falls back to the catalog default). */
-export async function get<K extends SettingKey>(key: K): Promise<SettingValue<K>> {
+async function get<K extends SettingKey>(key: K): Promise<SettingValue<K>> {
   const map = await getResolvedMap();
   return map[key] as SettingValue<K>;
 }
 
 /** All settings in a group, keyed by full setting key. */
-export async function getGroup(group: SettingGroup): Promise<Record<string, unknown>> {
+async function getGroup(group: SettingGroup): Promise<Record<string, unknown>> {
   const map = await getResolvedMap();
   const out: Record<string, unknown> = {};
   for (const key of SETTING_KEYS) {
@@ -69,7 +69,7 @@ export async function getGroup(group: SettingGroup): Promise<Record<string, unkn
 }
 
 /** The full resolved map plus per-key group/description metadata (admin GET all). */
-export async function getAllWithMeta(): Promise<
+async function getAllWithMeta(): Promise<
   Array<{ key: SettingKey; group: SettingGroup; value: unknown; description: string }>
 > {
   const map = await getResolvedMap();
@@ -82,7 +82,7 @@ export async function getAllWithMeta(): Promise<
 }
 
 /** Single key with metadata, or throw 404 for an unknown key. */
-export async function getKeyWithMeta(
+async function getKeyWithMeta(
   key: string,
 ): Promise<{ key: SettingKey; group: SettingGroup; value: unknown; description: string }> {
   if (!isSettingKey(key)) throw new NotFoundError(`Unknown setting key "${key}".`);
@@ -94,7 +94,7 @@ export async function getKeyWithMeta(
  * Validate + persist a setting value, audit the change, and invalidate the cache.
  * Rejects unknown keys (404) and invalid values (422).
  */
-export async function setValue(key: string, rawValue: unknown, ctx: AuditContext): Promise<{ key: SettingKey; group: SettingGroup; value: unknown; description: string }> {
+async function setValue(key: string, rawValue: unknown, ctx: AuditContext): Promise<{ key: SettingKey; group: SettingGroup; value: unknown; description: string }> {
   if (!isSettingKey(key)) throw new NotFoundError(`Unknown setting key "${key}".`);
   const def = getSettingDef(key);
 
@@ -122,12 +122,12 @@ export async function setValue(key: string, rawValue: unknown, ctx: AuditContext
 }
 
 // ── Typed convenience accessors (avoid raw lookups across the app) ────────────
-export const getVideoHomepageLimit = (): Promise<number> => get('limits.video_homepage_limit');
-export const getHomepageHighlightLimit = (): Promise<number> => get('limits.homepage_highlight_limit');
-export const getAllowedImageTypes = (): Promise<string[]> => get('uploads.allowed_image_types');
-export const getAllowedDocumentTypes = (): Promise<string[]> => get('uploads.allowed_document_types');
-export const getMaxImageBytes = async (): Promise<number> => (await get('uploads.max_image_mb')) * 1024 * 1024;
-export const getMaxDocumentBytes = async (): Promise<number> => (await get('uploads.max_document_mb')) * 1024 * 1024;
+const getVideoHomepageLimit = (): Promise<number> => get('limits.video_homepage_limit');
+const getHomepageHighlightLimit = (): Promise<number> => get('limits.homepage_highlight_limit');
+const getAllowedImageTypes = (): Promise<string[]> => get('uploads.allowed_image_types');
+const getAllowedDocumentTypes = (): Promise<string[]> => get('uploads.allowed_document_types');
+const getMaxImageBytes = async (): Promise<number> => (await get('uploads.max_image_mb')) * 1024 * 1024;
+const getMaxDocumentBytes = async (): Promise<number> => (await get('uploads.max_document_mb')) * 1024 * 1024;
 
 export const settingsService = {
   get,

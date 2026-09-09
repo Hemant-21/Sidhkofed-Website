@@ -27,32 +27,32 @@ function withInclude(def: MasterDefinition, args: Record<string, unknown>): Reco
   return def.include ? { ...args, include: def.include } : args;
 }
 
-export async function findById(def: MasterDefinition, id: string): Promise<MasterRow | null> {
+async function findById(def: MasterDefinition, id: string): Promise<MasterRow | null> {
   return delegate(def).findUnique(withInclude(def, { where: { id } }));
 }
 
 /** Look up by the unique identity column (duplicate detection). */
-export async function findByIdentity(def: MasterDefinition, value: string): Promise<MasterRow | null> {
+async function findByIdentity(def: MasterDefinition, value: string): Promise<MasterRow | null> {
   return delegate(def).findUnique({ where: { [identityColumn(def)]: value } });
 }
 
-export async function slugExists(def: MasterDefinition, slug: string): Promise<boolean> {
+async function slugExists(def: MasterDefinition, slug: string): Promise<boolean> {
   return (await delegate(def).count({ where: { slug } })) > 0;
 }
 
 /** First row matching an arbitrary camelCase `where` (duplicate pre-check). */
-export async function findFirstWhere(
+async function findFirstWhere(
   def: MasterDefinition,
   where: Record<string, unknown>,
 ): Promise<MasterRow | null> {
   return delegate(def).findFirst({ where });
 }
 
-export async function create(def: MasterDefinition, data: Record<string, unknown>): Promise<MasterRow> {
+async function create(def: MasterDefinition, data: Record<string, unknown>): Promise<MasterRow> {
   return delegate(def).create(withInclude(def, { data }));
 }
 
-export async function update(
+async function update(
   def: MasterDefinition,
   id: string,
   data: Record<string, unknown>,
@@ -61,16 +61,16 @@ export async function update(
 }
 
 /** Fetch any master row by id from an arbitrary model (referential checks across masters). */
-export async function findRefById(model: string, id: string): Promise<MasterRow | null> {
+async function findRefById(model: string, id: string): Promise<MasterRow | null> {
   return delegateFor(model).findUnique({ where: { id } });
 }
 
-export interface ListResult {
+interface ListResult {
   rows: MasterRow[];
   total: number;
 }
 
-export async function list(
+async function list(
   def: MasterDefinition,
   where: Record<string, unknown>,
   orderBy: Prisma.SortOrder | Record<string, unknown> | Array<Record<string, unknown>>,
@@ -85,7 +85,7 @@ export async function list(
 }
 
 /** All matching rows, unpaginated — used to build the cached public active list. */
-export async function findAll(
+async function findAll(
   def: MasterDefinition,
   where: Record<string, unknown>,
   orderBy: Record<string, unknown> | Array<Record<string, unknown>>,

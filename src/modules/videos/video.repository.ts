@@ -21,30 +21,30 @@ export interface VideoPublicListFilters {
   showOnHomepage?: boolean;
 }
 
-export async function slugExists(slug: string): Promise<boolean> {
+async function slugExists(slug: string): Promise<boolean> {
   return (await prisma.video.count({ where: { slug } })) > 0;
 }
 
-export async function create(data: Prisma.VideoUncheckedCreateInput, db: Db = prisma) {
+async function create(data: Prisma.VideoUncheckedCreateInput, db: Db = prisma) {
   return db.video.create({ data });
 }
 
-export async function findById(id: string) {
+async function findById(id: string) {
   return prisma.video.findUnique({ where: { id } });
 }
 
 /** Run a function inside a transaction (service orchestrates thumbnail-usage writes). */
-export function transaction<T>(fn: (tx: Prisma.TransactionClient) => Promise<T>): Promise<T> {
+function transaction<T>(fn: (tx: Prisma.TransactionClient) => Promise<T>): Promise<T> {
   return prisma.$transaction(fn);
 }
 
-export interface VideoListFilters {
+interface VideoListFilters {
   publicationState?: 'draft' | 'published' | 'unpublished' | 'archived';
   showOnHomepage?: boolean;
   search?: string;
 }
 
-export async function list(f: VideoListFilters, skip: number, take: number, direction: 'asc' | 'desc') {
+async function list(f: VideoListFilters, skip: number, take: number, direction: 'asc' | 'desc') {
   const where: Prisma.VideoWhereInput = {};
   if (f.publicationState) where.publicationState = f.publicationState;
   if (f.showOnHomepage !== undefined) where.showOnHomepage = f.showOnHomepage;
@@ -56,7 +56,7 @@ export async function list(f: VideoListFilters, skip: number, take: number, dire
   return { rows, total };
 }
 
-export async function update(id: string, data: Prisma.VideoUncheckedUpdateInput, db: Db = prisma) {
+async function update(id: string, data: Prisma.VideoUncheckedUpdateInput, db: Db = prisma) {
   return db.video.update({ where: { id }, data });
 }
 
@@ -65,7 +65,7 @@ export async function update(id: string, data: Prisma.VideoUncheckedUpdateInput,
  * Public list — applies the single public-visibility predicate (published, visible, non-archived,
  * due) so drafts/archived/future/hidden videos never leak.
  */
-export async function publicList(
+async function publicList(
   f: VideoPublicListFilters,
   skip: number,
   take: number,
@@ -84,12 +84,12 @@ export async function publicList(
 }
 
 /** Public detail by slug — same visibility predicate. */
-export async function findPublicBySlug(slug: string) {
+async function findPublicBySlug(slug: string) {
   return prisma.video.findFirst({ where: { ...(publicVisibilityWhere() as Prisma.VideoWhereInput), slug } });
 }
 
 /** Count currently public homepage videos (excluding one id) — enforces the ≤3 cap. */
-export async function countPublicHomepage(excludeId?: string): Promise<number> {
+async function countPublicHomepage(excludeId?: string): Promise<number> {
   return prisma.video.count({
     where: {
       showOnHomepage: true,

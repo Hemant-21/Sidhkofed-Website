@@ -27,7 +27,7 @@ function dateOnly(v: unknown): string {
 }
 
 /** Compact master reference `{ id, slug, name_en, name_hi }` (API spec §1.4). */
-export function masterRef(row: MasterRow | null | undefined): Record<string, unknown> | null {
+function masterRef(row: MasterRow | null | undefined): Record<string, unknown> | null {
   if (!row) return null;
   return {
     id: str(row.id),

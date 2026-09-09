@@ -47,7 +47,7 @@ async function storeSession(userId: string, sessionId: string, jti: string): Pro
   });
 }
 
-export async function issueTokens(userId: string): Promise<IssuedTokens> {
+async function issueTokens(userId: string): Promise<IssuedTokens> {
   const sessionId = randomUUID();
   const jti = randomUUID();
   await storeSession(userId, sessionId, jti);
@@ -60,7 +60,7 @@ export async function issueTokens(userId: string): Promise<IssuedTokens> {
   };
 }
 
-export function verifyAccessToken(token: string): AccessTokenClaims {
+function verifyAccessToken(token: string): AccessTokenClaims {
   let decoded: unknown;
   try {
     decoded = jwt.verify(token, jwtConfig.secret, { issuer: jwtConfig.issuer });
@@ -94,7 +94,7 @@ function decodeRefresh(token: string): RefreshTokenClaims {
   return decoded as RefreshTokenClaims;
 }
 
-export async function verifyRefreshSession(token: string): Promise<RefreshTokenClaims> {
+async function verifyRefreshSession(token: string): Promise<RefreshTokenClaims> {
   const claims = decodeRefresh(token);
   const session = await prisma.authRefreshSession.findUnique({ where: { sessionId: claims.sid } });
   if (
@@ -118,7 +118,7 @@ export async function verifyRefreshSession(token: string): Promise<RefreshTokenC
   return claims;
 }
 
-export async function rotateRefreshToken(token: string): Promise<IssuedTokens> {
+async function rotateRefreshToken(token: string): Promise<IssuedTokens> {
   const claims = await verifyRefreshSession(token);
   const nextJti = randomUUID();
   await storeSession(claims.sub, claims.sid, nextJti);
@@ -131,7 +131,7 @@ export async function rotateRefreshToken(token: string): Promise<IssuedTokens> {
   };
 }
 
-export async function revokeSession(token: string | undefined): Promise<string | null> {
+async function revokeSession(token: string | undefined): Promise<string | null> {
   if (!token) return null;
   let claims: RefreshTokenClaims;
   try {
@@ -146,7 +146,7 @@ export async function revokeSession(token: string | undefined): Promise<string |
   return claims.sub;
 }
 
-export async function revokeAllSessions(userId: string): Promise<number> {
+async function revokeAllSessions(userId: string): Promise<number> {
   const result = await prisma.authRefreshSession.updateMany({
     where: { userId, revokedAt: null },
     data: { revokedAt: new Date() },

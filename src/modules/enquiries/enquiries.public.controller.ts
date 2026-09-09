@@ -32,7 +32,7 @@ function ipHash(req: Request): string | null {
 }
 
 /** POST /public/enquiries */
-export const submit = wrap(async (req) => {
+const submit = wrap(async (req) => {
   const input = validateEnquirySubmit(req.body);
   const dto = await enquiryService.submit(input, ipHash(req));
   return { status: 201, body: success(dto, String(req.id), 'Enquiry submitted.') };

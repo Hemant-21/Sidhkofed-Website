@@ -2,10 +2,9 @@
  * Institution DTOs + mappers (API spec §5/§6 + §1.4 reference shapes).
  *
  * Shapes: admin summary (list), admin detail (single), public summary, public detail.
- * `toInstitutionRef` is the compact cross-module reference (id, slug, name) that the Events
- * module reuses. Public responses never expose `created_by`/`updated_by` or storage keys.
+ * Public responses never expose `created_by`/`updated_by` or storage keys.
  */
-import type { Institution, InstitutionType, District, MediaAsset } from '@prisma/client';
+import type { MediaAsset } from '@prisma/client';
 import type { InstitutionRow } from './institutions.repository';
 
 export interface MasterRef {
@@ -47,17 +46,6 @@ export function mediaRef(a: MediaAsset | null): MediaRef | null {
 
 const publicUrl = (slug: string): string => `/institutions/${slug}`;
 const iso = (d: Date | null): string | null => (d ? d.toISOString() : null);
-
-// ── Compact cross-module reference (§1.4) ─────────────────────────────────────
-export interface InstitutionRef {
-  id: string;
-  slug: string;
-  name_en: string;
-  name_hi: string | null;
-}
-export function toInstitutionRef(i: Institution): InstitutionRef {
-  return { id: i.id, slug: i.slug, name_en: i.nameEn, name_hi: i.nameHi };
-}
 
 // ── Admin summary (list) ──────────────────────────────────────────────────────
 export interface InstitutionSummaryDto {
@@ -186,6 +174,3 @@ export function toPublicInstitutionDetailDto(i: InstitutionRow): PublicInstituti
     contact_phone: i.contactPhone,
   };
 }
-
-// Re-export types used by mappers' signatures.
-export type { Institution, InstitutionType, District };

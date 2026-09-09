@@ -16,7 +16,7 @@ import { toAuthUserDto } from './auth.mapper';
 import type { AuthSessionDto, AuthUserDto } from './auth.dto';
 
 /** Per-request context for audit fidelity. */
-export interface AuthContext {
+interface AuthContext {
   ipHash?: string | null;
 }
 
@@ -42,7 +42,7 @@ async function buildSession(
  * session payload plus the refresh token (the controller sets the cookie). Records
  * LOGIN_SUCCESS / LOGIN_FAILED either way.
  */
-export async function login(
+async function login(
   input: { email: string; password: string },
   ctx: AuthContext = {},
 ): Promise<{ session: AuthSessionDto; refreshToken: string }> {
@@ -91,7 +91,7 @@ export async function login(
  * Rotate a refresh token and return a fresh session. Rejects when the presented token
  * is invalid/expired/superseded or the user has since been disabled (session revoked).
  */
-export async function refresh(
+async function refresh(
   refreshToken: string | undefined,
 ): Promise<{ session: AuthSessionDto; refreshToken: string }> {
   if (!refreshToken) {
@@ -115,7 +115,7 @@ export async function refresh(
  * Revoke the current refresh session (logout). Idempotent: a missing/invalid token is
  * a no-op. Records LOGOUT when a session was actually revoked.
  */
-export async function logout(refreshToken: string | undefined, ctx: AuthContext = {}): Promise<void> {
+async function logout(refreshToken: string | undefined, ctx: AuthContext = {}): Promise<void> {
   const userId = await tokenService.revokeSession(refreshToken);
   if (userId) {
     await auditService.record({
@@ -130,7 +130,7 @@ export async function logout(refreshToken: string | undefined, ctx: AuthContext 
 }
 
 /** Resolve the authenticated user's profile + live roles/permissions (`GET /auth/me`). */
-export async function getMe(userId: string): Promise<AuthUserDto> {
+async function getMe(userId: string): Promise<AuthUserDto> {
   const user = await authRepository.findUserById(userId);
   if (!user || !user.isActive) {
     throw new AuthenticationError('Account is no longer active.');

@@ -65,24 +65,24 @@ export function buildReportWhere(
   return where;
 }
 
-export async function reportKeyExists(reportKey: string, excludeId?: string, db: Db = prisma): Promise<boolean> {
+async function reportKeyExists(reportKey: string, excludeId?: string, db: Db = prisma): Promise<boolean> {
   const where: Prisma.DashboardReportWhereInput = { reportKey };
   if (excludeId) where.id = { not: excludeId };
   return (await db.dashboardReport.count({ where })) > 0;
 }
 
-export async function createReport(
+async function createReport(
   data: Prisma.DashboardReportUncheckedCreateInput,
   db: Db = prisma,
 ): Promise<ReportRow> {
   return db.dashboardReport.create({ data });
 }
 
-export async function findReportById(id: string, db: Db = prisma): Promise<ReportRow | null> {
+async function findReportById(id: string, db: Db = prisma): Promise<ReportRow | null> {
   return db.dashboardReport.findUnique({ where: { id } });
 }
 
-export async function findReportByKey(
+async function findReportByKey(
   reportKey: string,
   opts: { public?: boolean } = {},
 ): Promise<ReportRow | null> {
@@ -92,7 +92,7 @@ export async function findReportByKey(
   });
 }
 
-export async function updateReport(
+async function updateReport(
   id: string,
   data: Prisma.DashboardReportUncheckedUpdateInput,
   db: Db = prisma,
@@ -100,7 +100,7 @@ export async function updateReport(
   return db.dashboardReport.update({ where: { id }, data });
 }
 
-export async function listReports(
+async function listReports(
   f: ReportFilters,
   skip: number,
   take: number,
@@ -118,7 +118,7 @@ export async function listReports(
 }
 
 /** Reports flagged for the homepage KPI subset (published + visible). Ordered for display. */
-export async function listHomepageReports(): Promise<ReportRow[]> {
+async function listHomepageReports(): Promise<ReportRow[]> {
   return prisma.dashboardReport.findMany({
     where: { ...buildReportWhere({}, { public: true }), showOnHomepage: true },
     orderBy: [{ displayOrder: 'asc' }, { createdAt: 'asc' }],
@@ -142,18 +142,18 @@ function buildMetricWhere(reportId: string, f: MetricFilters): Prisma.DashboardM
   return where;
 }
 
-export async function createMetric(
+async function createMetric(
   data: Prisma.DashboardMetricUncheckedCreateInput,
   db: Db = prisma,
 ): Promise<MetricRow> {
   return db.dashboardMetric.create({ data, include: metricInclude });
 }
 
-export async function findMetricById(id: string, db: Db = prisma): Promise<MetricRow | null> {
+async function findMetricById(id: string, db: Db = prisma): Promise<MetricRow | null> {
   return db.dashboardMetric.findUnique({ where: { id }, include: metricInclude });
 }
 
-export async function updateMetric(
+async function updateMetric(
   id: string,
   data: Prisma.DashboardMetricUncheckedUpdateInput,
   db: Db = prisma,
@@ -161,11 +161,11 @@ export async function updateMetric(
   return db.dashboardMetric.update({ where: { id }, data, include: metricInclude });
 }
 
-export async function deleteMetric(id: string, db: Db = prisma): Promise<void> {
+async function deleteMetric(id: string, db: Db = prisma): Promise<void> {
   await db.dashboardMetric.delete({ where: { id } });
 }
 
-export async function listMetricsByReport(
+async function listMetricsByReport(
   reportId: string,
   f: MetricFilters,
   skip: number,
@@ -188,7 +188,7 @@ export async function listMetricsByReport(
  * constraint. Used by create (pre-check 409) and by import (decide insert vs refresh). Nullable FY/
  * reporting-period compare as `IS NULL`, matching the unique index semantics.
  */
-export async function findMetricByUniqueKey(
+async function findMetricByUniqueKey(
   reportId: string,
   metricKey: string,
   financialYearId: string | null,
@@ -202,7 +202,7 @@ export async function findMetricByUniqueKey(
 }
 
 /** Public metrics for a report, optionally narrowed to a FY / reporting period. Ordered for display. */
-export async function listPublicMetrics(
+async function listPublicMetrics(
   reportId: string,
   fyId: string | null,
   rpId: string | null,
@@ -235,18 +235,18 @@ function buildDatasetWhere(reportId: string, f: DatasetFilters): Prisma.Dashboar
   return where;
 }
 
-export async function createDataset(
+async function createDataset(
   data: Prisma.DashboardDatasetUncheckedCreateInput,
   db: Db = prisma,
 ): Promise<DatasetRow> {
   return db.dashboardDataset.create({ data, include: datasetInclude });
 }
 
-export async function findDatasetById(id: string, db: Db = prisma): Promise<DatasetRow | null> {
+async function findDatasetById(id: string, db: Db = prisma): Promise<DatasetRow | null> {
   return db.dashboardDataset.findUnique({ where: { id }, include: datasetInclude });
 }
 
-export async function listDatasetsByReport(
+async function listDatasetsByReport(
   reportId: string,
   f: DatasetFilters,
   skip: number,
@@ -265,7 +265,7 @@ export async function listDatasetsByReport(
 }
 
 /** Run a callback inside a transaction (dataset import creates dataset + metrics atomically). */
-export async function transaction<T>(fn: (tx: Prisma.TransactionClient) => Promise<T>): Promise<T> {
+async function transaction<T>(fn: (tx: Prisma.TransactionClient) => Promise<T>): Promise<T> {
   return prisma.$transaction(fn);
 }
 
@@ -285,7 +285,7 @@ export interface DashboardRefs {
  * back new data). A dataset reference must exist and (when `datasetReportId` is given) belong to the
  * same report. A source file asset must exist and not be archived.
  */
-export async function validateReferences(
+async function validateReferences(
   refs: DashboardRefs,
   db: Db = prisma,
 ): Promise<Record<string, string[]>> {

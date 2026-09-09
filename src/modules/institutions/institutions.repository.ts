@@ -31,7 +31,7 @@ const ORDER_COLUMN: Record<InstitutionOrderingField, keyof Prisma.InstitutionOrd
   created_at: 'createdAt',
 };
 
-export interface InstitutionQueryOptions {
+interface InstitutionQueryOptions {
   public?: boolean;
   ordering: { field: InstitutionOrderingField; direction: 'asc' | 'desc' };
 }
@@ -70,7 +70,7 @@ export function buildWhere(f: InstitutionFilters, opts: { public?: boolean }): P
   return where;
 }
 
-export async function slugExists(slug: string, db: Db = prisma): Promise<boolean> {
+async function slugExists(slug: string, db: Db = prisma): Promise<boolean> {
   return (await db.institution.count({ where: { slug } })) > 0;
 }
 
@@ -79,7 +79,7 @@ export async function slugExists(slug: string, db: Db = prisma): Promise<boolean
  * institution already carries `nameEn` (ignoring surrounding whitespace and letter case). Pass
  * `excludeId` on update so a record never collides with itself. Independent of slug uniqueness.
  */
-export async function nameExists(nameEn: string, excludeId: string | undefined, db: Db = prisma): Promise<boolean> {
+async function nameExists(nameEn: string, excludeId: string | undefined, db: Db = prisma): Promise<boolean> {
   return (
     (await db.institution.count({
       where: {
@@ -90,24 +90,24 @@ export async function nameExists(nameEn: string, excludeId: string | undefined, 
   );
 }
 
-export async function create(data: Prisma.InstitutionUncheckedCreateInput, db: Db = prisma): Promise<InstitutionRow> {
+async function create(data: Prisma.InstitutionUncheckedCreateInput, db: Db = prisma): Promise<InstitutionRow> {
   return db.institution.create({ data, include: institutionInclude });
 }
 
-export async function findById(id: string, db: Db = prisma): Promise<InstitutionRow | null> {
+async function findById(id: string, db: Db = prisma): Promise<InstitutionRow | null> {
   return db.institution.findUnique({ where: { id }, include: institutionInclude });
 }
 
-export async function findBySlug(slug: string, opts: { public?: boolean } = {}): Promise<InstitutionRow | null> {
+async function findBySlug(slug: string, opts: { public?: boolean } = {}): Promise<InstitutionRow | null> {
   if (!opts.public) return prisma.institution.findUnique({ where: { slug }, include: institutionInclude });
   return prisma.institution.findFirst({ where: { ...buildWhere({}, { public: true }), slug }, include: institutionInclude });
 }
 
-export async function update(id: string, data: Prisma.InstitutionUncheckedUpdateInput, db: Db = prisma): Promise<InstitutionRow> {
+async function update(id: string, data: Prisma.InstitutionUncheckedUpdateInput, db: Db = prisma): Promise<InstitutionRow> {
   return db.institution.update({ where: { id }, data, include: institutionInclude });
 }
 
-export async function list(
+async function list(
   f: InstitutionFilters,
   skip: number,
   take: number,
@@ -124,7 +124,7 @@ export async function list(
   return { rows, total };
 }
 
-export function transaction<T>(fn: (tx: Prisma.TransactionClient) => Promise<T>): Promise<T> {
+function transaction<T>(fn: (tx: Prisma.TransactionClient) => Promise<T>): Promise<T> {
   return prisma.$transaction(fn);
 }
 
@@ -132,12 +132,12 @@ export function transaction<T>(fn: (tx: Prisma.TransactionClient) => Promise<T>)
  * Validate referenced masters exist AND are active (FK Restrict guarantees existence; this adds
  * the active-status gate). Returns field-keyed errors ({} when all valid).
  */
-export interface InstitutionRefs {
+interface InstitutionRefs {
   institutionTypeId?: string;
   districtId?: string | null;
 }
 
-export async function validateReferences(refs: InstitutionRefs): Promise<Record<string, string[]>> {
+async function validateReferences(refs: InstitutionRefs): Promise<Record<string, string[]>> {
   const errors: Record<string, string[]> = {};
   if (refs.institutionTypeId !== undefined) {
     const row = await prisma.institutionType.findUnique({ where: { id: refs.institutionTypeId }, select: { isActive: true } });

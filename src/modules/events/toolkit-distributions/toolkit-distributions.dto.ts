@@ -11,7 +11,7 @@ const dateOnlyStr = (d: Date | null): string | null => (d ? d.toISOString().slic
 
 type ItemRow = DistributionSummaryRow['items'][number];
 
-export interface DistributionItemDto {
+interface DistributionItemDto {
   id: string;
   toolkit_item_id: string;
   name_en: string;

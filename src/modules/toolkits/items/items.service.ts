@@ -40,20 +40,20 @@ function dec(v: number | null | undefined): Prisma.Decimal | null | undefined {
   return new Prisma.Decimal(v);
 }
 
-export async function list(toolkitId: string): Promise<ToolkitItemDto[]> {
+async function list(toolkitId: string): Promise<ToolkitItemDto[]> {
   await assertToolkitExists(toolkitId);
   const rows = await toolkitItemRepository.listByToolkit(toolkitId);
   return rows.map(toToolkitItemDto);
 }
 
-export async function getById(toolkitId: string, itemId: string): Promise<ToolkitItemDto> {
+async function getById(toolkitId: string, itemId: string): Promise<ToolkitItemDto> {
   await assertToolkitExists(toolkitId);
   const row = await toolkitItemRepository.findByIdForToolkit(itemId, toolkitId);
   if (!row) throw new NotFoundError('Toolkit item not found.');
   return toToolkitItemDto(row);
 }
 
-export async function create(toolkitId: string, input: ToolkitItemCreateInput, ctx: AuditContext): Promise<ToolkitItemDto> {
+async function create(toolkitId: string, input: ToolkitItemCreateInput, ctx: AuditContext): Promise<ToolkitItemDto> {
   await assertParentEditable(toolkitId, ctx);
   if (await toolkitItemRepository.nameExists(toolkitId, input.name_en, undefined)) {
     throw new ConflictError(`A toolkit item named "${input.name_en}" already exists in this toolkit.`);
@@ -77,7 +77,7 @@ export async function create(toolkitId: string, input: ToolkitItemCreateInput, c
   return toToolkitItemDto(created);
 }
 
-export async function update(
+async function update(
   toolkitId: string,
   itemId: string,
   input: ToolkitItemUpdateInput,
@@ -116,7 +116,7 @@ export async function update(
   return toToolkitItemDto(updated);
 }
 
-export async function remove(toolkitId: string, itemId: string, ctx: AuditContext): Promise<void> {
+async function remove(toolkitId: string, itemId: string, ctx: AuditContext): Promise<void> {
   await assertParentEditable(toolkitId, ctx);
   const existing = await toolkitItemRepository.findByIdForToolkit(itemId, toolkitId);
   if (!existing) throw new NotFoundError('Toolkit item not found.');
@@ -135,7 +135,7 @@ export async function remove(toolkitId: string, itemId: string, ctx: AuditContex
 }
 
 /** Active toolkit-item ids for a toolkit (cross-module reference validation for distributions). */
-export async function activeItemIds(toolkitId: string): Promise<Set<string>> {
+async function activeItemIds(toolkitId: string): Promise<Set<string>> {
   return toolkitItemRepository.activeItemIds(toolkitId);
 }
 

@@ -5,7 +5,7 @@
 import { prisma } from '@/db/prisma';
 
 /** A user row with the fields the service needs to authenticate and respond. */
-export type UserRecord = {
+type UserRecord = {
   id: string;
   email: string;
   passwordHash: string;
@@ -15,7 +15,7 @@ export type UserRecord = {
 };
 
 /** Find an active-or-not user by normalized email (login path needs the hash). */
-export async function findUserByEmail(email: string): Promise<UserRecord | null> {
+async function findUserByEmail(email: string): Promise<UserRecord | null> {
   return prisma.user.findUnique({
     where: { email },
     select: {
@@ -30,7 +30,7 @@ export async function findUserByEmail(email: string): Promise<UserRecord | null>
 }
 
 /** Find a user by id (auth middleware / `me`); excludes the password hash. */
-export async function findUserById(id: string): Promise<Omit<UserRecord, 'passwordHash'> | null> {
+async function findUserById(id: string): Promise<Omit<UserRecord, 'passwordHash'> | null> {
   return prisma.user.findUnique({
     where: { id },
     select: {
@@ -44,7 +44,7 @@ export async function findUserById(id: string): Promise<Omit<UserRecord, 'passwo
 }
 
 /** Record the successful-login timestamp. */
-export async function touchLastLogin(id: string): Promise<void> {
+async function touchLastLogin(id: string): Promise<void> {
   await prisma.user.update({ where: { id }, data: { lastLoginAt: new Date() } });
 }
 
@@ -52,7 +52,7 @@ export async function touchLastLogin(id: string): Promise<void> {
  * Load a user's role keys and the flattened set of permission keys across all roles.
  * One query with nested includes; the service merges/dedupes permissions.
  */
-export async function findRolesAndPermissions(
+async function findRolesAndPermissions(
   userId: string,
 ): Promise<{ roleKeys: string[]; permissionKeys: string[] }> {
   const rows = await prisma.userRole.findMany({

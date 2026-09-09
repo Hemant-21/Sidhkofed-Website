@@ -27,7 +27,7 @@ function listCacheKey(filters: LeadershipFilters, ordering: unknown, page: numbe
 }
 
 /** GET /public/leadership */
-export const list = wrap(async (req) => {
+const list = wrap(async (req) => {
   const page = resolvePageParams(req.query.page, req.query.page_size);
   const filters = parseLeadershipFilters(req, { admin: false });
   const ordering = parseLeadershipOrdering(req);

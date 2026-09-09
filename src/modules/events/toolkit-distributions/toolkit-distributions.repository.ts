@@ -19,7 +19,7 @@ const summaryInclude = {
 
 export type DistributionSummaryRow = Prisma.ToolkitDistributionSummaryGetPayload<{ include: typeof summaryInclude }>;
 
-export async function listByEvent(eventId: string): Promise<DistributionSummaryRow[]> {
+async function listByEvent(eventId: string): Promise<DistributionSummaryRow[]> {
   return prisma.toolkitDistributionSummary.findMany({
     where: { eventId },
     include: summaryInclude,
@@ -27,19 +27,19 @@ export async function listByEvent(eventId: string): Promise<DistributionSummaryR
   });
 }
 
-export async function findByIdForEvent(id: string, eventId: string): Promise<DistributionSummaryRow | null> {
+async function findByIdForEvent(id: string, eventId: string): Promise<DistributionSummaryRow | null> {
   return prisma.toolkitDistributionSummary.findFirst({ where: { id, eventId }, include: summaryInclude });
 }
 
-export async function existsForEventToolkit(eventId: string, toolkitId: string): Promise<boolean> {
+async function existsForEventToolkit(eventId: string, toolkitId: string): Promise<boolean> {
   return (await prisma.toolkitDistributionSummary.count({ where: { eventId, toolkitId } })) > 0;
 }
 
-export async function findById(id: string, db: Db = prisma): Promise<DistributionSummaryRow | null> {
+async function findById(id: string, db: Db = prisma): Promise<DistributionSummaryRow | null> {
   return db.toolkitDistributionSummary.findUnique({ where: { id }, include: summaryInclude });
 }
 
-export async function createSummary(
+async function createSummary(
   data: Prisma.ToolkitDistributionSummaryUncheckedCreateInput,
   db: Db,
 ): Promise<{ id: string }> {
@@ -47,7 +47,7 @@ export async function createSummary(
   return row;
 }
 
-export async function updateSummary(
+async function updateSummary(
   id: string,
   data: Prisma.ToolkitDistributionSummaryUncheckedUpdateInput,
   db: Db,
@@ -55,11 +55,11 @@ export async function updateSummary(
   await db.toolkitDistributionSummary.update({ where: { id }, data });
 }
 
-export async function removeSummary(id: string, db: Db = prisma): Promise<void> {
+async function removeSummary(id: string, db: Db = prisma): Promise<void> {
   await db.toolkitDistributionSummary.delete({ where: { id } });
 }
 
-export async function replaceItems(
+async function replaceItems(
   summaryId: string,
   items: Array<Omit<Prisma.ToolkitDistributionItemUncheckedCreateInput, 'toolkitDistributionSummaryId'>>,
   db: Db,
@@ -72,7 +72,7 @@ export async function replaceItems(
   }
 }
 
-export function transaction<T>(fn: (tx: Prisma.TransactionClient) => Promise<T>): Promise<T> {
+function transaction<T>(fn: (tx: Prisma.TransactionClient) => Promise<T>): Promise<T> {
   return prisma.$transaction(fn);
 }
 
@@ -82,14 +82,14 @@ const visibleSummaryWhere = (toolkitId: string): Prisma.ToolkitDistributionSumma
   event: publicVisibilityWhere() as Prisma.EventWhereInput,
 });
 
-export interface SummaryModelGroup {
+interface SummaryModelGroup {
   distributionModel: string;
   summaryCount: number;
   participantsCovered: number;
 }
 
 /** Per-distribution-model counts + participant sums for the toolkit's publicly-visible summaries. */
-export async function aggregateSummaryModels(toolkitId: string): Promise<SummaryModelGroup[]> {
+async function aggregateSummaryModels(toolkitId: string): Promise<SummaryModelGroup[]> {
   const groups = await prisma.toolkitDistributionSummary.groupBy({
     by: ['distributionModel'],
     where: visibleSummaryWhere(toolkitId),
@@ -103,13 +103,13 @@ export async function aggregateSummaryModels(toolkitId: string): Promise<Summary
   }));
 }
 
-export interface ItemTotalGroup {
+interface ItemTotalGroup {
   toolkitItemId: string;
   totalQuantity: Prisma.Decimal | null;
 }
 
 /** Per-item summed `total_quantity` across the toolkit's publicly-visible distribution summaries. */
-export async function aggregateItemTotals(toolkitId: string): Promise<ItemTotalGroup[]> {
+async function aggregateItemTotals(toolkitId: string): Promise<ItemTotalGroup[]> {
   const groups = await prisma.toolkitDistributionItem.groupBy({
     by: ['toolkitItemId'],
     where: { summary: visibleSummaryWhere(toolkitId) },
@@ -118,7 +118,7 @@ export async function aggregateItemTotals(toolkitId: string): Promise<ItemTotalG
   return groups.map((g) => ({ toolkitItemId: g.toolkitItemId, totalQuantity: g._sum.totalQuantity }));
 }
 
-export interface ItemMetadata {
+interface ItemMetadata {
   id: string;
   nameEn: string;
   nameHi: string | null;
@@ -128,7 +128,7 @@ export interface ItemMetadata {
 }
 
 /** Canonical metadata for the given toolkit items, ordered for stable public output. */
-export async function itemMetadata(itemIds: string[]): Promise<ItemMetadata[]> {
+async function itemMetadata(itemIds: string[]): Promise<ItemMetadata[]> {
   if (itemIds.length === 0) return [];
   return prisma.toolkitItem.findMany({
     where: { id: { in: itemIds } },

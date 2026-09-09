@@ -21,7 +21,7 @@ const boolish = z
   .transform((v) => v === true || v === 'true' || v === '1');
 
 /** Optional descriptive metadata accepted on upload and PATCH. */
-export const mediaMetaSchema = z.object({
+const mediaMetaSchema = z.object({
   title: z.string().trim().max(255).optional(),
   alt_text: z.string().trim().max(500).optional(),
   caption: z.string().trim().max(500).optional(),
@@ -29,7 +29,7 @@ export const mediaMetaSchema = z.object({
 export type MediaMetaInput = z.infer<typeof mediaMetaSchema>;
 export const validateMediaMeta = (payload: unknown): MediaMetaInput => parse(mediaMetaSchema, payload);
 
-export const mediaQuerySchema = z.object({
+const mediaQuerySchema = z.object({
   mime_type: z.string().trim().min(1).max(120).optional(),
   archived: boolish.optional(),
   search: z.string().trim().min(2).max(120).optional(),

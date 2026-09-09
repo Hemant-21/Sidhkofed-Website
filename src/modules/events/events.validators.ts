@@ -76,7 +76,7 @@ function refineOverride(
   }
 }
 
-export const eventCreateSchema = z
+const eventCreateSchema = z
   .object(baseShape)
   .strict()
   .superRefine((data, ctx) => {
@@ -87,7 +87,7 @@ export const eventCreateSchema = z
 export type EventCreateInput = z.infer<typeof eventCreateSchema>;
 export const validateEventCreate = (p: unknown): EventCreateInput => parseSchema(eventCreateSchema, p);
 
-export const eventUpdateSchema = z
+const eventUpdateSchema = z
   .object(baseShape)
   .partial()
   .strict()
@@ -100,7 +100,7 @@ export type EventUpdateInput = z.infer<typeof eventUpdateSchema>;
 export const validateEventUpdate = (p: unknown): EventUpdateInput => parseSchema(eventUpdateSchema, p);
 
 /** Body of POST /admin/events/{id}/complete — completion/outcome fields (CMS requirements §4.1). */
-export const eventCompleteSchema = z
+const eventCompleteSchema = z
   .object({
     outcome_summary_en: optionalText(),
     outcome_summary_hi: optionalText(),
@@ -120,7 +120,7 @@ export type EventCompleteInput = z.infer<typeof eventCompleteSchema>;
 export const validateEventComplete = (p: unknown): EventCompleteInput => parseSchema(eventCompleteSchema, p);
 
 /** Body of POST /admin/events/{id}/cancel — cancellation reason + optional revised date. */
-export const eventCancelSchema = z
+const eventCancelSchema = z
   .object({
     cancellation_reason: optionalText(2000),
     revised_start_date: dateOnly.nullable().optional(),

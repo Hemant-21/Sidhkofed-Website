@@ -18,7 +18,7 @@ const wrap =
   };
 
 /** GET /public/search */
-export const publicSearch = wrap(async (req) => {
+const publicSearch = wrap(async (req) => {
   const filters = parseSearchFilters(req);
   const page = resolvePageParams(req.query.page, req.query.page_size);
   const { items, total } = await searchService.publicSearch(filters, { skip: page.skip, take: page.take });
@@ -26,7 +26,7 @@ export const publicSearch = wrap(async (req) => {
 });
 
 /** GET /admin/search */
-export const adminSearch = wrap(async (req, res) => {
+const adminSearch = wrap(async (req, res) => {
   // Admin responses are never cached (api-specification.md §1.5).
   res.setHeader('Cache-Control', 'no-store');
   const filters = parseSearchFilters(req);

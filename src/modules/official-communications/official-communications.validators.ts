@@ -44,7 +44,7 @@ function refineDates(
   refineDateOrder(data.effective_date ?? data.issue_date, data.expiry_date, 'expiry_date', ctx);
 }
 
-export const officialCommunicationCreateSchema = z
+const officialCommunicationCreateSchema = z
   .object(baseShape)
   .strict()
   .superRefine((data, ctx) => {
@@ -55,7 +55,7 @@ export type OfficialCommunicationCreateInput = z.infer<typeof officialCommunicat
 export const validateOfficialCommunicationCreate = (p: unknown): OfficialCommunicationCreateInput =>
   parseSchema(officialCommunicationCreateSchema, p);
 
-export const officialCommunicationUpdateSchema = z
+const officialCommunicationUpdateSchema = z
   .object(baseShape)
   .partial()
   .strict()

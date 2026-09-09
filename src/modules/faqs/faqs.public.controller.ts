@@ -27,7 +27,7 @@ function listCacheKey(filters: FaqFilters, ordering: unknown, page: number, page
 }
 
 /** GET /public/faqs */
-export const list = wrap(async (req) => {
+const list = wrap(async (req) => {
   const page = resolvePageParams(req.query.page, req.query.page_size);
   const filters = parseFaqFilters(req, { admin: false });
   const ordering = parseFaqOrdering(req);

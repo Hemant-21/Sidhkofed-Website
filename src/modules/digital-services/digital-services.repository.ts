@@ -23,7 +23,7 @@ const ORDER_COLUMN: Record<DigitalServiceOrderingField, keyof Prisma.DigitalServ
   updated_at: 'updatedAt',
 };
 
-export interface DigitalServiceQueryOptions {
+interface DigitalServiceQueryOptions {
   public?: boolean;
   ordering: { field: DigitalServiceOrderingField; direction: 'asc' | 'desc' };
 }
@@ -59,19 +59,19 @@ export function buildWhere(
   return where;
 }
 
-export async function slugExists(slug: string, db: Db = prisma): Promise<boolean> {
+async function slugExists(slug: string, db: Db = prisma): Promise<boolean> {
   return (await db.digitalService.count({ where: { slug } })) > 0;
 }
 
-export async function create(data: Prisma.DigitalServiceUncheckedCreateInput, db: Db = prisma): Promise<DigitalServiceRow> {
+async function create(data: Prisma.DigitalServiceUncheckedCreateInput, db: Db = prisma): Promise<DigitalServiceRow> {
   return db.digitalService.create({ data, include: digitalServiceInclude });
 }
 
-export async function findById(id: string, db: Db = prisma): Promise<DigitalServiceRow | null> {
+async function findById(id: string, db: Db = prisma): Promise<DigitalServiceRow | null> {
   return db.digitalService.findUnique({ where: { id }, include: digitalServiceInclude });
 }
 
-export async function update(
+async function update(
   id: string,
   data: Prisma.DigitalServiceUncheckedUpdateInput,
   db: Db = prisma,
@@ -79,7 +79,7 @@ export async function update(
   return db.digitalService.update({ where: { id }, data, include: digitalServiceInclude });
 }
 
-export async function list(
+async function list(
   f: DigitalServiceFilters,
   skip: number,
   take: number,
@@ -96,7 +96,7 @@ export async function list(
   return { rows, total };
 }
 
-export function transaction<T>(fn: (tx: Prisma.TransactionClient) => Promise<T>): Promise<T> {
+function transaction<T>(fn: (tx: Prisma.TransactionClient) => Promise<T>): Promise<T> {
   return prisma.$transaction(fn);
 }
 

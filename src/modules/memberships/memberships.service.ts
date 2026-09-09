@@ -144,7 +144,7 @@ async function slugSource(institutionId: string, level: string, type: string): P
 }
 
 // ── Create ────────────────────────────────────────────────────────────────────
-export async function create(
+async function create(
   input: MembershipCreateInput,
   ctx: AuditContext,
 ): Promise<MembershipDetailDto> {
@@ -204,7 +204,7 @@ export async function create(
 }
 
 // ── Update (PATCH — partial; never transitions publication state, never changes slug) ──
-export async function update(
+async function update(
   id: string,
   input: MembershipUpdateInput,
   ctx: AuditContext,
@@ -292,16 +292,16 @@ export async function update(
 }
 
 // ── Read ───────────────────────────────────────────────────────────────────────
-export async function getById(id: string): Promise<MembershipDetailDto> {
+async function getById(id: string): Promise<MembershipDetailDto> {
   return toMembershipDetailDto(loaded(await membershipRepository.findById(id)));
 }
 
-export interface ListResult<T> {
+interface ListResult<T> {
   items: T[];
   total: number;
 }
 
-export async function list(
+async function list(
   filters: MembershipFilters,
   ordering: { field: MembershipOrderingField; direction: 'asc' | 'desc' },
   skip: number,
@@ -312,7 +312,7 @@ export async function list(
 }
 
 // ── Lifecycle ──────────────────────────────────────────────────────────────────
-export async function lifecycle(
+async function lifecycle(
   id: string,
   action: LifecycleAction,
   ctx: AuditContext,
@@ -339,7 +339,7 @@ export async function lifecycle(
 }
 
 // ── Bulk upload (API spec §6) ──────────────────────────────────────────────────
-export interface BulkUploadResult {
+interface BulkUploadResult {
   created_count: number;
   skipped_count: number;
   errors: Array<{ row: number; fields: Record<string, string[]> }>;
@@ -352,7 +352,7 @@ export interface BulkUploadResult {
  * same uploaded batch (business key and membership number). Slugs are generated per row against the
  * transaction client, so slug suffixes within the same batch are de-duplicated correctly.
  */
-export async function bulkUpload(rows: unknown[], ctx: AuditContext): Promise<BulkUploadResult> {
+async function bulkUpload(rows: unknown[], ctx: AuditContext): Promise<BulkUploadResult> {
   const userId = requireUser(ctx);
   const errors: Array<{ row: number; fields: Record<string, string[]> }> = [];
   const valid: Array<{ index: number; data: MembershipBulkRowInput }> = [];
@@ -460,7 +460,7 @@ export async function bulkUpload(rows: unknown[], ctx: AuditContext): Promise<Bu
 }
 
 // ── Public reads (visibility predicate + in-process cache) ──────────────────────────
-export async function publicList(
+async function publicList(
   filters: MembershipFilters,
   ordering: { field: MembershipOrderingField; direction: 'asc' | 'desc' },
   page: { skip: number; take: number; page: number; pageSize: number },
@@ -480,7 +480,7 @@ export async function publicList(
   return result;
 }
 
-export async function publicDetailBySlug(slug: string): Promise<PublicMembershipDetailDto> {
+async function publicDetailBySlug(slug: string): Promise<PublicMembershipDetailDto> {
   const cacheKey = `${PUBLIC_CACHE_PREFIX}:slug:${slug}`;
   const cached = await cacheService.getJson<PublicMembershipDetailDto>(cacheKey);
   if (cached) return cached;

@@ -54,7 +54,7 @@ const ORDER_COLUMN: Record<ToolkitOrderingField, keyof Prisma.ToolkitOrderByWith
   created_at: 'createdAt',
 };
 
-export interface ToolkitQueryOptions {
+interface ToolkitQueryOptions {
   public?: boolean;
   ordering: { field: ToolkitOrderingField; direction: 'asc' | 'desc' };
 }
@@ -92,28 +92,28 @@ export function buildWhere(f: ToolkitFilters, opts: { public?: boolean }): Prism
   return where;
 }
 
-export async function slugExists(slug: string, db: Db = prisma): Promise<boolean> {
+async function slugExists(slug: string, db: Db = prisma): Promise<boolean> {
   return (await db.toolkit.count({ where: { slug } })) > 0;
 }
 
-export async function create(data: Prisma.ToolkitUncheckedCreateInput, db: Db = prisma): Promise<ToolkitRow> {
+async function create(data: Prisma.ToolkitUncheckedCreateInput, db: Db = prisma): Promise<ToolkitRow> {
   return db.toolkit.create({ data, include: toolkitInclude });
 }
 
-export async function findById(id: string, db: Db = prisma): Promise<ToolkitRow | null> {
+async function findById(id: string, db: Db = prisma): Promise<ToolkitRow | null> {
   return db.toolkit.findUnique({ where: { id }, include: toolkitInclude });
 }
 
-export async function findBySlug(slug: string, opts: { public?: boolean } = {}): Promise<ToolkitRow | null> {
+async function findBySlug(slug: string, opts: { public?: boolean } = {}): Promise<ToolkitRow | null> {
   if (!opts.public) return prisma.toolkit.findUnique({ where: { slug }, include: toolkitInclude });
   return prisma.toolkit.findFirst({ where: { ...buildWhere({}, { public: true }), slug }, include: toolkitInclude });
 }
 
-export async function update(id: string, data: Prisma.ToolkitUncheckedUpdateInput, db: Db = prisma): Promise<ToolkitRow> {
+async function update(id: string, data: Prisma.ToolkitUncheckedUpdateInput, db: Db = prisma): Promise<ToolkitRow> {
   return db.toolkit.update({ where: { id }, data, include: toolkitInclude });
 }
 
-export async function list(
+async function list(
   f: ToolkitFilters,
   skip: number,
   take: number,
@@ -130,17 +130,17 @@ export async function list(
   return { rows, total };
 }
 
-export function transaction<T>(fn: (tx: Prisma.TransactionClient) => Promise<T>): Promise<T> {
+function transaction<T>(fn: (tx: Prisma.TransactionClient) => Promise<T>): Promise<T> {
   return prisma.$transaction(fn);
 }
 
 /** Validate referenced programme (non-archived) + commodity (active). Returns field-keyed errors. */
-export interface ToolkitRefs {
+interface ToolkitRefs {
   programmeSchemeId?: string | null;
   commodityId?: string | null;
 }
 
-export async function validateReferences(refs: ToolkitRefs): Promise<Record<string, string[]>> {
+async function validateReferences(refs: ToolkitRefs): Promise<Record<string, string[]>> {
   const errors: Record<string, string[]> = {};
   if (refs.programmeSchemeId) {
     const programme = await prisma.programmeScheme.findFirst({

@@ -32,7 +32,7 @@ async function resolveReport(
 }
 
 /** GET /public/dashboard — all active public reports, each with resolved metrics (bounded set). */
-export async function dashboard(filters: PublicDashboardFilters): Promise<{ reports: PublicReportDetailDto[] }> {
+async function dashboard(filters: PublicDashboardFilters): Promise<{ reports: PublicReportDetailDto[] }> {
   const cacheKey = `${DASHBOARD_PUBLIC_CACHE_PREFIX}:dashboard:${periodKey(filters)}`;
   const cached = await cacheService.getJson<{ reports: PublicReportDetailDto[] }>(cacheKey);
   if (cached) return cached;
@@ -49,7 +49,7 @@ export async function dashboard(filters: PublicDashboardFilters): Promise<{ repo
 }
 
 /** GET /public/dashboard/kpis — the homepage-safe subset (reports flagged `show_on_homepage`). */
-export async function kpis(filters: PublicDashboardFilters): Promise<{ kpis: PublicReportDetailDto[] }> {
+async function kpis(filters: PublicDashboardFilters): Promise<{ kpis: PublicReportDetailDto[] }> {
   const cacheKey = `${DASHBOARD_PUBLIC_CACHE_PREFIX}:kpis:${periodKey(filters)}`;
   const cached = await cacheService.getJson<{ kpis: PublicReportDetailDto[] }>(cacheKey);
   if (cached) return cached;
@@ -61,7 +61,7 @@ export async function kpis(filters: PublicDashboardFilters): Promise<{ kpis: Pub
 }
 
 /** GET /public/dashboard/{report_key} — one fixed report + its resolved metrics. */
-export async function reportByKey(
+async function reportByKey(
   reportKey: string,
   filters: PublicDashboardFilters,
 ): Promise<PublicReportDetailDto> {

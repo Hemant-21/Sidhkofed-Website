@@ -27,7 +27,7 @@ function listCacheKey(filters: GalleryPublicListFilters, ordering: unknown, page
 }
 
 /** GET /public/galleries */
-export const list = wrap(async (req) => {
+const list = wrap(async (req) => {
   const page = resolvePageParams(req.query.page, req.query.page_size);
   const filters = parseGalleryPublicFilters(req);
   const ordering = parseGalleryPublicOrdering(req);
@@ -37,7 +37,7 @@ export const list = wrap(async (req) => {
 });
 
 /** GET /public/galleries/{slug} */
-export const detail = wrap(async (req) => {
+const detail = wrap(async (req) => {
   const dto = await galleryService.publicDetailBySlug(req.params.slug as string);
   return { status: 200, body: success(dto, String(req.id)) };
 });

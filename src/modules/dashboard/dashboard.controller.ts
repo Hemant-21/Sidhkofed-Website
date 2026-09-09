@@ -43,13 +43,13 @@ const wrap =
   };
 
 // ── Reports ──────────────────────────────────────────────────────────────────────
-export const createReport = wrap(async (req) => {
+const createReport = wrap(async (req) => {
   const input = validateReportCreate(req.body);
   const dto = await reportService.create(input, auditContext(req));
   return { status: 201, body: success(dto, String(req.id), 'Dashboard report created.') };
 });
 
-export const listReports = wrap(async (req) => {
+const listReports = wrap(async (req) => {
   const page = resolvePageParams(req.query.page, req.query.page_size);
   const filters = parseReportFilters(req);
   const ordering = parseReportOrdering(req);
@@ -57,12 +57,12 @@ export const listReports = wrap(async (req) => {
   return { status: 200, body: paginated(items, buildPagination(total, page), String(req.id)) };
 });
 
-export const reportDetail = wrap(async (req) => {
+const reportDetail = wrap(async (req) => {
   const dto = await reportService.getById(req.params.id as string);
   return { status: 200, body: success(dto, String(req.id)) };
 });
 
-export const patchReport = wrap(async (req) => {
+const patchReport = wrap(async (req) => {
   const input = validateReportUpdate(req.body);
   const dto = await reportService.update(req.params.id as string, input, auditContext(req));
   return { status: 200, body: success(dto, String(req.id), 'Dashboard report updated.') };
@@ -74,13 +74,13 @@ const reportLifecycle = (action: LifecycleAction) =>
     return { status: 200, body: success(dto, String(req.id), `Dashboard report ${action}ed.`) };
   });
 
-export const publishReport = reportLifecycle('publish');
-export const unpublishReport = reportLifecycle('unpublish');
-export const archiveReport = reportLifecycle('archive');
-export const restoreReport = reportLifecycle('restore');
+const publishReport = reportLifecycle('publish');
+const unpublishReport = reportLifecycle('unpublish');
+const archiveReport = reportLifecycle('archive');
+const restoreReport = reportLifecycle('restore');
 
 // ── Metrics ────────────────────────────────────────────────────────────────────
-export const listMetrics = wrap(async (req) => {
+const listMetrics = wrap(async (req) => {
   const page = resolvePageParams(req.query.page, req.query.page_size);
   const filters = parseMetricFilters(req);
   const ordering = parseMetricOrdering(req);
@@ -94,13 +94,13 @@ export const listMetrics = wrap(async (req) => {
   return { status: 200, body: paginated(items, buildPagination(total, page), String(req.id)) };
 });
 
-export const createMetric = wrap(async (req) => {
+const createMetric = wrap(async (req) => {
   const input = validateMetricCreate(req.body);
   const dto = await metricService.create(req.params.report_id as string, input, auditContext(req));
   return { status: 201, body: success(dto, String(req.id), 'Dashboard metric created.') };
 });
 
-export const patchMetric = wrap(async (req) => {
+const patchMetric = wrap(async (req) => {
   const input = validateMetricUpdate(req.body);
   const dto = await metricService.update(
     req.params.report_id as string,
@@ -111,7 +111,7 @@ export const patchMetric = wrap(async (req) => {
   return { status: 200, body: success(dto, String(req.id), 'Dashboard metric updated.') };
 });
 
-export const removeMetric = wrap(async (req) => {
+const removeMetric = wrap(async (req) => {
   await metricService.remove(
     req.params.report_id as string,
     req.params.id as string,
@@ -121,7 +121,7 @@ export const removeMetric = wrap(async (req) => {
 });
 
 // ── Datasets ─────────────────────────────────────────────────────────────────────
-export const listDatasets = wrap(async (req) => {
+const listDatasets = wrap(async (req) => {
   const page = resolvePageParams(req.query.page, req.query.page_size);
   const filters = parseDatasetFilters(req);
   const ordering = parseDatasetOrdering(req);
@@ -135,13 +135,13 @@ export const listDatasets = wrap(async (req) => {
   return { status: 200, body: paginated(items, buildPagination(total, page), String(req.id)) };
 });
 
-export const datasetDetail = wrap(async (req) => {
+const datasetDetail = wrap(async (req) => {
   const dto = await datasetService.getById(req.params.id as string);
   return { status: 200, body: success(dto, String(req.id)) };
 });
 
 /** Manual dataset create (`source` = manual | cms_derived). */
-export const createDataset = wrap(async (req) => {
+const createDataset = wrap(async (req) => {
   const input = validateDatasetCreate(req.body);
   const result = await datasetService.importDataset(
     req.params.report_id as string,
@@ -168,7 +168,7 @@ export const createDataset = wrap(async (req) => {
  * validation). Accompanying multipart text fields carry the financial year / reporting period and the
  * optional `preview` flag.
  */
-export const uploadDataset = wrap(async (req) => {
+const uploadDataset = wrap(async (req) => {
   const file = (req as Request & { file?: MulterFile }).file;
   if (!file) throw new ValidationError({ file: ['A CSV or XLSX file is required.'] });
   if (!uploadConfig.allowedDatasetTypes.includes(file.mimetype)) {

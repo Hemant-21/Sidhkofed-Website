@@ -30,7 +30,7 @@ function listCacheKey(filters: OfficialCommunicationFilters, ordering: unknown, 
 }
 
 /** GET /public/official-communications */
-export const list = wrap(async (req) => {
+const list = wrap(async (req) => {
   const page = resolvePageParams(req.query.page, req.query.page_size);
   const filters = parseOfficialCommunicationFilters(req, { admin: false });
   const ordering = parseOfficialCommunicationOrdering(req, false);
@@ -45,7 +45,7 @@ export const list = wrap(async (req) => {
 });
 
 /** GET /public/official-communications/{slug} */
-export const detail = wrap(async (req) => {
+const detail = wrap(async (req) => {
   const dto = await officialCommunicationService.publicDetailBySlug(req.params.slug as string);
   return { status: 200, body: success(dto, String(req.id)) };
 });

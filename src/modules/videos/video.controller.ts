@@ -17,13 +17,13 @@ const wrap =
     fn(req).then(({ status, body }) => res.status(status).json(body)).catch(next);
   };
 
-export const create = wrap(async (req) => {
+const create = wrap(async (req) => {
   const input = validateVideoCreate(req.body);
   const dto = await videoService.create(input, auditContext(req));
   return { status: 201, body: success(dto, String(req.id), 'Video created.') };
 });
 
-export const list = wrap(async (req) => {
+const list = wrap(async (req) => {
   const page = resolvePageParams(req.query.page, req.query.page_size);
   // Validate enums/flags BEFORE the service/Prisma — invalid → 422 (no manual cast).
   const state = parsePublicationState(req.query.publication_state);
@@ -33,12 +33,12 @@ export const list = wrap(async (req) => {
   return { status: 200, body: paginated(items, buildPagination(total, page), String(req.id)) };
 });
 
-export const detail = wrap(async (req) => {
+const detail = wrap(async (req) => {
   const dto = await videoService.getById(req.params.id as string);
   return { status: 200, body: success(dto, String(req.id)) };
 });
 
-export const patch = wrap(async (req) => {
+const patch = wrap(async (req) => {
   const input = validateVideoUpdate(req.body);
   const dto = await videoService.update(req.params.id as string, input, auditContext(req));
   return { status: 200, body: success(dto, String(req.id), 'Video updated.') };
@@ -50,13 +50,13 @@ const lifecycle = (action: LifecycleAction) =>
     return { status: 200, body: success(dto, String(req.id), `Video ${action}ed.`) };
   });
 
-export const publish = lifecycle('publish');
-export const unpublish = lifecycle('unpublish');
-export const archive = lifecycle('archive');
-export const restore = lifecycle('restore');
+const publish = lifecycle('publish');
+const unpublish = lifecycle('unpublish');
+const archive = lifecycle('archive');
+const restore = lifecycle('restore');
 
 /** POST /admin/videos/validate-url — stateless pre-check for the CMS form. */
-export const validateUrl = wrap(async (req) => {
+const validateUrl = wrap(async (req) => {
   const body = req.body as { youtube_url?: unknown };
   const raw = typeof body?.youtube_url === 'string' ? body.youtube_url : '';
   const parsed = parseYouTubeUrl(raw);

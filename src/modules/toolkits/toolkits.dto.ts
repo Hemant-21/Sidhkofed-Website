@@ -1,9 +1,7 @@
 /**
  * Toolkit DTOs + mappers (API spec §5/§6). Shapes: admin summary/detail, public summary/detail.
  * Reuses the shared compact reference shapes (MediaRef, MasterRef) and the Programme reference.
- * `toToolkitRef` is the compact cross-module reference.
  */
-import type { Toolkit } from '@prisma/client';
 import { mediaRef, type MediaRef, type MasterRef } from '@/modules/institutions/institutions.dto';
 import { type ProgrammeRef } from '@/modules/programmes/programmes.dto';
 import { isPubliclyVisible, type VisibilityFields } from '@/shared/visibility';
@@ -28,17 +26,6 @@ function publicProgrammeRef(p: ProgrammeRefRow): ProgrammeRef | null {
 
 const publicUrl = (slug: string): string => `/toolkits/${slug}`;
 const iso = (d: Date | null): string | null => (d ? d.toISOString() : null);
-
-// ── Compact cross-module reference ─────────────────────────────────────────────
-export interface ToolkitRef {
-  id: string;
-  slug: string;
-  title_en: string;
-  title_hi: string | null;
-}
-export function toToolkitRef(t: Toolkit): ToolkitRef {
-  return { id: t.id, slug: t.slug, title_en: t.titleEn, title_hi: t.titleHi };
-}
 
 // ── Admin summary (list) ──────────────────────────────────────────────────────
 export interface ToolkitSummaryDto {

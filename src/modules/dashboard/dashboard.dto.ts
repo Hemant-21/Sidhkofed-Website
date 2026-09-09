@@ -13,7 +13,7 @@ const iso = (d: Date | null): string | null => (d ? d.toISOString() : null);
 const num = (d: { toString(): string } | null): number | null => (d === null ? null : Number(d.toString()));
 
 // ── Compact references ──────────────────────────────────────────────────────────
-export interface FinancialYearRef {
+interface FinancialYearRef {
   id: string;
   label: string;
 }
@@ -21,7 +21,7 @@ function financialYearRef(fy: { id: string; label: string } | null): FinancialYe
   return fy ? { id: fy.id, label: fy.label } : null;
 }
 
-export interface ReportingPeriodRef {
+interface ReportingPeriodRef {
   id: string;
   slug: string;
   name_en: string;
@@ -176,7 +176,7 @@ export function toDatasetDto(d: DatasetRow): DatasetDto {
 }
 
 // ── Public metric (safe subset — no provenance/dataset/authorship) ──────────────
-export interface PublicMetricDto {
+interface PublicMetricDto {
   metric_key: string;
   label_en: string;
   label_hi: string | null;
@@ -187,7 +187,7 @@ export interface PublicMetricDto {
   reporting_period: ReportingPeriodRef | null;
 }
 
-export function toPublicMetricDto(m: MetricRow): PublicMetricDto {
+function toPublicMetricDto(m: MetricRow): PublicMetricDto {
   return {
     metric_key: m.metricKey,
     label_en: m.labelEn,
@@ -201,7 +201,7 @@ export function toPublicMetricDto(m: MetricRow): PublicMetricDto {
 }
 
 // ── Public report summary (list — no metrics) ───────────────────────────────────
-export interface PublicReportSummaryDto {
+interface PublicReportSummaryDto {
   report_key: string;
   title_en: string;
   title_hi: string | null;
@@ -212,7 +212,7 @@ export interface PublicReportSummaryDto {
   public_url: string;
 }
 
-export function toPublicReportSummaryDto(r: ReportRow): PublicReportSummaryDto {
+function toPublicReportSummaryDto(r: ReportRow): PublicReportSummaryDto {
   return {
     report_key: r.reportKey,
     title_en: r.titleEn,

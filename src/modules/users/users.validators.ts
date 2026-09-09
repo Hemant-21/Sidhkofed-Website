@@ -30,7 +30,7 @@ const preferredLanguage = z.enum(['en', 'hi'], { errorMap: () => ({ message: 'Mu
 const roles = z.array(z.string().trim().min(1)).min(1, 'At least one role is required.').max(10);
 
 // ── Create ────────────────────────────────────────────────────────────────────
-export const userCreateSchema = z
+const userCreateSchema = z
   .object({
     email,
     full_name: requiredText(255),
@@ -44,7 +44,7 @@ export type UserCreateInput = z.infer<typeof userCreateSchema>;
 export const validateUserCreate = (p: unknown): UserCreateInput => parseSchema(userCreateSchema, p);
 
 // ── Update (PATCH — partial) ───────────────────────────────────────────────────
-export const userUpdateSchema = z
+const userUpdateSchema = z
   .object({
     email,
     full_name: requiredText(255),
@@ -57,19 +57,19 @@ export type UserUpdateInput = z.infer<typeof userUpdateSchema>;
 export const validateUserUpdate = (p: unknown): UserUpdateInput => parseSchema(userUpdateSchema, p);
 
 // ── Password reset (admin → another user) ──────────────────────────────────────
-export const userPasswordSchema = z.object({ password }).strict();
+const userPasswordSchema = z.object({ password }).strict();
 export type UserPasswordInput = z.infer<typeof userPasswordSchema>;
 export const validateUserPassword = (p: unknown): UserPasswordInput => parseSchema(userPasswordSchema, p);
 
 // ── Status (activate / deactivate) ─────────────────────────────────────────────
-export const userStatusSchema = z
+const userStatusSchema = z
   .object({ is_active: z.boolean({ required_error: 'This field is required.' }) })
   .strict();
 export type UserStatusInput = z.infer<typeof userStatusSchema>;
 export const validateUserStatus = (p: unknown): UserStatusInput => parseSchema(userStatusSchema, p);
 
 // ── Self-service profile (any authenticated user; own account only) ────────────
-export const profileUpdateSchema = z
+const profileUpdateSchema = z
   .object({
     full_name: requiredText(255),
     preferred_language: preferredLanguage,
@@ -79,7 +79,7 @@ export const profileUpdateSchema = z
 export type ProfileUpdateInput = z.infer<typeof profileUpdateSchema>;
 export const validateProfileUpdate = (p: unknown): ProfileUpdateInput => parseSchema(profileUpdateSchema, p);
 
-export const profilePasswordSchema = z
+const profilePasswordSchema = z
   .object({
     current_password: z.string({ required_error: 'This field is required.' }).min(1, 'This field is required.'),
     new_password: password,

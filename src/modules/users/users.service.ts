@@ -59,13 +59,13 @@ async function toProfile(row: UserRow): Promise<AuthUserDto> {
   );
 }
 
-export interface ListResult<T> {
+interface ListResult<T> {
   items: T[];
   total: number;
 }
 
 // ── Reads ───────────────────────────────────────────────────────────────────────
-export async function list(
+async function list(
   filters: UserFilters,
   ordering: { field: UserOrderingField; direction: 'asc' | 'desc' },
   skip: number,
@@ -75,12 +75,12 @@ export async function list(
   return { items: rows.map(toUserDto), total };
 }
 
-export async function getById(id: string): Promise<UserDto> {
+async function getById(id: string): Promise<UserDto> {
   return toUserDto(loaded(await userRepository.findById(id)));
 }
 
 // ── Create ────────────────────────────────────────────────────────────────────
-export async function create(input: UserCreateInput, ctx: AuditContext): Promise<UserDto> {
+async function create(input: UserCreateInput, ctx: AuditContext): Promise<UserDto> {
   requireUser(ctx);
   if (await userRepository.emailExists(input.email)) {
     throw new ConflictError(`A user with email "${input.email}" already exists.`);
@@ -112,7 +112,7 @@ export async function create(input: UserCreateInput, ctx: AuditContext): Promise
 }
 
 // ── Update (admin; identity + roles) ───────────────────────────────────────────
-export async function update(id: string, input: UserUpdateInput, ctx: AuditContext): Promise<UserDto> {
+async function update(id: string, input: UserUpdateInput, ctx: AuditContext): Promise<UserDto> {
   const actorId = requireUser(ctx);
   const existing = loaded(await userRepository.findById(id));
 
@@ -162,7 +162,7 @@ export async function update(id: string, input: UserUpdateInput, ctx: AuditConte
 }
 
 // ── Password reset (admin → another user) ──────────────────────────────────────
-export async function resetPassword(id: string, input: UserPasswordInput, ctx: AuditContext): Promise<void> {
+async function resetPassword(id: string, input: UserPasswordInput, ctx: AuditContext): Promise<void> {
   requireUser(ctx);
   const existing = loaded(await userRepository.findById(id));
   const passwordHash = await hashPassword(input.password);
@@ -173,7 +173,7 @@ export async function resetPassword(id: string, input: UserPasswordInput, ctx: A
 }
 
 // ── Status (activate / deactivate) ─────────────────────────────────────────────
-export async function setStatus(id: string, input: UserStatusInput, ctx: AuditContext): Promise<UserDto> {
+async function setStatus(id: string, input: UserStatusInput, ctx: AuditContext): Promise<UserDto> {
   const actorId = requireUser(ctx);
   const existing = loaded(await userRepository.findById(id));
 
@@ -200,7 +200,7 @@ export async function setStatus(id: string, input: UserStatusInput, ctx: AuditCo
 }
 
 // ── Self-service profile (own account only) ────────────────────────────────────
-export async function updateOwnProfile(input: ProfileUpdateInput, ctx: AuditContext): Promise<AuthUserDto> {
+async function updateOwnProfile(input: ProfileUpdateInput, ctx: AuditContext): Promise<AuthUserDto> {
   const actorId = requireUser(ctx);
   const existing = loaded(await userRepository.findById(actorId));
   const updated = await userRepository.updateProfile(actorId, {
@@ -213,7 +213,7 @@ export async function updateOwnProfile(input: ProfileUpdateInput, ctx: AuditCont
   return toProfile(updated);
 }
 
-export async function changeOwnPassword(input: ProfilePasswordInput, ctx: AuditContext): Promise<void> {
+async function changeOwnPassword(input: ProfilePasswordInput, ctx: AuditContext): Promise<void> {
   const actorId = requireUser(ctx);
   const currentHash = await userRepository.findPasswordHashById(actorId);
   if (!currentHash) throw new NotFoundError('User not found.');

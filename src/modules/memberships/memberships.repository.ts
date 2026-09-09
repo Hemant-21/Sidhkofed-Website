@@ -46,7 +46,7 @@ const ORDER_COLUMN: Record<
   created_at: 'createdAt',
 };
 
-export interface MembershipQueryOptions {
+interface MembershipQueryOptions {
   public?: boolean;
   ordering: { field: MembershipOrderingField; direction: 'asc' | 'desc' };
 }
@@ -97,7 +97,7 @@ export function buildWhere(
   return where;
 }
 
-export async function slugExists(slug: string, db: Db = prisma): Promise<boolean> {
+async function slugExists(slug: string, db: Db = prisma): Promise<boolean> {
   return (await db.institutionalMembership.count({ where: { slug } })) > 0;
 }
 
@@ -117,7 +117,7 @@ export interface MembershipBusinessKey {
 }
 
 /** True when a membership with the same business key already exists (excluding `excludeId`). */
-export async function businessKeyExists(
+async function businessKeyExists(
   key: MembershipBusinessKey,
   excludeId?: string,
   db: Db = prisma,
@@ -134,7 +134,7 @@ export async function businessKeyExists(
 }
 
 /** True when another membership already carries this (non-null) membership number. */
-export async function membershipNumberExists(
+async function membershipNumberExists(
   membershipNumber: string,
   excludeId?: string,
   db: Db = prisma,
@@ -144,18 +144,18 @@ export async function membershipNumberExists(
   return (await db.institutionalMembership.count({ where })) > 0;
 }
 
-export async function create(
+async function create(
   data: Prisma.InstitutionalMembershipUncheckedCreateInput,
   db: Db = prisma,
 ): Promise<MembershipRow> {
   return db.institutionalMembership.create({ data, include: membershipInclude });
 }
 
-export async function findById(id: string, db: Db = prisma): Promise<MembershipRow | null> {
+async function findById(id: string, db: Db = prisma): Promise<MembershipRow | null> {
   return db.institutionalMembership.findUnique({ where: { id }, include: membershipInclude });
 }
 
-export async function findBySlug(
+async function findBySlug(
   slug: string,
   opts: { public?: boolean } = {},
 ): Promise<MembershipRow | null> {
@@ -170,7 +170,7 @@ export async function findBySlug(
   });
 }
 
-export async function update(
+async function update(
   id: string,
   data: Prisma.InstitutionalMembershipUncheckedUpdateInput,
   db: Db = prisma,
@@ -178,7 +178,7 @@ export async function update(
   return db.institutionalMembership.update({ where: { id }, data, include: membershipInclude });
 }
 
-export async function list(
+async function list(
   f: MembershipFilters,
   skip: number,
   take: number,
@@ -202,7 +202,7 @@ export async function list(
 }
 
 /** Run a callback inside a transaction (bulk-upload creates all rows atomically). */
-export async function transaction<T>(fn: (tx: Prisma.TransactionClient) => Promise<T>): Promise<T> {
+async function transaction<T>(fn: (tx: Prisma.TransactionClient) => Promise<T>): Promise<T> {
   return prisma.$transaction(fn);
 }
 
@@ -220,7 +220,7 @@ export interface MembershipRefs {
  * District and Reporting Period are masters: they must exist AND be active. Returns field-keyed
  * errors ({} when all valid).
  */
-export async function validateReferences(
+async function validateReferences(
   refs: MembershipRefs,
   db: Db = prisma,
 ): Promise<Record<string, string[]>> {
@@ -260,7 +260,7 @@ export async function validateReferences(
 }
 
 /** Fetch an institution's name to seed the membership slug (no member title field exists). */
-export async function institutionName(id: string, db: Db = prisma): Promise<string | null> {
+async function institutionName(id: string, db: Db = prisma): Promise<string | null> {
   const row = await db.institution.findUnique({ where: { id }, select: { nameEn: true } });
   return row?.nameEn ?? null;
 }

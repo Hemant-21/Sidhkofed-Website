@@ -28,12 +28,12 @@ import {
 import { datasetRowSchema, type DatasetRowInput } from './dashboard.validators';
 import { invalidateDashboardCache, requireUser } from './dashboard.shared';
 
-export interface RowError {
+interface RowError {
   row: number;
   fields: Record<string, string[]>;
 }
 
-export interface DatasetImportParams {
+interface DatasetImportParams {
   source: DatasetSourceValue;
   financialYearId: string | null;
   reportingPeriodId: string | null;
@@ -55,7 +55,7 @@ export interface DatasetImportResult {
   metrics_updated: number;
 }
 
-export type DatasetResult = DatasetPreviewResult | DatasetImportResult;
+type DatasetResult = DatasetPreviewResult | DatasetImportResult;
 
 async function assertReportExists(reportId: string): Promise<void> {
   if (!(await dashboardRepository.findReportById(reportId))) {
@@ -123,7 +123,7 @@ function flattenRowErrors(errors: RowError[]): Record<string, string[]> {
  * Manual create OR Excel/CSV import — one path, all-or-nothing. The caller fixes the `source`
  * (`manual`/`cms_derived` for the manual route; `excel` for the upload route).
  */
-export async function importDataset(
+async function importDataset(
   reportId: string,
   params: DatasetImportParams,
   ctx: AuditContext,
@@ -240,16 +240,16 @@ function loaded(row: DatasetRow | null): DatasetRow {
   return row;
 }
 
-export async function getById(id: string): Promise<DatasetDto> {
+async function getById(id: string): Promise<DatasetDto> {
   return toDatasetDto(loaded(await dashboardRepository.findDatasetById(id)));
 }
 
-export interface DatasetListResult {
+interface DatasetListResult {
   items: DatasetDto[];
   total: number;
 }
 
-export async function list(
+async function list(
   reportId: string,
   filters: DatasetFilters,
   ordering: { field: DatasetOrderingField; direction: 'asc' | 'desc' },

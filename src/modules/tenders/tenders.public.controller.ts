@@ -27,7 +27,7 @@ function listCacheKey(filters: TenderFilters, ordering: unknown, page: number, p
 }
 
 /** GET /public/tenders */
-export const list = wrap(async (req) => {
+const list = wrap(async (req) => {
   const page = resolvePageParams(req.query.page, req.query.page_size);
   const filters = parseTenderFilters(req, { admin: false });
   const ordering = parseTenderOrdering(req);
@@ -42,7 +42,7 @@ export const list = wrap(async (req) => {
 });
 
 /** GET /public/tenders/{slug} */
-export const detail = wrap(async (req) => {
+const detail = wrap(async (req) => {
   const dto = await tenderService.publicDetailBySlug(req.params.slug as string);
   return { status: 200, body: success(dto, String(req.id)) };
 });

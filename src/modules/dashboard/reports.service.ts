@@ -25,7 +25,7 @@ function loaded(row: ReportRow | null): ReportRow {
   return row;
 }
 
-export async function create(input: ReportCreateInput, ctx: AuditContext): Promise<ReportDetailDto> {
+async function create(input: ReportCreateInput, ctx: AuditContext): Promise<ReportDetailDto> {
   const userId = requireUser(ctx);
   if (await dashboardRepository.reportKeyExists(input.report_key)) {
     throw new ConflictError('A dashboard report with this report key already exists.');
@@ -56,7 +56,7 @@ export async function create(input: ReportCreateInput, ctx: AuditContext): Promi
   return toReportDetailDto(created);
 }
 
-export async function update(id: string, input: ReportUpdateInput, ctx: AuditContext): Promise<ReportDetailDto> {
+async function update(id: string, input: ReportUpdateInput, ctx: AuditContext): Promise<ReportDetailDto> {
   const userId = requireUser(ctx);
   loaded(await dashboardRepository.findReportById(id));
   const data: Prisma.DashboardReportUncheckedUpdateInput = { updatedById: userId };
@@ -80,16 +80,16 @@ export async function update(id: string, input: ReportUpdateInput, ctx: AuditCon
   return toReportDetailDto(updated);
 }
 
-export async function getById(id: string): Promise<ReportDetailDto> {
+async function getById(id: string): Promise<ReportDetailDto> {
   return toReportDetailDto(loaded(await dashboardRepository.findReportById(id)));
 }
 
-export interface ReportListResult {
+interface ReportListResult {
   items: ReportSummaryDto[];
   total: number;
 }
 
-export async function list(
+async function list(
   filters: ReportFilters,
   ordering: { field: ReportOrderingField; direction: 'asc' | 'desc' },
   skip: number,
@@ -99,7 +99,7 @@ export async function list(
   return { items: rows.map(toReportSummaryDto), total };
 }
 
-export async function lifecycle(id: string, action: LifecycleAction, ctx: AuditContext): Promise<ReportDetailDto> {
+async function lifecycle(id: string, action: LifecycleAction, ctx: AuditContext): Promise<ReportDetailDto> {
   const userId = requireUser(ctx);
   const existing = loaded(await dashboardRepository.findReportById(id));
   const change = applyLifecycle(

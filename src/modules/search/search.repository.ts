@@ -140,14 +140,6 @@ function procurementFragment(c: SurfaceContext): Prisma.Sql | null {
   return Prisma.sql`SELECT 'procurement_update'::text AS content_type, pu.id::text AS id, pu.slug AS slug, pu.title_en AS title_en, pu.title_hi AS title_hi, pu.summary_en AS summary, pu.effective_date::date::text AS publication_date, NULL::text AS cover_media_id, ts_rank(pu.search_vector, ${c.tsq}) AS rank FROM procurement_updates pu WHERE ${Prisma.join(conds, ' AND ')}`;
 }
 
-function pageFragment(c: SurfaceContext): Prisma.Sql | null {
-  if (c.commodity || c.district || c.programme) return null;
-  const conds: Prisma.Sql[] = [Prisma.sql`pg.search_vector @@ ${c.tsq}`];
-  if (c.public) conds.push(publicPredicate('pg', c.now));
-  if (c.year) conds.push(Prisma.sql`EXTRACT(YEAR FROM pg.published_at) = ${c.year}`);
-  return Prisma.sql`SELECT 'page'::text AS content_type, pg.id::text AS id, pg.slug AS slug, pg.title_en AS title_en, pg.title_hi AS title_hi, pg.meta_description_en AS summary, pg.published_at::date::text AS publication_date, NULL::text AS cover_media_id, ts_rank(pg.search_vector, ${c.tsq}) AS rank FROM pages pg WHERE ${Prisma.join(conds, ' AND ')}`;
-}
-
 const SURFACE_BUILDERS: Record<ContentType, (c: SurfaceContext) => Prisma.Sql | null> = {
   event: eventFragment,
   news: newsFragment,
@@ -156,7 +148,6 @@ const SURFACE_BUILDERS: Record<ContentType, (c: SurfaceContext) => Prisma.Sql | 
   official_communication: communicationFragment,
   tender: tenderFragment,
   procurement_update: procurementFragment,
-  page: pageFragment,
 };
 
 /**
@@ -217,7 +208,7 @@ export async function search(
  * map keyed by media id; ids with no live asset are simply absent. Kept in the repository so all
  * Prisma access for the module stays here (layering rule).
  */
-export async function findCoverMediaRefs(ids: string[]): Promise<Map<string, MediaRef>> {
+async function findCoverMediaRefs(ids: string[]): Promise<Map<string, MediaRef>> {
   const map = new Map<string, MediaRef>();
   if (ids.length === 0) return map;
   const assets = await prisma.mediaAsset.findMany({

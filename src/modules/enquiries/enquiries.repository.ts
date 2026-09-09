@@ -65,18 +65,18 @@ export function buildWhere(f: EnquiryFilters): Prisma.EnquiryWhereInput {
   return where;
 }
 
-export async function create(
+async function create(
   data: Prisma.EnquiryUncheckedCreateInput,
   db: Db = prisma,
 ): Promise<EnquiryRow> {
   return db.enquiry.create({ data, include: enquiryInclude });
 }
 
-export async function findById(id: string, db: Db = prisma): Promise<EnquiryRow | null> {
+async function findById(id: string, db: Db = prisma): Promise<EnquiryRow | null> {
   return db.enquiry.findUnique({ where: { id }, include: enquiryInclude });
 }
 
-export async function update(
+async function update(
   id: string,
   data: Prisma.EnquiryUncheckedUpdateInput,
   db: Db = prisma,
@@ -84,7 +84,7 @@ export async function update(
   return db.enquiry.update({ where: { id }, data, include: enquiryInclude });
 }
 
-export async function list(
+async function list(
   f: EnquiryFilters,
   skip: number,
   take: number,
@@ -102,7 +102,7 @@ export async function list(
 }
 
 /** Fetch all rows matching the filters (no pagination) for export. Cap at 10 000 rows. */
-export async function listAll(f: EnquiryFilters): Promise<EnquiryRow[]> {
+async function listAll(f: EnquiryFilters): Promise<EnquiryRow[]> {
   return prisma.enquiry.findMany({
     where: buildWhere(f),
     include: enquiryInclude,
@@ -115,7 +115,7 @@ export async function listAll(f: EnquiryFilters): Promise<EnquiryRow[]> {
  * Validate that the enquiry type is active. Returns field-keyed errors ({} = valid).
  * Also checks optional commodity and programme scheme exist if provided.
  */
-export async function validateReferences(refs: {
+async function validateReferences(refs: {
   enquiryTypeId: string;
   commodityId?: string;
   programmeSchemeId?: string;

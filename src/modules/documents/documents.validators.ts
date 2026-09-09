@@ -77,7 +77,7 @@ function refineHighlightWindow(
   }
 }
 
-export const documentCreateSchema = z
+const documentCreateSchema = z
   .object(baseDocumentShape)
   .strict()
   .superRefine((data, ctx) => {
@@ -95,7 +95,7 @@ export const documentCreateSchema = z
 export type DocumentCreateInput = z.infer<typeof documentCreateSchema>;
 export const validateDocumentCreate = (p: unknown): DocumentCreateInput => parse(documentCreateSchema, p);
 
-export const documentUpdateSchema = z
+const documentUpdateSchema = z
   .object(baseDocumentShape)
   .partial()
   .strict()
@@ -104,6 +104,6 @@ export type DocumentUpdateInput = z.infer<typeof documentUpdateSchema>;
 export const validateDocumentUpdate = (p: unknown): DocumentUpdateInput => parse(documentUpdateSchema, p);
 
 /** Body of POST /admin/documents/{id}/replace-file. */
-export const replaceFileSchema = z.object({ file_asset_id: uuid }).strict();
+const replaceFileSchema = z.object({ file_asset_id: uuid }).strict();
 export type ReplaceFileInput = z.infer<typeof replaceFileSchema>;
 export const validateReplaceFile = (p: unknown): ReplaceFileInput => parse(replaceFileSchema, p);

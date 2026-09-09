@@ -17,7 +17,7 @@ import { prisma } from '@/db/prisma';
 /** A Prisma client or an active transaction client. */
 type Db = PrismaClient | Prisma.TransactionClient;
 
-export interface UsageRef {
+interface UsageRef {
   mediaId: string;
   /** Consuming entity key, e.g. `gallery`, `event`, `document`. */
   entityType: string;
@@ -27,7 +27,7 @@ export interface UsageRef {
 }
 
 /** Register a usage link (idempotent). Pass a tx client to join the caller's transaction. */
-export async function registerUsage(ref: UsageRef, db: Db = prisma): Promise<void> {
+async function registerUsage(ref: UsageRef, db: Db = prisma): Promise<void> {
   await db.mediaUsage.upsert({
     where: {
       mediaId_entityType_entityId_field: {
@@ -43,13 +43,13 @@ export async function registerUsage(ref: UsageRef, db: Db = prisma): Promise<voi
 }
 
 /** Remove a usage link (no-op if absent). */
-export async function removeUsage(ref: UsageRef, db: Db = prisma): Promise<void> {
+async function removeUsage(ref: UsageRef, db: Db = prisma): Promise<void> {
   await db.mediaUsage.deleteMany({
     where: { mediaId: ref.mediaId, entityType: ref.entityType, entityId: ref.entityId, field: ref.field },
   });
 }
 
-export interface UsageRecord {
+interface UsageRecord {
   entityType: string;
   entityId: string;
   field: string;
@@ -57,7 +57,7 @@ export interface UsageRecord {
 }
 
 /** All places a media asset is currently used. */
-export async function whereUsed(mediaId: string, db: Db = prisma): Promise<UsageRecord[]> {
+async function whereUsed(mediaId: string, db: Db = prisma): Promise<UsageRecord[]> {
   const rows = await db.mediaUsage.findMany({
     where: { mediaId },
     select: { entityType: true, entityId: true, field: true, createdAt: true },
@@ -67,7 +67,7 @@ export async function whereUsed(mediaId: string, db: Db = prisma): Promise<Usage
 }
 
 /** Whether the asset is referenced anywhere (blocks hard-delete). */
-export async function isUsed(mediaId: string, db: Db = prisma): Promise<boolean> {
+async function isUsed(mediaId: string, db: Db = prisma): Promise<boolean> {
   const count = await db.mediaUsage.count({ where: { mediaId } });
   return count > 0;
 }

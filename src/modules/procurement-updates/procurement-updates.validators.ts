@@ -55,7 +55,7 @@ function refineDates(
   refineDateOrder(data.period_start, data.period_end, 'period_end', ctx);
 }
 
-export const procurementUpdateCreateSchema = z
+const procurementUpdateCreateSchema = z
   .object(baseShape)
   .strict()
   .superRefine((data, ctx) => {
@@ -66,7 +66,7 @@ export type ProcurementUpdateCreateInput = z.infer<typeof procurementUpdateCreat
 export const validateProcurementUpdateCreate = (p: unknown): ProcurementUpdateCreateInput =>
   parseSchema(procurementUpdateCreateSchema, p);
 
-export const procurementUpdateUpdateSchema = z
+const procurementUpdateUpdateSchema = z
   .object(baseShape)
   .partial()
   .strict()

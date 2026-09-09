@@ -21,7 +21,7 @@ function listCacheKey(filters: ProgrammeFilters, ordering: unknown, page: number
   return `programmes:public:list:${hash}`;
 }
 
-export const list = wrap(async (req) => {
+const list = wrap(async (req) => {
   const page = resolvePageParams(req.query.page, req.query.page_size);
   const filters = parseProgrammeFilters(req, { admin: false });
   const ordering = parseProgrammeOrdering(req, false);
@@ -35,7 +35,7 @@ export const list = wrap(async (req) => {
   return { status: 200, body: paginated(items, buildPagination(total, page), String(req.id)) };
 });
 
-export const detail = wrap(async (req) => {
+const detail = wrap(async (req) => {
   const dto = await programmeService.publicDetailBySlug(req.params.slug as string);
   return { status: 200, body: success(dto, String(req.id)) };
 });

@@ -23,7 +23,7 @@ function listCacheKey(filters: ToolkitFilters, ordering: unknown, page: number, 
   return `toolkits:public:list:${hash}`;
 }
 
-export const list = wrap(async (req) => {
+const list = wrap(async (req) => {
   const page = resolvePageParams(req.query.page, req.query.page_size);
   const filters = parseToolkitFilters(req, { admin: false });
   const ordering = parseToolkitOrdering(req, false);
@@ -37,12 +37,12 @@ export const list = wrap(async (req) => {
   return { status: 200, body: paginated(items, buildPagination(total, page), String(req.id)) };
 });
 
-export const detail = wrap(async (req) => {
+const detail = wrap(async (req) => {
   const dto = await toolkitService.publicDetailBySlug(req.params.slug as string);
   return { status: 200, body: success(dto, String(req.id)) };
 });
 
-export const distributionSummary = wrap(async (req) => {
+const distributionSummary = wrap(async (req) => {
   // Resolve the published toolkit (toolkits module), then aggregate its per-event distribution
   // figures (events/toolkit-distributions module). The aggregation is summary-only.
   const toolkit = await toolkitService.publicRowBySlug(req.params.slug as string);

@@ -27,7 +27,7 @@ function listCacheKey(surface: string, filters: InstitutionFilters, ordering: un
 }
 
 /** GET /public/institutions */
-export const list = wrap(async (req) => {
+const list = wrap(async (req) => {
   const page = resolvePageParams(req.query.page, req.query.page_size);
   const filters = parseInstitutionFilters(req, { admin: false });
   const ordering = parseInstitutionOrdering(req, false);
@@ -42,7 +42,7 @@ export const list = wrap(async (req) => {
 });
 
 /** GET /public/home/partners — capped, homepage-flagged partner list. */
-export const homePartners = wrap(async (req) => {
+const homePartners = wrap(async (req) => {
   const page = { skip: 0, take: PARTNERS_LIMIT, page: 1, pageSize: PARTNERS_LIMIT };
   const filters: InstitutionFilters = { showOnHomepage: true };
   const ordering = { field: 'display_order' as const, direction: 'asc' as const };
@@ -52,7 +52,7 @@ export const homePartners = wrap(async (req) => {
 });
 
 /** GET /public/institutions/{slug} */
-export const detail = wrap(async (req) => {
+const detail = wrap(async (req) => {
   const dto = await institutionService.publicDetailBySlug(req.params.slug as string);
   return { status: 200, body: success(dto, String(req.id)) };
 });

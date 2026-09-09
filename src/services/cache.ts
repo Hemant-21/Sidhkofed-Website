@@ -19,7 +19,7 @@ function isExpired(entry: CacheEntry): boolean {
   return entry.expiresAt <= Date.now();
 }
 
-export async function getJson<T>(key: string): Promise<T | null> {
+async function getJson<T>(key: string): Promise<T | null> {
   const entry = store.get(key);
   if (!entry) return null;
   if (isExpired(entry)) {
@@ -29,7 +29,7 @@ export async function getJson<T>(key: string): Promise<T | null> {
   return JSON.parse(entry.value) as T;
 }
 
-export async function setJson(key: string, value: unknown, ttlSeconds = cacheConfig.ttlSeconds): Promise<void> {
+async function setJson(key: string, value: unknown, ttlSeconds = cacheConfig.ttlSeconds): Promise<void> {
   if (ttlSeconds <= 0) return;
   store.set(key, {
     value: JSON.stringify(value),
@@ -37,11 +37,11 @@ export async function setJson(key: string, value: unknown, ttlSeconds = cacheCon
   });
 }
 
-export async function del(key: string): Promise<void> {
+async function del(key: string): Promise<void> {
   store.delete(key);
 }
 
-export async function delByPrefix(prefix: string): Promise<void> {
+async function delByPrefix(prefix: string): Promise<void> {
   for (const key of store.keys()) {
     if (key.startsWith(prefix)) store.delete(key);
   }

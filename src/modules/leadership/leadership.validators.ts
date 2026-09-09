@@ -25,7 +25,7 @@ const createShape = {
   ...workflowShape,
 };
 
-export const leadershipCreateSchema = z
+const leadershipCreateSchema = z
   .object(createShape)
   .strict()
   .superRefine((data, ctx) => {
@@ -36,7 +36,7 @@ export const validateLeadershipCreate = (p: unknown): LeadershipCreateInput =>
   parseSchema(leadershipCreateSchema, p);
 
 // PATCH is partial — every field stays validated when present, but none are required.
-export const leadershipUpdateSchema = z
+const leadershipUpdateSchema = z
   .object(createShape)
   .partial()
   .strict()

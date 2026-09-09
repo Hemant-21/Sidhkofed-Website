@@ -14,7 +14,7 @@ import { SPAM_STATES } from './enquiries.types';
 // ── Public submission ──────────────────────────────────────────────────────────
 const mobileRe = /^\+?[0-9\s\-().]{7,20}$/;
 
-export const enquirySubmitSchema = z
+const enquirySubmitSchema = z
   .object({
     name: z.string().trim().min(1, 'Name is required.').max(150),
     mobile: z
@@ -42,7 +42,7 @@ export type EnquirySubmitInput = z.infer<typeof enquirySubmitSchema>;
 export const validateEnquirySubmit = (p: unknown): EnquirySubmitInput => parseSchema(enquirySubmitSchema, p);
 
 // ── Admin PATCH ────────────────────────────────────────────────────────────────
-export const enquiryAdminPatchSchema = z
+const enquiryAdminPatchSchema = z
   .object({
     internal_notes: z.string().trim().max(10000).nullable().optional(),
     spam_state: z.enum(SPAM_STATES).optional(),

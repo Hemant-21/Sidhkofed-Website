@@ -34,7 +34,6 @@ export type MixinModelName =
   | 'officialCommunication'
   | 'tender'
   | 'procurementUpdate'
-  | 'page'
   | 'faq'
   | 'digitalService'
   | 'institutionalMembership'
@@ -59,7 +58,7 @@ function delegate(model: MixinModelName, db: PrismaClient | Prisma.TransactionCl
  * first and bounded by `take`. Returns ids only; the owning service performs the publish so all
  * publish rules + audit are reused. Idempotent: once published the row no longer matches.
  */
-export async function findDueForPublish(
+async function findDueForPublish(
   model: MixinModelName,
   now: Date,
   take: number,
@@ -74,7 +73,7 @@ export async function findDueForPublish(
 }
 
 /** A record whose highlight label has expired. */
-export interface ExpiredHighlight {
+interface ExpiredHighlight {
   id: string;
   highlightType: string | null;
 }
@@ -83,7 +82,7 @@ export interface ExpiredHighlight {
  * Records whose highlight label has EXPIRED: `highlight_type` is set and `highlight_end_at` has
  * passed. Idempotent: clearing nulls `highlight_type`, so a cleared row never matches again.
  */
-export async function findExpiredHighlights(
+async function findExpiredHighlights(
   model: MixinModelName,
   now: Date,
   take: number,
@@ -103,7 +102,7 @@ export async function findExpiredHighlights(
  * Runs inside a transaction so the row write is atomic (single-row, but keeps the contract that
  * every background mutation is transactional).
  */
-export async function clearHighlight(model: MixinModelName, id: string): Promise<void> {
+async function clearHighlight(model: MixinModelName, id: string): Promise<void> {
   await prisma.$transaction(async (tx) => {
     await delegate(model, tx).update({
       where: { id },
@@ -120,7 +119,7 @@ export async function clearHighlight(model: MixinModelName, id: string): Promise
  * validation, Phase 14). Returns null when no Super Admin exists yet (unseeded DB) — the scheduler
  * then skips with a clear warning rather than mutating data anonymously.
  */
-export async function findSystemActorId(): Promise<string | null> {
+async function findSystemActorId(): Promise<string | null> {
   const user = await prisma.user.findFirst({
     where: { isActive: true, userRoles: { some: { role: { key: ROLE_KEYS.superAdmin } } } },
     select: { id: true },

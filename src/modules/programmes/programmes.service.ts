@@ -59,7 +59,7 @@ async function assertReferencesValid(refs: Parameters<typeof programmeRepository
 }
 
 // ── Create ────────────────────────────────────────────────────────────────────
-export async function create(input: ProgrammeCreateInput, ctx: AuditContext): Promise<ProgrammeDetailDto> {
+async function create(input: ProgrammeCreateInput, ctx: AuditContext): Promise<ProgrammeDetailDto> {
   const userId = requireUser(ctx);
   // Duplicate-name validation (codex §4.2) — case-insensitive, independent of slug uniqueness.
   if (await programmeRepository.nameExists(input.title_en, undefined)) {
@@ -127,7 +127,7 @@ export async function create(input: ProgrammeCreateInput, ctx: AuditContext): Pr
 }
 
 // ── Update ──────────────────────────────────────────────────────────────────────
-export async function update(id: string, input: ProgrammeUpdateInput, ctx: AuditContext): Promise<ProgrammeDetailDto> {
+async function update(id: string, input: ProgrammeUpdateInput, ctx: AuditContext): Promise<ProgrammeDetailDto> {
   const userId = requireUser(ctx);
   const existing = loaded(await programmeRepository.findById(id));
   // Content Editors may edit drafts only; a published/archived programme requires a Publisher.
@@ -213,16 +213,16 @@ export async function update(id: string, input: ProgrammeUpdateInput, ctx: Audit
 }
 
 // ── Read ───────────────────────────────────────────────────────────────────────
-export async function getById(id: string): Promise<ProgrammeDetailDto> {
+async function getById(id: string): Promise<ProgrammeDetailDto> {
   return toProgrammeDetailDto(loaded(await programmeRepository.findById(id)));
 }
 
-export interface ListResult<T> {
+interface ListResult<T> {
   items: T[];
   total: number;
 }
 
-export async function list(
+async function list(
   filters: ProgrammeFilters,
   ordering: { field: ProgrammeOrderingField; direction: 'asc' | 'desc' },
   skip: number,
@@ -233,7 +233,7 @@ export async function list(
 }
 
 // ── Lifecycle ──────────────────────────────────────────────────────────────────
-export async function lifecycle(id: string, action: LifecycleAction, ctx: AuditContext): Promise<ProgrammeDetailDto> {
+async function lifecycle(id: string, action: LifecycleAction, ctx: AuditContext): Promise<ProgrammeDetailDto> {
   const userId = requireUser(ctx);
   const existing = loaded(await programmeRepository.findById(id));
   const change = applyLifecycle(
@@ -252,7 +252,7 @@ export async function lifecycle(id: string, action: LifecycleAction, ctx: AuditC
 }
 
 // ── Public reads ─────────────────────────────────────────────────────────────
-export async function publicList(
+async function publicList(
   filters: ProgrammeFilters,
   ordering: { field: ProgrammeOrderingField; direction: 'asc' | 'desc' },
   page: { skip: number; take: number; page: number; pageSize: number },
@@ -266,7 +266,7 @@ export async function publicList(
   return result;
 }
 
-export async function publicDetailBySlug(slug: string): Promise<PublicProgrammeDetailDto> {
+async function publicDetailBySlug(slug: string): Promise<PublicProgrammeDetailDto> {
   const cacheKey = `${PUBLIC_CACHE_PREFIX}:slug:${slug}`;
   const cached = await cacheService.getJson<PublicProgrammeDetailDto>(cacheKey);
   if (cached) return cached;

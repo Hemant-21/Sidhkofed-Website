@@ -29,7 +29,6 @@ describe('publicUrlFor', () => {
     expect(publicUrlFor('official_communication', 's')).toBe('/official-communications/s');
     expect(publicUrlFor('tender', 's')).toBe('/tenders/s');
     expect(publicUrlFor('procurement_update', 's')).toBe('/procurement-updates/s');
-    expect(publicUrlFor('page', 's')).toBe('/pages/s');
   });
 });
 

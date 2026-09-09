@@ -27,7 +27,7 @@ const text = (frags: { sql: string }[]): string => frags.map((f) => f.sql).join(
 
 describe('buildSurfaceFragments — surface selection', () => {
   it('builds one fragment per requested content type when no relational filter is set', () => {
-    expect(buildSurfaceFragments([...CONTENT_TYPES], ctx())).toHaveLength(8);
+    expect(buildSurfaceFragments([...CONTENT_TYPES], ctx())).toHaveLength(7);
   });
 
   it('limits surfaces to the requested content types', () => {
@@ -48,7 +48,6 @@ describe('buildSurfaceFragments — surface selection', () => {
     expect(sql).toContain('FROM procurement_updates');
     expect(sql).not.toContain('FROM event_news');
     expect(sql).not.toContain('FROM tenders');
-    expect(sql).not.toContain('FROM pages');
   });
 
   it('drops surfaces that cannot satisfy a district filter', () => {
@@ -63,7 +62,7 @@ describe('buildSurfaceFragments — surface selection', () => {
   });
 
   it('returns no fragments when a relational filter excludes every requested surface', () => {
-    expect(buildSurfaceFragments(['news', 'page'], ctx({ commodity: 'lac' }))).toHaveLength(0);
+    expect(buildSurfaceFragments(['news', 'tender'], ctx({ commodity: 'lac' }))).toHaveLength(0);
   });
 });
 

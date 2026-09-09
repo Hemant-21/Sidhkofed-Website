@@ -44,10 +44,6 @@ export function deriveEventStatus(input: DeriveInput): EventStatus {
   return 'ongoing';
 }
 
-/** Manual-override statuses are the only values an editor may set directly (API spec §6). */
-export const MANUAL_OVERRIDE_STATUSES = ['postponed', 'cancelled'] as const;
-export type ManualOverrideStatus = (typeof MANUAL_OVERRIDE_STATUSES)[number];
-
 /**
  * Explicit complete / cancel workflow rules (Issue 5). The Complete and Cancel actions are
  * deliberate, audited transitions guarded by the two terminal markers — NOT the date-derived
