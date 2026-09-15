@@ -37,6 +37,7 @@ PATCH  /api/admin/events/{id}/news-fields
 - `title_en`
 - `title_hi`
 - `event_type`
+- `event_category` (derived read-only from `event_type.event_category`)
 - `start_date`
 - `end_date`
 - `status`
@@ -102,7 +103,8 @@ Optional:
 ## Filters
 
 ```http
-?type=training
+?event_type=training
+?event_category=trainings
 ?status=upcoming
 ?district=gumla
 ?commodity=lac
@@ -110,6 +112,12 @@ Optional:
 ?year=2026
 ?show_on_homepage=true
 ```
+
+`event_type` and `event_category` accept a single id/slug or a comma-separated list, and combine
+with AND: `event_category` alone returns every event whose type belongs to that category;
+`event_category` + `event_type` returns only the listed types, further restricted to that category.
+An event always stores exactly one `event_type_id` — `event_category` is never a write field, only
+a derived filter/read field.
 
 ## Permissions
 

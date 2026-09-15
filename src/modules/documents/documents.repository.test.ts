@@ -42,8 +42,30 @@ describe('buildWhere — filters', () => {
     expect(buildWhere({ commodity: 'lac' }, {}).commodities).toEqual({ some: { commodity: { slug: 'lac' } } });
   });
 
-  it('sets the Knowledge Centre flag', () => {
-    expect(buildWhere({ knowledgeCentre: true }, {}).showInKnowledgeCentre).toBe(true);
+  it('resolves the legacy Knowledge Centre flag via the document type parent, not the deprecated column', () => {
+    const where = buildWhere({ knowledgeCentre: true }, {});
+    expect(where.showInKnowledgeCentre).toBeUndefined();
+    expect((where.documentType as Record<string, unknown>).knowledgeCategoryId).toEqual({ not: null });
+  });
+
+  it('document_section=publications/notifications resolve via the document type parent', () => {
+    const pub = buildWhere({ documentSection: 'publications' }, {});
+    expect((pub.documentType as Record<string, unknown>).knowledgeCategoryId).toEqual({ not: null });
+    const notif = buildWhere({ documentSection: 'notifications' }, {});
+    expect((notif.documentType as Record<string, unknown>).communicationTypeId).toEqual({ not: null });
+  });
+
+  it('combines document type + category + section as AND, never broadening the result', () => {
+    const where = buildWhere({ documentType: 'report', knowledgeCategory: 'research-and-reports', documentSection: 'publications' }, {});
+    const documentTypeWhere = where.documentType as Record<string, unknown>;
+    expect(documentTypeWhere.slug).toBe('report');
+    expect(documentTypeWhere.knowledgeCategory).toEqual({ slug: 'research-and-reports' });
+    // documentSection is redundant with an explicit knowledgeCategory filter and must not overwrite it.
+    expect(documentTypeWhere.knowledgeCategoryId).toBeUndefined();
+  });
+
+  it('filters by communication type', () => {
+    expect(buildWhere({ communicationType: 'notice' }, {}).documentType).toEqual({ communicationType: { slug: 'notice' } });
   });
 
   it('builds a publication_date range from year', () => {

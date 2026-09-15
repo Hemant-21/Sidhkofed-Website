@@ -45,7 +45,7 @@ routes → controller → validators → service → repository → Prisma
 `publish_start_at`, `published_at`, `archived_at`, `highlight_type/start/end`,
 `display_order`, `show_on_homepage`, `created_by`, `updated_by`, timestamps.
 
-Junctions landed this phase: `document_commodities`, `document_districts`, `document_tags`
+Junctions landed this phase: `document_commodities`, `document_districts`
 (junction child → `Cascade`; master → `Restrict`).
 
 ### Scoping note (module-by-module, additive)
@@ -72,7 +72,7 @@ POST /admin/documents
     uniqueSlug(title_en)                          // stable, collision-safe
     $transaction:
       repo.create(documents)
-      repo.setCommodities/Districts/Tags(...)     // junctions
+      repo.setCommodities/Districts(...)           // junctions
       mediaUsageService.registerUsage(file)       // delete-protection for the file asset
     audit.create('document', …)
     cache.delByPrefix('documents:public:')        // invalidate public reads
@@ -199,7 +199,7 @@ keys.
 
 - Cannot publish without an uploaded, non-archived file.
 - Cannot link an archived or image media asset as the document file.
-- Cannot reference an inactive master (type / category / FY / commodity / district / tag).
+- Cannot reference an inactive master (type / category / FY / commodity / district).
 - Cannot create a duplicate slug (auto-suffixed; `slug` is immutable after creation).
 - Knowledge-Centre tag requires a knowledge category (create, update-merged-state, publish).
 - Linked file assets cannot be hard-deleted (`media_usages`); replacement preserves the

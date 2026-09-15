@@ -42,8 +42,8 @@ async function listSurface(req: Request, surface: 'documents' | 'knowledge-centr
 /** GET /public/documents */
 const list = wrap((req) => listSurface(req, 'documents', {}));
 
-/** GET /public/knowledge-centre — only documents explicitly tagged for the Knowledge Centre. */
-const knowledgeCentre = wrap((req) => listSurface(req, 'knowledge-centre', { knowledgeCentre: true }));
+/** GET /public/knowledge-centre — only documents whose type parents to a Knowledge Category. */
+const knowledgeCentre = wrap((req) => listSurface(req, 'knowledge-centre', { documentSection: 'publications' }));
 
 /** GET /public/documents/{slug} */
 const detail = wrap(async (req) => {

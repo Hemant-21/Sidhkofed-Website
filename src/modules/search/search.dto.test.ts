@@ -26,9 +26,9 @@ describe('publicUrlFor', () => {
     expect(publicUrlFor('news', 's')).toBe('/news/s');
     expect(publicUrlFor('programme', 's')).toBe('/programmes/s');
     expect(publicUrlFor('document', 's')).toBe('/documents/s');
-    expect(publicUrlFor('official_communication', 's')).toBe('/official-communications/s');
-    expect(publicUrlFor('tender', 's')).toBe('/tenders/s');
-    expect(publicUrlFor('procurement_update', 's')).toBe('/procurement-updates/s');
+    expect(publicUrlFor('official_communication', 's')).toBe('/notifications/notices/s');
+    expect(publicUrlFor('tender', 's')).toBe('/notifications/tenders/s');
+    expect(publicUrlFor('procurement_update', 's')).toBe('/procurement/announcements/s');
   });
 });
 

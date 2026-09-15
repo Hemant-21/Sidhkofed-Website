@@ -101,3 +101,89 @@ describe('writeXlsx', () => {
     expect(ct).toContain('spreadsheetml.sharedStrings+xml');
   });
 });
+
+describe('writeXlsx — typed cells', () => {
+  it('writes a numeric cell as an untyped numeric <c> (no t="s")', () => {
+    const files = unzipBuffer(writeXlsx([{ name: 'Sheet1', rows: [[42]] }]));
+    const sheet = files['xl/worksheets/sheet1.xml'];
+    expect(sheet).toContain('<c r="A1"><v>42</v></c>');
+  });
+
+  it('writes a Date cell as a numeric serial with the date style index', () => {
+    const d = new Date('2024-01-01T00:00:00Z');
+    const files = unzipBuffer(writeXlsx([{ name: 'Sheet1', rows: [[d]] }]));
+    const sheet = files['xl/worksheets/sheet1.xml'];
+    // Excel serial for 2024-01-01 is 45292.
+    expect(sheet).toContain('<c r="A1" s="1"><v>45292</v></c>');
+  });
+
+  it('declares a date number format in styles.xml', () => {
+    const files = unzipBuffer(writeXlsx([{ name: 'Sheet1', rows: [[new Date()]] }]));
+    expect(files['xl/styles.xml']).toContain('formatCode="yyyy-mm-dd"');
+  });
+
+  it('renders null/undefined cells as empty string cells', () => {
+    const files = unzipBuffer(writeXlsx([{ name: 'Sheet1', rows: [[null, undefined]] }]));
+    const sheet = files['xl/worksheets/sheet1.xml'];
+    expect(sheet).toContain('t="s"');
+  });
+});
+
+describe('writeXlsx — multiple sheets', () => {
+  it('writes each named sheet to its own worksheet part', () => {
+    const files = unzipBuffer(
+      writeXlsx([
+        { name: 'Summary', rows: [['A']] },
+        { name: 'Data', rows: [['B']] },
+      ]),
+    );
+    expect(files['xl/worksheets/sheet1.xml']).toContain('A');
+    expect(files['xl/worksheets/sheet2.xml']).toBeDefined();
+    expect(files['xl/workbook.xml']).toContain('name="Summary"');
+    expect(files['xl/workbook.xml']).toContain('name="Data"');
+  });
+
+  it('shares one sharedStrings table across all sheets', () => {
+    const files = unzipBuffer(
+      writeXlsx([
+        { name: 'S1', rows: [['Repeated']] },
+        { name: 'S2', rows: [['Repeated']] },
+      ]),
+    );
+    const siCount = (files['xl/sharedStrings.xml'].match(/<si>/g) ?? []).length;
+    expect(siCount).toBe(1);
+  });
+});
+
+describe('writeXlsx — formula-injection neutralization', () => {
+  it.each([
+    ['=SUM(A1:A2)', "'=SUM(A1:A2)"],
+    ['+1+1', "'+1+1"],
+    ['-1+1', "'-1+1"],
+    ['@cmd', "'@cmd"],
+    ['\tsneaky', "'\tsneaky"],
+    ['\rsneaky', "'\rsneaky"],
+  ])('prefixes a leading quote for %s', (input, expected) => {
+    const files = unzipBuffer(writeXlsx([{ name: 'Sheet1', rows: [[input]] }]));
+    const ss = files['xl/sharedStrings.xml'];
+    expect(ss).toContain(xmlEscapeForAssert(expected));
+  });
+
+  it('leaves an ordinary string untouched', () => {
+    const files = unzipBuffer(writeXlsx([{ name: 'Sheet1', rows: [['Ramesh Kumar']] }]));
+    expect(files['xl/sharedStrings.xml']).toContain('Ramesh Kumar');
+  });
+
+  it('still neutralizes formula-like strings via the legacy string[][] call shape', () => {
+    const files = unzipBuffer(writeXlsx([['=cmd|calc']]));
+    expect(files['xl/sharedStrings.xml']).toContain('&apos;=cmd|calc');
+  });
+});
+
+function xmlEscapeForAssert(s: string): string {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/'/g, '&apos;');
+}

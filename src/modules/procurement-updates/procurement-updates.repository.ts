@@ -7,17 +7,16 @@
 import type { Prisma, PrismaClient } from '@prisma/client';
 import { prisma } from '@/db/prisma';
 import { publicVisibilityWhere } from '@/shared/visibility';
+import { referenceFilter } from '@/shared/reference-filter';
 import type { ProcurementUpdateFilters, ProcurementUpdateOrderingField } from './procurement-updates.types';
 
 type Db = PrismaClient | Prisma.TransactionClient;
 
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const isUuid = (v: string): boolean => UUID_RE.test(v);
 
 /** Detail/summary include — type + commodity/district/block/programme masters + linked document
  *  (with its type + file asset so the shared `toDocumentRef` mapper can build a compact reference). */
 const procurementInclude = {
-  procurementUpdateType: true,
+  procurementUpdateType: { include: { procurementUpdateCategory: true } },
   commodity: true,
   district: true,
   block: true,
@@ -39,7 +38,7 @@ interface ProcurementUpdateQueryOptions {
   ordering: { field: ProcurementUpdateOrderingField; direction: 'asc' | 'desc' };
 }
 
-const idOrSlug = (v: string): { id: string } | { slug: string } => (isUuid(v) ? { id: v } : { slug: v });
+const idOrSlug = referenceFilter;
 
 /** Build the Prisma `where` from validated filters. Exported for unit testing (pure, DB-free). */
 export function buildWhere(
@@ -56,7 +55,12 @@ export function buildWhere(
   }
 
   if (f.showOnHomepage !== undefined) where.showOnHomepage = f.showOnHomepage;
-  if (f.procurementUpdateType) where.procurementUpdateType = idOrSlug(f.procurementUpdateType);
+  if (f.procurementUpdateType || f.procurementUpdateCategory) {
+    where.procurementUpdateType = {
+      ...(f.procurementUpdateType ? idOrSlug(f.procurementUpdateType) : {}),
+      ...(f.procurementUpdateCategory ? { procurementUpdateCategory: idOrSlug(f.procurementUpdateCategory) } : {}),
+    };
+  }
   if (f.commodity) where.commodity = idOrSlug(f.commodity);
   if (f.district) where.district = idOrSlug(f.district);
   if (f.block) where.block = idOrSlug(f.block);
@@ -67,8 +71,10 @@ export function buildWhere(
   if (f.dateFrom) dateRange.gte = f.dateFrom;
   if (f.dateTo) dateRange.lte = f.dateTo;
   if (f.year) {
-    dateRange.gte = new Date(Date.UTC(f.year, 0, 1));
-    dateRange.lte = new Date(Date.UTC(f.year, 11, 31, 23, 59, 59, 999));
+    const yearStart = new Date(Date.UTC(f.year, 0, 1));
+    const yearEnd = new Date(Date.UTC(f.year, 11, 31, 23, 59, 59, 999));
+    dateRange.gte = f.dateFrom && f.dateFrom > yearStart ? f.dateFrom : yearStart;
+    dateRange.lte = f.dateTo && f.dateTo < yearEnd ? f.dateTo : yearEnd;
   }
   if (Object.keys(dateRange).length > 0) where.effectiveDate = dateRange;
 
@@ -127,9 +133,12 @@ async function list(
   opts: ProcurementUpdateQueryOptions,
 ): Promise<{ rows: ProcurementUpdateRow[]; total: number }> {
   const where = buildWhere(f, { public: opts.public });
-  const orderBy: Prisma.ProcurementUpdateOrderByWithRelationInput = {
-    [ORDER_COLUMN[opts.ordering.field]]: opts.ordering.direction,
-  };
+  // published_at orders nulls last with a stable id tie-break (unpublished/draft rows never
+  // sort ahead of published ones); other fields use a single-key sort as before.
+  const orderBy: Prisma.ProcurementUpdateOrderByWithRelationInput[] =
+    opts.ordering.field === 'published_at'
+      ? [{ publishedAt: { sort: opts.ordering.direction, nulls: 'last' } }, { id: 'asc' }]
+      : [{ [ORDER_COLUMN[opts.ordering.field]]: opts.ordering.direction }];
   const [rows, total] = await Promise.all([
     prisma.procurementUpdate.findMany({ where, include: procurementInclude, orderBy, skip, take }),
     prisma.procurementUpdate.count({ where }),
@@ -161,10 +170,13 @@ async function validateReferences(refs: ProcurementUpdateRefs): Promise<Record<s
   if (refs.procurementUpdateTypeId !== undefined) {
     const row = await prisma.procurementUpdateType.findUnique({
       where: { id: refs.procurementUpdateTypeId },
-      select: { isActive: true },
+      select: { isActive: true, procurementUpdateCategory: { select: { isActive: true } } },
     });
     if (!row) errors.procurement_update_type_id = ['Procurement update type not found.'];
     else if (!row.isActive) errors.procurement_update_type_id = ['Procurement update type is inactive.'];
+    else if (!row.procurementUpdateCategory.isActive) {
+      errors.procurement_update_type_id = ['Procurement update type’s category is inactive.'];
+    }
   }
   if (refs.commodityId) {
     const row = await prisma.commodity.findUnique({ where: { id: refs.commodityId }, select: { isActive: true } });

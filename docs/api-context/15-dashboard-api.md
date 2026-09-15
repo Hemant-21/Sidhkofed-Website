@@ -14,11 +14,13 @@ GET /api/dashboard/{report-key}
 
 ## Admin Endpoints
 
-```http
-GET  /api/admin/dashboard-data
-POST /api/admin/dashboard-data
-POST /api/admin/dashboard-data/upload
-```
+Manual dashboard-data entry/upload (`GET`/`POST /api/admin/dashboard-data`,
+`POST /api/admin/dashboard-data/upload`) has been retired (Stage 7 of the
+Operational Reports / Website Metrics cutover) and fully removed from the
+implementation — see `src/modules/dashboard/dashboard.routes.ts`. Manual
+metric entry and Excel/CSV dataset import are superseded by Operational
+Reports and Website Metrics. Only report-definition admin endpoints
+(create/list/detail/patch + publish/unpublish/archive/restore) remain.
 
 ## Fixed Report Keys
 
@@ -61,25 +63,25 @@ POST /api/admin/dashboard-data/upload
 
 ## Rules
 
-- Admin controls public visibility, display order, reporting period, and data
-  upload/update.
+- Admin controls public visibility, display order, and reporting period on
+  the fixed report definitions.
 - Reports are predefined.
 - Dashboard summary may feed homepage headline KPIs.
+- The underlying `DashboardMetric`/`DashboardDataset` figures are no longer
+  admin-editable; they are populated (if at all) by other means — see
+  Operational Reports / Website Metrics.
 
 ## Permissions
 
 - Public: public reports only.
-- Content Editor: upload/edit dashboard data if granted.
 - Publisher/Super Administrator: control public visibility and reporting period.
 
 ## Lifecycle Rules
 
 - Dashboard reports are fixed definitions.
-- Data may be CMS-derived, manual, or Excel-uploaded.
 
 ## Validation
 
-- Uploaded rows must validate reporting period and master references.
 - Unknown report keys must be rejected.
 
 ## Non-Goals

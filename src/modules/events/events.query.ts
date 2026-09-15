@@ -43,6 +43,7 @@ export function parseEventFilters(req: Request, opts: { admin: boolean }): Event
   const q = req.query;
   const filters: EventFilters = {
     eventType: str(q.event_type),
+    eventCategory: str(q.event_category),
     eventStatus: statusOf(q.event_status),
     district: str(q.district),
     block: str(q.block),

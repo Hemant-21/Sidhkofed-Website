@@ -18,7 +18,7 @@ function masterRef(m: { id: string; slug: string; nameEn: string; nameHi: string
   return { id: m.id, slug: m.slug, name_en: m.nameEn, name_hi: m.nameHi };
 }
 
-const publicUrl = (slug: string): string => `/official-communications/${slug}`;
+const publicUrl = (slug: string): string => `/notifications/notices/${slug}`;
 const iso = (d: Date | null): string | null => (d ? d.toISOString() : null);
 const dateOnly = (d: Date | null): string | null => (d ? d.toISOString().slice(0, 10) : null);
 

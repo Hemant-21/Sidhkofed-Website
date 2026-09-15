@@ -10,6 +10,7 @@ import path from 'node:path';
 import { PrismaClient } from '@prisma/client';
 import { seedBaseline } from './index';
 import { SETTINGS_CATALOG, SETTING_KEYS, encodeForStorage } from '@/modules/settings/settings.catalog';
+import { FAQ_PAGE_REGISTRY } from '@/modules/faqs/faqs.pages.registry';
 
 const prisma = new PrismaClient();
 // Prisma's generated delegates are structurally safe here; `any` keeps this data-heavy
@@ -57,7 +58,7 @@ async function mapBy(delegate: any, key: string): Promise<Map<string, any>> {
   return new Map(rows.map((row: any) => [String(row[key]), row]));
 }
 
-async function seedPeriodsAndTags() {
+async function seedFinancialPeriods() {
   const years = [
     ['2023-2024', '2023-04-01', '2024-03-31'],
     ['2024-2025', '2024-04-01', '2025-03-31'],
@@ -83,14 +84,6 @@ async function seedPeriodsAndTags() {
       where: { slug },
       update: { nameEn: `${months[i]} ${year}`, financialYearId: fy.id, startDate: start, endDate: end, isActive: true },
       create: { financialYearId: fy.id, nameEn: `${months[i]} ${year}`, slug, periodType: 'month', startDate: start, endDate: end, isActive: true },
-    });
-  }
-  const tags = ['lac', 'honey', 'millets', 'training', 'procurement', 'membership', 'women-led', 'district-coverage', 'policy', 'research', 'toolkit', 'cooperative'];
-  for (const [i, slug] of tags.entries()) {
-    await db.tag.upsert({
-      where: { slug },
-      update: { nameEn: slug.replace(/-/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase()), isActive: true },
-      create: { id: fixtureId('tag', i), nameEn: slug.replace(/-/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase()), slug, isActive: true },
     });
   }
 }
@@ -177,19 +170,15 @@ async function seedCoreContent(userId: string, media: MediaFixture[]) {
   const institutionTypes = await mapBy(db.institutionType, 'slug');
   const districts = await mapBy(db.district, 'slug');
   const commodities = [...(await db.commodity.findMany({ orderBy: { displayOrder: 'asc' } }))];
-  const trainingTypes = [...(await db.trainingType.findMany({ orderBy: { displayOrder: 'asc' } }))];
-  const eventTypes = [...(await db.eventType.findMany({ orderBy: { displayOrder: 'asc' } }))];
-  const documentTypes = [...(await db.documentType.findMany({ orderBy: { displayOrder: 'asc' } }))];
-  const knowledgeCategories = [...(await db.knowledgeCategory.findMany({ orderBy: { displayOrder: 'asc' } }))];
-  const communicationTypes = [...(await db.communicationType.findMany({ orderBy: { displayOrder: 'asc' } }))];
+  const eventTypes = [...(await db.eventType.findMany({ where: { isActive: true }, orderBy: { displayOrder: 'asc' } }))];
+  const documentTypes = [...(await db.documentType.findMany({ where: { isActive: true }, orderBy: { displayOrder: 'asc' } }))];
+  const communicationTypes = [...(await db.communicationType.findMany({ where: { isActive: true }, orderBy: { displayOrder: 'asc' } }))];
   const tenderTypes = [...(await db.tenderType.findMany({ orderBy: { displayOrder: 'asc' } }))];
   const procurementTypes = [...(await db.procurementUpdateType.findMany({ orderBy: { displayOrder: 'asc' } }))];
-  const faqCategories = [...(await db.faqCategory.findMany({ orderBy: { displayOrder: 'asc' } }))];
   const enquiryTypes = [...(await db.enquiryType.findMany({ orderBy: { displayOrder: 'asc' } }))];
   const blocks = [...(await db.block.findMany({ orderBy: { displayOrder: 'asc' } }))];
   const years = [...(await db.financialYear.findMany({ orderBy: { startDate: 'asc' } }))];
   const periods = [...(await db.reportingPeriod.findMany({ orderBy: { startDate: 'asc' } }))];
-  const tags = [...(await db.tag.findMany({ orderBy: { slug: 'asc' } }))];
   const districtRows = [...districts.values()];
 
   const institutionIds = Array.from({ length: 12 }, (_, i) => fixtureId('institution', i));
@@ -237,9 +226,7 @@ async function seedCoreContent(userId: string, media: MediaFixture[]) {
       updatedById: userId,
     });
     await db.programmeCommodity.deleteMany({ where: { programmeSchemeId: programmeIds[i] } });
-    await db.programmePermittedTrainingType.deleteMany({ where: { programmeSchemeId: programmeIds[i] } });
     await db.programmeCommodity.createMany({ data: [0, 1].map((offset) => ({ id: fixtureId('programme-commodity', `${i}-${offset}`), programmeSchemeId: programmeIds[i], commodityId: commodities[(i + offset) % commodities.length].id })) });
-    await db.programmePermittedTrainingType.createMany({ data: [0, 1].map((offset) => ({ id: fixtureId('programme-training', `${i}-${offset}`), programmeSchemeId: programmeIds[i], trainingTypeId: trainingTypes[(i + offset) % trainingTypes.length].id })) });
   }
 
   const toolkitIds = Array.from({ length: 10 }, (_, i) => fixtureId('toolkit', i));
@@ -289,8 +276,8 @@ async function seedCoreContent(userId: string, media: MediaFixture[]) {
       publicationDate: new Date(`202${4 + (i % 3)}-${String((i % 9) + 1).padStart(2, '0')}-15`),
       language: i % 4 === 0 ? 'hi' : 'en',
       isPublic: i !== 15,
-      showInKnowledgeCentre: i < 12,
-      knowledgeCategoryId: i < 12 ? knowledgeCategories[i % knowledgeCategories.length].id : null,
+      showInKnowledgeCentre: i < 12 && documentTypes[i % documentTypes.length].knowledgeCategoryId !== null,
+      knowledgeCategoryId: i < 12 ? documentTypes[i % documentTypes.length].knowledgeCategoryId : null,
       financialYearId: years[i % years.length].id,
       slug: `demo-publication-${i + 1}`,
       ...publication(i, 18, 0),
@@ -300,13 +287,11 @@ async function seedCoreContent(userId: string, media: MediaFixture[]) {
     await Promise.all([
       db.documentCommodity.deleteMany({ where: { documentId: documentIds[i] } }),
       db.documentDistrict.deleteMany({ where: { documentId: documentIds[i] } }),
-      db.documentTag.deleteMany({ where: { documentId: documentIds[i] } }),
       db.documentProgramme.deleteMany({ where: { documentId: documentIds[i] } }),
       db.documentInstitution.deleteMany({ where: { documentId: documentIds[i] } }),
     ]);
     await db.documentCommodity.create({ data: { id: fixtureId('document-commodity', i), documentId: documentIds[i], commodityId: commodities[i % commodities.length].id } });
     await db.documentDistrict.create({ data: { id: fixtureId('document-district', i), documentId: documentIds[i], districtId: districtRows[i % districtRows.length].id } });
-    await db.documentTag.create({ data: { id: fixtureId('document-tag', i), documentId: documentIds[i], tagId: tags[i % tags.length].id } });
     await db.documentProgramme.create({ data: { id: fixtureId('document-programme', i), documentId: documentIds[i], programmeSchemeId: programmeIds[i % programmeIds.length] } });
     await db.documentInstitution.create({ data: { id: fixtureId('document-institution', i), documentId: documentIds[i], institutionId: institutionIds[i % institutionIds.length] } });
   }
@@ -334,7 +319,6 @@ async function seedCoreContent(userId: string, media: MediaFixture[]) {
     const d = districtRows[i % districtRows.length];
     await upsert(db.event, eventIds[i], {
       eventTypeId: eventTypes[i % eventTypes.length].id,
-      trainingTypeId: i % 3 === 0 ? trainingTypes[i % trainingTypes.length].id : null,
       titleEn: `Demo ${commodities[i % commodities.length].nameEn} Cooperative Activity ${i + 1}`,
       titleHi: i % 2 === 0 ? `डेमो सहकारी गतिविधि ${i + 1}` : null,
       summaryEn: `Fictional ${eventStatus} event in ${d.nameEn} for listing, filter, and detail tests.`,
@@ -450,14 +434,25 @@ async function seedCoreContent(userId: string, media: MediaFixture[]) {
     }
   }
 
+  // FAQs no longer carry showOnHomepage (Faq lost that column — home placement is now an ordinary
+  // page assignment) or a category FK; `publication()` is shared with models that still have
+  // showOnHomepage, so its result is destructured to drop that field before the FAQ upsert.
+  const nonHomeFaqPages = FAQ_PAGE_REGISTRY.filter((p) => p.key !== 'home').map((p) => p.key);
   for (let i = 0; i < 12; i += 1) {
+    const { showOnHomepage, ...pub } = publication(i, 12, 3);
     await upsert(db.faq, fixtureId('faq', i), {
-      faqCategoryId: faqCategories[i % faqCategories.length].id,
       questionEn: `How does fictional CMS feature ${i + 1} work?`, questionHi: i % 2 === 0 ? `डेमो प्रश्न ${i + 1}?` : null,
-      answerEn: 'This answer is fictional and exists only to test FAQ listing, search, categories, and visibility.',
+      answerEn: 'This answer is fictional and exists only to test FAQ listing, search, page assignment, and visibility.',
       answerHi: i % 2 === 0 ? 'यह केवल परीक्षण उत्तर है।' : null,
-      slug: `demo-faq-${i + 1}`, ...publication(i, 12, 0), createdById: userId, updatedById: userId,
+      slug: `demo-faq-${i + 1}`, ...pub, createdById: userId, updatedById: userId,
     });
+    const faqId = fixtureId('faq', i);
+    await db.faqPageAssignment.deleteMany({ where: { faqId } });
+    const assignments: { faqId: string; pageKey: string; displayOrder: number }[] = [
+      { faqId, pageKey: nonHomeFaqPages[i % nonHomeFaqPages.length], displayOrder: Math.floor(i / nonHomeFaqPages.length) },
+    ];
+    if (showOnHomepage) assignments.push({ faqId, pageKey: 'home', displayOrder: i });
+    for (const a of assignments) await db.faqPageAssignment.create({ data: a });
   }
   for (let i = 0; i < 10; i += 1) {
     await upsert(db.digitalService, fixtureId('digital-service', i), {
@@ -508,33 +503,21 @@ async function seedCoreContent(userId: string, media: MediaFixture[]) {
   return { institutionIds, programmeIds, toolkitIds, documentIds, galleryIds, eventIds };
 }
 
-async function seedDashboard(userId: string, media: MediaFixture[]) {
+/**
+ * Seeds only the DashboardReport DEFINITIONS (publication state/visibility) so the public dashboard
+ * has fixture reports to render. Deliberately does NOT create `DashboardDataset`/`DashboardMetric`
+ * rows anymore — manual metric/dataset entry was retired (Operational Reports / Website Metrics
+ * cutover) and those tables' rows were dummy data with no CMS write path left to manage them. The
+ * public dashboard reads gracefully render an empty metrics array for these reports.
+ */
+async function seedDashboard(userId: string) {
   const reports = await db.dashboardReport.findMany({ orderBy: { displayOrder: 'asc' } });
-  const fy = await db.financialYear.findUnique({ where: { label: '2025-2026' } });
-  const period = await db.reportingPeriod.findUnique({ where: { slug: 'fy-2025-2026' } });
   for (const [i, report] of reports.entries()) {
     await db.dashboardReport.update({ where: { id: report.id }, data: {
       titleHi: i % 2 === 0 ? `डेमो डैशबोर्ड रिपोर्ट ${i + 1}` : null,
       descriptionEn: 'Fictional fixed-layout dashboard report.', publicationState: 'published', publicVisibility: true,
       publishedAt: PAST, archivedAt: null, showOnHomepage: i < 5, isActive: true, updatedById: userId,
     } });
-    const datasetId = fixtureId('dashboard-dataset', i);
-    await upsert(db.dashboardDataset, datasetId, {
-      reportId: report.id, source: i % 3 === 0 ? 'excel' : i % 3 === 1 ? 'manual' : 'cms_derived',
-      financialYearId: fy.id, reportingPeriodId: period.id, sourceFileAssetId: media[32 + (i % 8)].id,
-      rawRows: [{ district: 'Ranchi', value: 100 + i }, { district: 'Gumla', value: 80 + i }], rowCount: 2,
-      status: i === 12 ? 'failed' : 'processed', processedAt: i === 12 ? null : NOW, createdById: userId,
-    });
-    for (let j = 0; j < 4; j += 1) {
-      const metricId = fixtureId('dashboard-metric', `${i}-${j}`);
-      await upsert(db.dashboardMetric, metricId, {
-        reportId: report.id, metricKey: `fixture_metric_${j + 1}`, labelEn: ['Total activities', 'Participants reached', 'Districts covered', 'Completion rate'][j],
-        labelHi: j < 2 ? `डेमो संकेतक ${j + 1}` : null, value: j === 3 ? 87.5 : 100 + i * 10 + j,
-        valueText: null, unit: j === 3 ? 'percent' : j === 2 ? 'districts' : 'count', financialYearId: fy.id,
-        reportingPeriodId: period.id, source: i % 3 === 0 ? 'excel' : i % 3 === 1 ? 'manual' : 'cms_derived', datasetId,
-        displayOrder: j + 1, createdById: userId, updatedById: userId,
-      });
-    }
   }
 }
 
@@ -566,11 +549,11 @@ async function seedAuditLogs(userId: string) {
 export async function seedFixtures(): Promise<void> {
   console.log(`Fixture storage root: ${STORAGE_ROOT}`);
   const userId = await seedBaseline(prisma);
-  await seedPeriodsAndTags();
+  await seedFinancialPeriods();
   const media = await seedMedia(userId);
   await seedSettings(userId, media);
   const entities = await seedCoreContent(userId, media);
-  await seedDashboard(userId, media);
+  await seedDashboard(userId);
   await seedMediaUsages(media, entities);
   await seedAuditLogs(userId);
   console.log('Full deterministic fixture dataset seeded.');

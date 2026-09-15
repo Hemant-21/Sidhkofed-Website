@@ -5,6 +5,8 @@
  * cache invalidation (TASK 21). Nothing master-specific lives here; per-master behavior is
  * read from the `MasterDefinition`.
  */
+import type { Prisma } from '@prisma/client';
+import { prisma } from '@/db/prisma';
 import { ConflictError, NotFoundError, ValidationError, type AppError } from '@/shared/errors';
 import { resolveOrdering } from '@/shared/listing';
 import { uniqueSlug, slugify } from '@/utils/slug';
@@ -100,16 +102,19 @@ async function create(
   ctx: AuditContext,
 ): Promise<Record<string, unknown>> {
   const input = parse(def.createSchema, body) as MasterInput;
-  if (def.validate) await def.validate({ mode: 'create', input, def });
-  await assertUnique(def, input);
 
-  const data = def.buildCreateData(input);
-  const slug = await ensureSlug(def, input);
-  if (slug) data.slug = slug;
+  const run = async (tx?: Prisma.TransactionClient): Promise<MasterRow> => {
+    if (def.validate) await def.validate({ mode: 'create', input, def, tx });
+    await assertUnique(def, input);
+    const data = def.buildCreateData(input);
+    const slug = await ensureSlug(def, input);
+    if (slug) data.slug = slug;
+    return repo.create(def, data, tx);
+  };
 
   let row: MasterRow;
   try {
-    row = await repo.create(def, data);
+    row = def.requiresTransaction ? await prisma.$transaction((tx) => run(tx)) : await run();
   } catch (err) {
     throw asAppError(err, def) as AppError;
   }
@@ -133,12 +138,24 @@ async function update(
 ): Promise<Record<string, unknown>> {
   const existing = loaded(def, await repo.findById(def, id));
   const input = parse(def.updateSchema, body) as MasterInput;
-  if (def.validate) await def.validate({ mode: 'update', input, existing, def });
-  await assertUnique(def, input, id);
+
+  const run = async (tx?: Prisma.TransactionClient): Promise<MasterRow> => {
+    if (def.validate) await def.validate({ mode: 'update', input, existing, def, tx });
+    await assertUnique(def, input, id);
+    const data = def.buildUpdateData(input);
+    if (input.is_active === false) {
+      if (tx) {
+        if (def.guardDeactivate) await def.guardDeactivate(id, tx);
+        return repo.update(def, id, data, tx);
+      }
+      return repo.updateGuarded(def, id, data);
+    }
+    return repo.update(def, id, data, tx);
+  };
 
   let row: MasterRow;
   try {
-    row = await repo.update(def, id, def.buildUpdateData(input));
+    row = def.requiresTransaction ? await prisma.$transaction((tx) => run(tx)) : await run();
   } catch (err) {
     throw asAppError(err, def) as AppError;
   }
@@ -162,7 +179,26 @@ async function setActive(
 ): Promise<Record<string, unknown>> {
   const existing = loaded(def, await repo.findById(def, id));
   const wasActive = Boolean(existing.isActive);
-  const row = await repo.update(def, id, { isActive: active });
+  const input: MasterInput = { is_active: active };
+
+  const run = async (tx?: Prisma.TransactionClient): Promise<MasterRow> => {
+    if (active && def.validate) await def.validate({ mode: 'update', input, existing, def, tx });
+    if (!active) {
+      if (tx) {
+        if (def.guardDeactivate) await def.guardDeactivate(id, tx);
+        return repo.update(def, id, { isActive: active }, tx);
+      }
+      return repo.updateGuarded(def, id, { isActive: active });
+    }
+    return repo.update(def, id, { isActive: active }, tx);
+  };
+
+  let row: MasterRow;
+  try {
+    row = def.requiresTransaction ? await prisma.$transaction((tx) => run(tx)) : await run();
+  } catch (err) {
+    throw asAppError(err, def) as AppError;
+  }
 
   await auditService.log(active ? 'MASTER_ACTIVATE' : 'MASTER_DEACTIVATE', ctx, {
     module: def.module,

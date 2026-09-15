@@ -28,7 +28,7 @@ Generated from the current codebase on 2026-06-26. Sources inspected: `prisma/sc
 | Media tables | 5 | media_assets, media_usages, galleries, gallery_images, videos |
 | Analytics tables | 3 | dashboard_reports, dashboard_metrics, dashboard_datasets |
 | Audit tables | 1 | `audit_logs`. |
-| Join/detail tables | 17 | role_permissions, user_roles, gallery_images, media_usages, document_commodities, document_districts, document_tags, document_programmes, document_institutions, event_commodities, event_programmes, event_institutions, event_documents, event_galleries, programme_commodities, programme_permitted_training_types, toolkit_distribution_items |
+| Join/detail tables | 16 | role_permissions, user_roles, gallery_images, media_usages, document_commodities, document_districts, document_programmes, document_institutions, event_commodities, event_programmes, event_institutions, event_documents, event_galleries, programme_commodities, programme_permitted_training_types, toolkit_distribution_items |
 | Enums | 15 | Language, AuditAction, PublicationState, HighlightType, ReportingPeriodType, DateMode, EventStatus, FieldDataType, TranslationSource, DistributionBasis, DistributionModel, MembershipLevel, MembershipType, MembershipStatus, DatasetSource |
 | Indexes | 173 | Applied SQL indexes, including unique indexes. |
 | Foreign keys | 65 | Applied SQL FK constraints parsed from migrations. |
@@ -73,10 +73,6 @@ erDiagram
   documents ||--o{ document_districts : "document_id -> id (CASCADE)"
 
   districts ||--o{ document_districts : "district_id -> id (RESTRICT)"
-
-  documents ||--o{ document_tags : "document_id -> id (CASCADE)"
-
-  tags ||--o{ document_tags : "tag_id -> id (RESTRICT)"
 
   event_types ||--o{ events : "event_type_id -> id (RESTRICT)"
 
@@ -3652,136 +3648,13 @@ Indexed columns: "slug"; "financial_year_id".
 Not found in current codebase.
 
 
-## Table: tags
-
-**Prisma model:** `Tag`
-
-**Purpose**
-
-Master/lookup data table used for validated references and dropdowns.
-
-
-**Columns**
-
-
-| Column | Type | Nullable | Default | Description |
-| --- | --- | --- | --- | --- |
-| id | String @db.Uuid | No | @default(uuid()) | id (primary key) |
-| name_en | String | No | Not found in current codebase. | nameEn (unique) mapped from nameEn |
-| name_hi | String? | Yes | Not found in current codebase. | nameHi mapped from nameHi |
-| slug | String | No | Not found in current codebase. | slug (unique) |
-| is_active | Boolean | No | @default(true) @map("is_active") | isActive mapped from isActive |
-| created_at | DateTime | No | @default(now()) | createdAt mapped from createdAt |
-| updated_at | DateTime | No | @updatedAt | updatedAt mapped from updatedAt |
-
-
-**Primary Key**
-
-
-- id
-
-
-**Unique Keys**
-
-
-| Name | Columns | Source |
-| --- | --- | --- |
-| Prisma/default generated | name_en | nameEn    String   @unique @map("name_en") |
-| Prisma/default generated | slug | slug      String   @unique |
-
-
-**Foreign Keys**
-
-
-Not found in current codebase.
-
-
-**Indexes**
-
-
-| Index | Columns | Unique | Method | Notes |
-| --- | --- | --- | --- | --- |
-| tags_name_en_key | "name_en" | Yes | BTREE | Prisma/application query support. |
-| tags_slug_key | "slug" | Yes | BTREE | Prisma/application query support. |
-
-
-**Relationships**
-
-
-| Direction | Related Table | Columns | Cardinality | Cascade |
-| --- | --- | --- | --- | --- |
-| Referenced by | document_tags | tag_id | one-to-many | RESTRICT |
-
-
-**Used By**
-
-
-- `src/modules/documents/documents.repository.ts`
-- `src/modules/masters/masters.registry.ts`
-
-
-**APIs**
-
-/api/v1/admin/masters, /api/v1/admin/documents, /api/v1/public/masters, /api/v1/public/documents
-
-
-**Services**
-
-Not found in current codebase.
-
-
-**Repositories**
-
-src/modules/documents/documents.repository.ts
-
-
-**Controllers**
-
-Not found in current codebase.
-
-
-**Scheduler**
-
-Not found in current codebase.
-
-
-**Triggers**
-
-Not found in current codebase.
-
-
-**Lifecycle**
-
-Active/deactivated master-data lifecycle through `is_active`.
-
-
-**Typical Queries**
-
-detail lookup by slug.
-
-
-**Security Notes**
-
-No table-specific security notes found beyond normal RBAC/service validation.
-
-
-**Performance Notes**
-
-Indexed columns: "name_en"; "slug".
-
-
-**Future Improvements**
-
-Not found in current codebase.
-
-
 ## Table: documents
 
 **Prisma model:** `Document`
 
 **Purpose**
 
---------------- Documents (Phase 5 - database-schema-design.md Part 6 / Part 13) --------------- Added VERBATIM from the approved Part 13 `Document` model, TRIMMED to the relations whose counterpart models exist in this phase: documentType, fileAsset (MediaAsset, "DocumentFile"), knowledgeCategory, financialYear, and the commodity/district/tag junctions. The programme and institution junctions (`document_programmes`, `document_institutions`) and the content back-relations (`events EventDocument[]`, `communications OfficialCommunication[]`, `procurementUpdates ProcurementUpdate[]`) are intentionally OMITTED here and re-added additively when those modules land (programmes/institutions = Tier 7, events = Tier 10, communications/procurement = Tier 12) - the documented module-by-module process (docs/foundation/03-module-dependency-graph.md). This is NOT a redesign: the Document table shape, field names, enums, and onDelete contract are unchanged from the approved schema.  created_by / updated_by are scalar UUID columns (as in Part 13), not modeled User relations. The metadata `search_vector` GIN column lands later via the parked FTS migration (prisma/parked-migrations/) once all FTS content tables exist (see schema header note).
+--------------- Documents (Phase 5 - database-schema-design.md Part 6 / Part 13) --------------- Added VERBATIM from the approved Part 13 `Document` model, TRIMMED to the relations whose counterpart models exist in this phase: documentType, fileAsset (MediaAsset, "DocumentFile"), knowledgeCategory, financialYear, and the commodity/district junctions. The programme and institution junctions (`document_programmes`, `document_institutions`) and the content back-relations (`events EventDocument[]`, `communications OfficialCommunication[]`, `procurementUpdates ProcurementUpdate[]`) are intentionally OMITTED here and re-added additively when those modules land (programmes/institutions = Tier 7, events = Tier 10, communications/procurement = Tier 12) - the documented module-by-module process (docs/foundation/03-module-dependency-graph.md). This is NOT a redesign: the Document table shape, field names, enums, and onDelete contract are unchanged from the approved schema.  created_by / updated_by are scalar UUID columns (as in Part 13), not modeled User relations. The metadata `search_vector` GIN column lands later via the parked FTS migration (prisma/parked-migrations/) once all FTS content tables exist (see schema header note).
 
 
 **Columns**
@@ -3872,7 +3745,6 @@ Not found in current codebase.
 | Depends on | users | updated_by_id | many-to-zero/one | SetNull |
 | Referenced by | document_commodities | document_id | one-to-many | CASCADE |
 | Referenced by | document_districts | document_id | one-to-many | CASCADE |
-| Referenced by | document_tags | document_id | one-to-many | CASCADE |
 | Referenced by | event_documents | document_id | one-to-many | RESTRICT |
 | Referenced by | document_programmes | document_id | one-to-many | CASCADE |
 | Referenced by | document_institutions | document_id | one-to-many | CASCADE |
@@ -4195,127 +4067,6 @@ No table-specific security notes found beyond normal RBAC/service validation.
 **Performance Notes**
 
 Indexed columns: "document_id", "district_id"; "district_id", "document_id".
-
-
-**Future Improvements**
-
-Not found in current codebase.
-
-
-## Table: document_tags
-
-**Prisma model:** `DocumentTag`
-
-**Purpose**
-
-Join/detail table representing relationships or nested child records.
-
-
-**Columns**
-
-
-| Column | Type | Nullable | Default | Description |
-| --- | --- | --- | --- | --- |
-| id | String @db.Uuid | No | @default(uuid()) | id (primary key) |
-| document_id | String @db.Uuid | No | Not found in current codebase. | documentId mapped from documentId |
-| tag_id | String @db.Uuid | No | Not found in current codebase. | tagId mapped from tagId |
-
-
-**Primary Key**
-
-
-- id
-
-
-**Unique Keys**
-
-
-| Name | Columns | Source |
-| --- | --- | --- |
-| Prisma/default generated | document_id, tag_id | @@unique([documentId, tagId]) |
-
-
-**Foreign Keys**
-
-
-| Constraint | Columns | References | On Delete | On Update |
-| --- | --- | --- | --- | --- |
-| document_tags_document_id_fkey | document_id | documents(id) | CASCADE | CASCADE |
-| document_tags_tag_id_fkey | tag_id | tags(id) | RESTRICT | CASCADE |
-
-
-**Indexes**
-
-
-| Index | Columns | Unique | Method | Notes |
-| --- | --- | --- | --- | --- |
-| document_tags_document_id_tag_id_key | "document_id", "tag_id" | Yes | BTREE | Prisma/application query support. |
-| document_tags_tag_id_document_id_idx | "tag_id", "document_id" | No | BTREE | Prisma/application query support. |
-
-
-**Relationships**
-
-
-| Direction | Related Table | Columns | Cardinality | Cascade |
-| --- | --- | --- | --- | --- |
-| Depends on | documents | document_id | many-to-one | Cascade |
-| Depends on | tags | tag_id | many-to-one | Restrict |
-
-
-**Used By**
-
-
-- `src/modules/documents/documents.repository.ts`
-
-
-**APIs**
-
-/api/v1/admin/documents, /api/v1/public/documents
-
-
-**Services**
-
-Not found in current codebase.
-
-
-**Repositories**
-
-src/modules/documents/documents.repository.ts
-
-
-**Controllers**
-
-Not found in current codebase.
-
-
-**Scheduler**
-
-Not found in current codebase.
-
-
-**Triggers**
-
-Not found in current codebase.
-
-
-**Lifecycle**
-
-Not found in current codebase.
-
-
-**Typical Queries**
-
-Repository usage not found beyond direct primary-key/natural-key operations.
-
-
-**Security Notes**
-
-No table-specific security notes found beyond normal RBAC/service validation.
-
-
-**Performance Notes**
-
-Indexed columns: "document_id", "tag_id"; "tag_id", "document_id".
 
 
 **Future Improvements**
@@ -8436,8 +8187,6 @@ Not found in current codebase.
 | document_commodities | commodity_id | commodities | id | document_commodities_commodity_id_fkey | RESTRICT | CASCADE |
 | document_districts | document_id | documents | id | document_districts_document_id_fkey | CASCADE | CASCADE |
 | document_districts | district_id | districts | id | document_districts_district_id_fkey | RESTRICT | CASCADE |
-| document_tags | document_id | documents | id | document_tags_document_id_fkey | CASCADE | CASCADE |
-| document_tags | tag_id | tags | id | document_tags_tag_id_fkey | RESTRICT | CASCADE |
 | events | event_type_id | event_types | id | events_event_type_id_fkey | RESTRICT | CASCADE |
 | events | training_type_id | training_types | id | events_training_type_id_fkey | RESTRICT | CASCADE |
 | events | district_id | districts | id | events_district_id_fkey | RESTRICT | CASCADE |
@@ -8739,8 +8488,6 @@ Purpose: constrains fields typed as `DatasetSource`.
 | financial_years_label_key | financial_years | "label" | Yes | Uniqueness/business-key enforcement. | Create/update duplicate prevention. | BTREE |
 | reporting_periods_slug_key | reporting_periods | "slug" | Yes | Uniqueness/business-key enforcement. | Create/update duplicate prevention. | BTREE |
 | reporting_periods_financial_year_id_idx | reporting_periods | "financial_year_id" | No | Filtering, listing, joins, ordering, or FK lookup support. | Repository filter/join query. | BTREE |
-| tags_name_en_key | tags | "name_en" | Yes | Uniqueness/business-key enforcement. | Create/update duplicate prevention. | BTREE |
-| tags_slug_key | tags | "slug" | Yes | Uniqueness/business-key enforcement. | Create/update duplicate prevention. | BTREE |
 | documents_slug_key | documents | "slug" | Yes | Uniqueness/business-key enforcement. | Create/update duplicate prevention. | BTREE |
 | documents_publication_state_public_visibility_archived_at_p_idx | documents | "publication_state", "public_visibility", "archived_at", "published_at" | No | Filtering, listing, joins, ordering, or FK lookup support. | Public/admin publishable listing. | BTREE |
 | documents_publication_date_idx | documents | "publication_date" | No | Filtering, listing, joins, ordering, or FK lookup support. | Repository filter/join query. | BTREE |
@@ -8752,8 +8499,6 @@ Purpose: constrains fields typed as `DatasetSource`.
 | document_commodities_commodity_id_document_id_idx | document_commodities | "commodity_id", "document_id" | No | Filtering, listing, joins, ordering, or FK lookup support. | Repository filter/join query. | BTREE |
 | document_districts_document_id_district_id_key | document_districts | "document_id", "district_id" | Yes | Uniqueness/business-key enforcement. | Create/update duplicate prevention. | BTREE |
 | document_districts_district_id_document_id_idx | document_districts | "district_id", "document_id" | No | Filtering, listing, joins, ordering, or FK lookup support. | Repository filter/join query. | BTREE |
-| document_tags_document_id_tag_id_key | document_tags | "document_id", "tag_id" | Yes | Uniqueness/business-key enforcement. | Create/update duplicate prevention. | BTREE |
-| document_tags_tag_id_document_id_idx | document_tags | "tag_id", "document_id" | No | Filtering, listing, joins, ordering, or FK lookup support. | Repository filter/join query. | BTREE |
 | documents_publication_state_public_visibility_is_public_arc_idx | documents | "publication_state", "public_visibility", "is_public", "archived_at", "publication_date" | No | Filtering, listing, joins, ordering, or FK lookup support. | Public/admin publishable listing. | BTREE |
 | events_slug_key | events | "slug" | Yes | Uniqueness/business-key enforcement. | Create/update duplicate prevention. | BTREE |
 | events_publication_state_public_visibility_archived_at_publ_idx | events | "publication_state", "public_visibility", "archived_at", "published_at" | No | Filtering, listing, joins, ordering, or FK lookup support. | Public/admin publishable listing. | BTREE |
@@ -8912,12 +8657,9 @@ Every Prisma model declares `id` as the primary key. Current Prisma models use U
 | enquiry_types | Prisma/default generated | slug | slug         String   @unique |
 | financial_years | Prisma/default generated | label | label     String   @unique |
 | reporting_periods | Prisma/default generated | slug | slug            String              @unique |
-| tags | Prisma/default generated | name_en | nameEn    String   @unique @map("name_en") |
-| tags | Prisma/default generated | slug | slug      String   @unique |
 | documents | Prisma/default generated | slug | slug                  String           @unique |
 | document_commodities | Prisma/default generated | document_id, commodity_id | @@unique([documentId, commodityId]) |
 | document_districts | Prisma/default generated | document_id, district_id | @@unique([documentId, districtId]) |
-| document_tags | Prisma/default generated | document_id, tag_id | @@unique([documentId, tagId]) |
 | document_programmes | Prisma/default generated | document_id, programme_scheme_id | @@unique([documentId, programmeSchemeId]) |
 | document_institutions | Prisma/default generated | document_id, institution_id | @@unique([documentId, institutionId]) |
 | events | Prisma/default generated | slug | slug                   String            @unique |
@@ -8971,8 +8713,6 @@ Every Prisma model declares `id` as the primary key. Current Prisma models use U
 | document_commodities | commodity_id | commodities | id | document_commodities_commodity_id_fkey | RESTRICT | CASCADE |
 | document_districts | document_id | documents | id | document_districts_document_id_fkey | CASCADE | CASCADE |
 | document_districts | district_id | districts | id | document_districts_district_id_fkey | RESTRICT | CASCADE |
-| document_tags | document_id | documents | id | document_tags_document_id_fkey | CASCADE | CASCADE |
-| document_tags | tag_id | tags | id | document_tags_tag_id_fkey | RESTRICT | CASCADE |
 | events | event_type_id | event_types | id | events_event_type_id_fkey | RESTRICT | CASCADE |
 | events | training_type_id | training_types | id | events_training_type_id_fkey | RESTRICT | CASCADE |
 | events | district_id | districts | id | events_district_id_fkey | RESTRICT | CASCADE |
@@ -9044,7 +8784,6 @@ Defaults and nullability are listed for every table in Section 5. PostgreSQL NOT
 | media_usages | Media library, gallery, video, or usage-tracking table. | media_id -> media_assets | media_id, entity_type, entity_id, field | media_usages_entity_type_entity_id_idx, media_usages_media_id_entity_type_entity_id_field_key |
 | document_commodities | Join/detail table representing relationships or nested child records. | document_id -> documents; commodity_id -> commodities | document_id, commodity_id | document_commodities_document_id_commodity_id_key, document_commodities_commodity_id_document_id_idx |
 | document_districts | Join/detail table representing relationships or nested child records. | document_id -> documents; district_id -> districts | document_id, district_id | document_districts_document_id_district_id_key, document_districts_district_id_document_id_idx |
-| document_tags | Join/detail table representing relationships or nested child records. | document_id -> documents; tag_id -> tags | document_id, tag_id | document_tags_document_id_tag_id_key, document_tags_tag_id_document_id_idx |
 | document_programmes | --------------- Phase 6: Document additive junctions (programmes / institutions) --------------- Added with the Programmes/Institutions modules (Tier 7). They let an already-uploaded Document be linked by reference to programmes/institutions (CMS requirements §4.5). Junction child → CASCADE on the document; → RESTRICT on the master/content side (in-use record can't be removed). | document_id -> documents; programme_scheme_id -> programme_schemes | document_id, programme_scheme_id | document_programmes_programme_scheme_id_document_id_idx, document_programmes_document_id_programme_scheme_id_key |
 | document_institutions | Join/detail table representing relationships or nested child records. | document_id -> documents; institution_id -> institutions | document_id, institution_id | document_institutions_institution_id_document_id_idx, document_institutions_document_id_institution_id_key |
 | event_commodities | --------------- Event junctions (shared relationships) --------------- | event_id -> events; commodity_id -> commodities | event_id, commodity_id | event_commodities_commodity_id_event_id_idx, event_commodities_event_id_commodity_id_key |
@@ -9069,10 +8808,9 @@ PostgreSQL scheduler tables: Not found in current codebase. Scheduler state is i
 
 | Table | Module | Publishing | Notes |
 | --- | --- | --- | --- |
-| documents | CMS/content | Yes | --------------- Documents (Phase 5 - database-schema-design.md Part 6 / Part 13) --------------- Added VERBATIM from the approved Part 13 `Document` model, TRIMMED to the relations whose counterpart models exist in this phase: documentType, fileAsset (MediaAsset, "DocumentFile"), knowledgeCategory, financialYear, and the commodity/district/tag junctions. The programme and institution junctions (`document_programmes`, `document_institutions`) and the content back-relations (`events EventDocument[]`, `communications OfficialCommunication[]`, `procurementUpdates ProcurementUpdate[]`) are intentionally OMITTED here and re-added additively when those modules land (programmes/institutions = Tier 7, events = Tier 10, communications/procurement = Tier 12) - the documented module-by-module process (docs/foundation/03-module-dependency-graph.md). This is NOT a redesign: the Document table shape, field names, enums, and onDelete contract are unchanged from the approved schema.  created_by / updated_by are scalar UUID columns (as in Part 13), not modeled User relations. The metadata `search_vector` GIN column lands later via the parked FTS migration (prisma/parked-migrations/) once all FTS content tables exist (see schema header note). |
+| documents | CMS/content | Yes | --------------- Documents (Phase 5 - database-schema-design.md Part 6 / Part 13) --------------- Added VERBATIM from the approved Part 13 `Document` model, TRIMMED to the relations whose counterpart models exist in this phase: documentType, fileAsset (MediaAsset, "DocumentFile"), knowledgeCategory, financialYear, and the commodity/district junctions. The programme and institution junctions (`document_programmes`, `document_institutions`) and the content back-relations (`events EventDocument[]`, `communications OfficialCommunication[]`, `procurementUpdates ProcurementUpdate[]`) are intentionally OMITTED here and re-added additively when those modules land (programmes/institutions = Tier 7, events = Tier 10, communications/procurement = Tier 12) - the documented module-by-module process (docs/foundation/03-module-dependency-graph.md). This is NOT a redesign: the Document table shape, field names, enums, and onDelete contract are unchanged from the approved schema.  created_by / updated_by are scalar UUID columns (as in Part 13), not modeled User relations. The metadata `search_vector` GIN column lands later via the parked FTS migration (prisma/parked-migrations/) once all FTS content tables exist (see schema header note). |
 | document_commodities | CMS/content | No | Join/detail table representing relationships or nested child records. |
 | document_districts | CMS/content | No | Join/detail table representing relationships or nested child records. |
-| document_tags | CMS/content | No | Join/detail table representing relationships or nested child records. |
 | document_programmes | CMS/content | No | --------------- Phase 6: Document additive junctions (programmes / institutions) --------------- Added with the Programmes/Institutions modules (Tier 7). They let an already-uploaded Document be linked by reference to programmes/institutions (CMS requirements §4.5). Junction child → CASCADE on the document; → RESTRICT on the master/content side (in-use record can't be removed). |
 | document_institutions | CMS/content | No | Join/detail table representing relationships or nested child records. |
 | events | CMS/content | Yes | --------------- Phase 6: Events (database-schema-design.md Part 6 / Part 13) --------------- The relational hub for all institutional activities (one Events operation, configurable type). Status is derived from dates unless `status_override=true` (postponed/cancelled only). `dynamic_values` is a CONTROLLED JSONB object validated against the active event_field_definitions for the chosen type - not a form builder.  TRIMMED (scope discipline): the `toolkitDistributions` back-relation from Part 13 is OMITTED here because Toolkits are out of Phase 6 scope; it is re-added additively when the Toolkit module lands (Tier 9). The Event table shape itself is unchanged from the approved schema. createdBy/updatedBy follow the applied-codebase convention (nullable + ON DELETE SET NULL), matching Document/Gallery/Video. |
@@ -9547,11 +9285,9 @@ flowchart TD
 | enquiry_types | Not found in current codebase. | Not found in current codebase. | Not found in current codebase. | Medium |
 | financial_years | Not found in current codebase. | Not found in current codebase. | Not found in current codebase. | Medium |
 | reporting_periods | financial_years | Not found in current codebase. | Not found in current codebase. | Medium |
-| tags | Not found in current codebase. | document_tags | Not found in current codebase. | Medium |
-| documents | document_types, media_assets, knowledge_categories, financial_years, users, users | document_commodities, document_districts, document_tags, event_documents, document_programmes, document_institutions, official_communications, procurement_updates | document_type_id: RESTRICT; file_asset_id: RESTRICT | Medium/High |
+| documents | document_types, media_assets, knowledge_categories, financial_years, users, users | document_commodities, document_districts, event_documents, document_programmes, document_institutions, official_communications, procurement_updates | document_type_id: RESTRICT; file_asset_id: RESTRICT | Medium/High |
 | document_commodities | documents, commodities | Not found in current codebase. | document_id: CASCADE; commodity_id: RESTRICT | Medium/High |
 | document_districts | documents, districts | Not found in current codebase. | document_id: CASCADE; district_id: RESTRICT | Medium/High |
-| document_tags | documents, tags | Not found in current codebase. | document_id: CASCADE; tag_id: RESTRICT | Medium/High |
 | document_programmes | documents, programme_schemes | Not found in current codebase. | document_id: CASCADE; programme_scheme_id: RESTRICT | Medium/High |
 | document_institutions | documents, institutions | Not found in current codebase. | document_id: CASCADE; institution_id: RESTRICT | Medium/High |
 | events | event_types, training_types, districts, blocks, media_assets, users, users | event_news, event_commodities, event_programmes, event_institutions, event_documents, event_galleries, toolkit_distribution_summaries | event_type_id: RESTRICT; training_type_id: RESTRICT; district_id: RESTRICT; block_id: RESTRICT | Medium/High |

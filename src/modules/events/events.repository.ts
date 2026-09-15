@@ -8,17 +8,15 @@
 import type { Prisma, PrismaClient } from '@prisma/client';
 import { prisma } from '@/db/prisma';
 import { publicVisibilityWhere } from '@/shared/visibility';
+import { referenceFilter } from '@/shared/reference-filter';
 import type { EventFilters, EventOrderingField } from './events.types';
 
 type Db = PrismaClient | Prisma.TransactionClient;
 
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const isUuid = (v: string): boolean => UUID_RE.test(v);
 
 /** Full detail include — masters + cover + every relationship junction resolved. */
 const eventInclude = {
-  eventType: true,
-  trainingType: true,
+  eventType: { include: { eventCategory: true } },
   district: true,
   block: true,
   coverMedia: true,
@@ -43,8 +41,7 @@ export type EventRow = Prisma.EventGetPayload<{ include: typeof eventInclude }>;
  * `EventRow` (nested `where` does not change the row shape).
  */
 const publicEventInclude = {
-  eventType: true,
-  trainingType: true,
+  eventType: { include: { eventCategory: true } },
   district: true,
   block: true,
   coverMedia: true,
@@ -70,7 +67,7 @@ const publicEventInclude = {
 
 /** Lightweight list summary — masters + cover only (no relationship collections, no dynamic). */
 const eventSummaryInclude = {
-  eventType: true,
+  eventType: { include: { eventCategory: true } },
   district: true,
   coverMedia: true,
 } satisfies Prisma.EventInclude;
@@ -101,19 +98,24 @@ export function buildWhere(f: EventFilters, opts: { public?: boolean }): Prisma.
 
   if (f.eventStatus) where.eventStatus = f.eventStatus;
   if (f.showOnHomepage !== undefined) where.showOnHomepage = f.showOnHomepage;
-  if (f.eventType) where.eventType = isUuid(f.eventType) ? { id: f.eventType } : { slug: f.eventType };
-  if (f.district) where.district = isUuid(f.district) ? { id: f.district } : { slug: f.district };
-  if (f.block) where.block = isUuid(f.block) ? { id: f.block } : { slug: f.block };
+  if (f.eventType || f.eventCategory) {
+    where.eventType = {
+      ...(f.eventType ? referenceFilter(f.eventType) : {}),
+      ...(f.eventCategory ? { eventCategory: referenceFilter(f.eventCategory) } : {}),
+    };
+  }
+  if (f.district) where.district = referenceFilter(f.district);
+  if (f.block) where.block = referenceFilter(f.block);
   if (f.commodity) {
-    const sel = isUuid(f.commodity) ? { id: f.commodity } : { slug: f.commodity };
+    const sel = referenceFilter(f.commodity);
     where.commodities = { some: { commodity: sel } };
   }
   if (f.programme) {
-    const sel = isUuid(f.programme) ? { id: f.programme } : { slug: f.programme };
+    const sel = referenceFilter(f.programme);
     where.programmes = { some: { programmeScheme: sel } };
   }
   if (f.institution) {
-    const sel = isUuid(f.institution) ? { id: f.institution } : { slug: f.institution };
+    const sel = referenceFilter(f.institution);
     where.institutions = { some: { institution: sel } };
   }
 
@@ -121,8 +123,10 @@ export function buildWhere(f: EventFilters, opts: { public?: boolean }): Prisma.
   if (f.dateFrom) dateRange.gte = f.dateFrom;
   if (f.dateTo) dateRange.lte = f.dateTo;
   if (f.year) {
-    dateRange.gte = new Date(Date.UTC(f.year, 0, 1));
-    dateRange.lte = new Date(Date.UTC(f.year, 11, 31, 23, 59, 59, 999));
+    const yearStart = new Date(Date.UTC(f.year, 0, 1));
+    const yearEnd = new Date(Date.UTC(f.year, 11, 31, 23, 59, 59, 999));
+    dateRange.gte = f.dateFrom && f.dateFrom > yearStart ? f.dateFrom : yearStart;
+    dateRange.lte = f.dateTo && f.dateTo < yearEnd ? f.dateTo : yearEnd;
   }
   if (Object.keys(dateRange).length > 0) where.startDate = dateRange;
 
@@ -210,7 +214,6 @@ async function setGalleries(eventId: string, ids: string[], db: Db): Promise<voi
 // ── Reference / activation validation ──────────────────────────────────────────
 interface EventRefs {
   eventTypeId?: string;
-  trainingTypeId?: string | null;
   districtId?: string | null;
   blockId?: string | null;
   commodityIds?: string[];
@@ -224,14 +227,13 @@ async function validateReferences(refs: EventRefs): Promise<Record<string, strin
   const errors: Record<string, string[]> = {};
 
   if (refs.eventTypeId !== undefined) {
-    const row = await prisma.eventType.findUnique({ where: { id: refs.eventTypeId }, select: { isActive: true } });
+    const row = await prisma.eventType.findUnique({
+      where: { id: refs.eventTypeId },
+      select: { isActive: true, eventCategory: { select: { isActive: true } } },
+    });
     if (!row) errors.event_type_id = ['Event type not found.'];
     else if (!row.isActive) errors.event_type_id = ['Event type is inactive.'];
-  }
-  if (refs.trainingTypeId) {
-    const row = await prisma.trainingType.findUnique({ where: { id: refs.trainingTypeId }, select: { isActive: true } });
-    if (!row) errors.training_type_id = ['Training type not found.'];
-    else if (!row.isActive) errors.training_type_id = ['Training type is inactive.'];
+    else if (!row.eventCategory.isActive) errors.event_type_id = ['Event type’s category is inactive.'];
   }
   if (refs.districtId) {
     const row = await prisma.district.findUnique({ where: { id: refs.districtId }, select: { isActive: true } });
@@ -291,28 +293,6 @@ async function assertExistsSet(
   if (missing.length > 0) errors[field] = missing.map((id) => `Reference ${id} not found.`);
 }
 
-/**
- * Validate `trainingTypeId` against the permitted set of the chosen programmes (API spec §6):
- * when any linked programme declares `permitted_training_type_ids`, the event's training type must
- * be in the union of those permitted sets. Programmes with no declared permitted set don't
- * constrain. Returns a field error map ({} when valid / not applicable).
- */
-async function validateTrainingTypeAgainstProgrammes(
-  trainingTypeId: string | null | undefined,
-  programmeIds: string[] | undefined,
-): Promise<Record<string, string[]>> {
-  if (!trainingTypeId || !programmeIds || programmeIds.length === 0) return {};
-  const permitted = await prisma.programmePermittedTrainingType.findMany({
-    where: { programmeSchemeId: { in: programmeIds } },
-    select: { programmeSchemeId: true, trainingTypeId: true },
-  });
-  if (permitted.length === 0) return {}; // no programme constrains training type
-  const allowed = new Set(permitted.map((p) => p.trainingTypeId));
-  if (!allowed.has(trainingTypeId)) {
-    return { training_type_id: ['Training type is not permitted by the selected programme(s).'] };
-  }
-  return {};
-}
 
 // ── Active field definitions (dynamic-field engine) ────────────────────────────
 async function activeFieldDefinitions(eventTypeId: string): Promise<
@@ -381,7 +361,6 @@ export const eventRepository = {
   setDocuments,
   setGalleries,
   validateReferences,
-  validateTrainingTypeAgainstProgrammes,
   activeFieldDefinitions,
   findStatusRecomputeCandidates,
   updateEventStatus,

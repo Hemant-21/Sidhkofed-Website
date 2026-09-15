@@ -1,0 +1,3 @@
+metric_key,label_en,value,unit,display_order
+district_unions_referenced,District Unions (Referenced),24,DU,1
+districts_referenced,Districts (Referenced),24,district,2

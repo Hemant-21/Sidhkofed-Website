@@ -16,7 +16,6 @@ const isUuid = (v: string): boolean => UUID_RE.test(v);
 const programmeInclude = {
   coverMedia: true,
   commodities: { include: { commodity: true } },
-  permittedTrainingTypes: { include: { trainingType: true } },
 } satisfies Prisma.ProgrammeSchemeInclude;
 
 export type ProgrammeRow = Prisma.ProgrammeSchemeGetPayload<{ include: typeof programmeInclude }>;
@@ -143,27 +142,16 @@ async function setCommodities(programmeSchemeId: string, commodityIds: string[],
   }
 }
 
-async function setPermittedTrainingTypes(programmeSchemeId: string, trainingTypeIds: string[], db: Db): Promise<void> {
-  await db.programmePermittedTrainingType.deleteMany({ where: { programmeSchemeId } });
-  if (trainingTypeIds.length > 0) {
-    await db.programmePermittedTrainingType.createMany({
-      data: trainingTypeIds.map((trainingTypeId) => ({ programmeSchemeId, trainingTypeId })),
-    });
-  }
-}
 
 /** Validate referenced masters exist AND are active. Returns field-keyed errors ({} when valid). */
 interface ProgrammeRefs {
   commodityIds?: string[];
-  permittedTrainingTypeIds?: string[];
 }
 
 async function validateReferences(refs: ProgrammeRefs): Promise<Record<string, string[]>> {
   const errors: Record<string, string[]> = {};
   await assertActiveSet('commodity_ids', refs.commodityIds, (ids) =>
     prisma.commodity.findMany({ where: { id: { in: ids }, isActive: true }, select: { id: true } }), errors);
-  await assertActiveSet('permitted_training_type_ids', refs.permittedTrainingTypeIds, (ids) =>
-    prisma.trainingType.findMany({ where: { id: { in: ids }, isActive: true }, select: { id: true } }), errors);
   return errors;
 }
 
@@ -190,6 +178,5 @@ export const programmeRepository = {
   list,
   transaction,
   setCommodities,
-  setPermittedTrainingTypes,
   validateReferences,
 };

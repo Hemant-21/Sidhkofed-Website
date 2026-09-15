@@ -2,9 +2,9 @@
  * Query-string parsing for procurement-update list endpoints → framework-free filters + allow-listed
  * ordering. Unknown ordering → 422; unknown filter keys → 422 (API spec §1.4).
  *
- * Public filters (API spec §5): procurement_update_type, commodity, district, block, programme,
- * date_from, date_to, year. The admin surface additionally accepts publication_state and
- * show_on_homepage.
+ * Public filters (API spec §5): procurement_update_type, procurement_update_category, commodity,
+ * district, block, programme, date_from, date_to, year. The admin surface additionally accepts
+ * publication_state and show_on_homepage.
  */
 import type { Request } from 'express';
 import { resolveOrdering } from '@/shared/listing';
@@ -37,6 +37,7 @@ function dateOf(v: unknown, field: string): Date | undefined {
 
 const PUBLIC_FILTER_KEYS = [
   'procurement_update_type',
+  'procurement_update_category',
   'commodity',
   'district',
   'block',
@@ -52,6 +53,7 @@ export function parseProcurementUpdateFilters(req: Request, opts: { admin: boole
   assertKnownQueryKeys(q, opts.admin ? ADMIN_FILTER_KEYS : PUBLIC_FILTER_KEYS);
   const filters: ProcurementUpdateFilters = {
     procurementUpdateType: str(q.procurement_update_type),
+    procurementUpdateCategory: str(q.procurement_update_category),
     commodity: str(q.commodity),
     district: str(q.district),
     block: str(q.block),
@@ -68,11 +70,13 @@ export function parseProcurementUpdateFilters(req: Request, opts: { admin: boole
   return filters;
 }
 
-const DEFAULT = { field: 'effective_date' as ProcurementUpdateOrderingField, direction: 'desc' as const };
+const ADMIN_DEFAULT = { field: 'effective_date' as ProcurementUpdateOrderingField, direction: 'desc' as const };
+const PUBLIC_DEFAULT = { field: 'published_at' as ProcurementUpdateOrderingField, direction: 'desc' as const };
 
 export function parseProcurementUpdateOrdering(
   req: Request,
+  admin: boolean,
 ): { field: ProcurementUpdateOrderingField; direction: 'asc' | 'desc' } {
-  const ob = resolveOrdering(req.query.ordering, PROCUREMENT_UPDATE_ORDERING_FIELDS, DEFAULT);
+  const ob = resolveOrdering(req.query.ordering, PROCUREMENT_UPDATE_ORDERING_FIELDS, admin ? ADMIN_DEFAULT : PUBLIC_DEFAULT);
   return { field: ob.field as ProcurementUpdateOrderingField, direction: ob.direction };
 }

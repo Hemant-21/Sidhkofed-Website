@@ -185,7 +185,6 @@ one. `name_hi`, `display_order`, and `is_active` are optional. Duplicate
 | `blocks` | `district_id` required; list filters `district_id`/`district` | `/public/masters/blocks` |
 | `financial-years` | `label`, `start_date`, `end_date` required; label unique, start <= end | `/public/masters/financial-years` |
 | `reporting-periods` | `period_type` in `month\|financial_year\|calendar_year\|cumulative` required; `start_date`/`end_date` required except for `cumulative`; `calendar_year` required for `calendar_year`; `financial_year_id` required for `month`/`financial_year` and dates must fit that year | `/public/masters/reporting-periods` |
-| `tags` | shared fields; internal document classification only | none by default |
 
 Public master responses include active values only and may be filtered by
 `district`. They are unpaginated only when the server-defined list is small;
@@ -277,7 +276,7 @@ Example creation request:
 | `/admin/toolkits/{toolkit_id}/items` | `name_en` | `GET,POST`; `GET,PATCH,DELETE` on `{item_id}`. Accept description, unit, `distribution_basis` (`individual`/`group`), `default_quantity_per_unit`, `default_group_size`, non-negative `quantity_summary`, `is_active`, display order. Editor may change draft parent; a publisher manages published parent items. |
 | `/admin/events/{event_id}/toolkit-distributions` | `toolkit_id`, `distribution_model` | `GET,POST`; `GET,PATCH,DELETE` on `{id}`. Training-level summary only. Accept `distribution_done`, `distribution_model` (`individual`/`group`/`mixed`), `participants_covered`, `distribution_date`, bilingual remarks, and `items:[{toolkit_item_id,distribution_basis,quantity_per_unit,number_of_units_or_groups,total_quantity,manual_override}]`. When `manual_override=false` and basis=`group`, `total_quantity = quantity_per_unit * number_of_units_or_groups`. No beneficiary-level rows, stock ledger, or acknowledgements. |
 | **P** `/admin/institutions` | `institution_type_id`, `name_en` | bilingual text, website (valid http/https URL), logo, district, email, phone. Partner homepage display is the normal `show_on_homepage` workflow field. |
-| **P** `/admin/documents` | `title_en`, `document_type_id`, `file_asset_id`, `language` | bilingual description, publication date, public flags, knowledge category, FY, and relation arrays `commodity_ids,programme_ids,institution_ids,district_ids,tag_ids`. `knowledge_category_id` is required when knowledge-centre flag is true. Asset must be a permitted document media asset. |
+| **P** `/admin/documents` | `title_en`, `document_type_id`, `file_asset_id`, `language` | bilingual description, publication date, public flags, knowledge category, FY, and relation arrays `commodity_ids,programme_ids,institution_ids,district_ids`. `knowledge_category_id` is required when knowledge-centre flag is true. Asset must be a permitted document media asset. |
 | **P** `/admin/official-communications` | `title_en`, `communication_type_id` | summary/body, reference number, issue/effective/expiry dates, authority, document ID. Validate chronological dates; do not auto-expire. |
 | **P** `/admin/tenders` | `title_en`, `tender_type_id` | summary, number, dates, status `open|closed|cancelled|awarded`, valid HTTPS `gem_url`. Opening may not precede publish; deadline is a timestamp. |
 | **P** `/admin/procurement-updates` | `title_en`, `procurement_update_type_id` | bilingual content, commodity, decimal rate, unit, effective/period dates, district/block/location, programme, document, `status` (informational, e.g. `active`/`closed`/`upcoming`). Period end cannot precede start; block/district consistency applies. |
@@ -365,23 +364,17 @@ the report definition (Super Admin for create/layout; Publisher for lifecycle).
 Create requires unique `report_key,title_en`; `layout_config` is an approved
 fixed presentation descriptor, never a user-defined report builder.
 
-Metrics: `GET|POST /admin/dashboard/reports/{report_id}/metrics`, `PATCH|DELETE
-/admin/dashboard/reports/{report_id}/metrics/{id}`. Require `metric_key,label_en`
-and exactly one of `value`/`value_text`; accept unit, FY, reporting period,
-source, dataset and order. Reporting-period granularity is Month, Financial Year,
-Calendar Year, or Cumulative (the `reporting_periods.period_type` set); the
-membership reports (#10–#13) read `membership_level`×`membership_type` for the
-selected period. The unique report/metric/FY/period combination gives `409` on
-duplicates.
-
-Datasets: `GET|POST /admin/dashboard/reports/{report_id}/datasets`; `GET
-/admin/dashboard/datasets/{id}`; `POST /admin/dashboard/reports/{report_id}/datasets/upload`.
-Manual create accepts source, period and validated tabular rows. Upload is
-multipart XLSX/CSV media upload followed by parser validation against report
-layout, financial year/reporting period and masters. It creates `dashboard_datasets`
-with `pending|processed|failed`, stores controlled `raw_rows`, and creates/updates
-durable metrics transactionally when processed. Content Editor needs an explicit
-dashboard-data grant; Publisher/Super Admin control public report lifecycle.
+**Retired (Stage 7 — Operational Reports / Website Metrics cutover):** the manual
+metric CRUD (`GET|POST /admin/dashboard/reports/{report_id}/metrics`,
+`PATCH|DELETE /admin/dashboard/reports/{report_id}/metrics/{id}`) and dataset
+create/import routes (`GET|POST /admin/dashboard/reports/{report_id}/datasets`,
+`GET /admin/dashboard/datasets/{id}`, `POST
+/admin/dashboard/reports/{report_id}/datasets/upload`) have been fully removed —
+Operational Reports and Website Metrics supersede manual metric entry and
+Excel/CSV dataset import. The underlying `dashboard_metrics`/`dashboard_datasets`
+tables and their (dummy) rows are no longer populated or managed through the
+CMS; `dashboard.manage_data` remains in the permission catalog unused. Publisher/
+Super Admin still control the report definitions' public lifecycle.
 
 ### Users, settings, and audit
 
@@ -446,7 +439,7 @@ only when the corresponding update permission is granted.
 | Menus create/PATCH/reorder | M | C/U draft configuration only if granted | Publisher U |
 | Menu delete | M | — | — |
 | Dashboard reports/layout | M | R | R/L if granted |
-| Dashboard metrics/datasets/upload | M | C/U if dashboard grant | C/U/L if granted |
+| Dashboard metrics/datasets/upload | RETIRED (Stage 7 cutover) | RETIRED | RETIRED |
 | Enquiries list/detail/notes/archive/export | M | — | M |
 | Users and settings | M | — | — |
 | Audit logs | M | — | — |
@@ -561,8 +554,7 @@ envelope (`success` + `data`/`pagination` or `error`, plus `meta`).
   "commodity_ids": ["uuid"],
   "programme_ids": ["uuid"],
   "institution_ids": [],
-  "district_ids": ["uuid"],
-  "tag_ids": ["uuid"]
+  "district_ids": ["uuid"]
 }
 // 201 Created  (Location: /admin/documents/{id})
 {"success": true, "data": {"id": "uuid", "slug": "annual-report-2025-26", "publication_state": "draft"}, "meta": {"request_id": "req_..."}}

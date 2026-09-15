@@ -11,6 +11,7 @@
 import { PrismaClient } from '@prisma/client';
 import { slugify } from '@/utils/slug';
 import { seedBlocks } from './blocks';
+import { seedContentClassification } from './content-classification';
 
 type NameRow = { nameEn: string; nameHi?: string; displayOrder?: number };
 
@@ -26,16 +27,6 @@ async function seedNameMaster<T extends NameRow>(
   console.log(`  ✓ ${label}: ${rows.length}`);
 }
 
-const EVENT_TYPES: NameRow[] = [
-  { nameEn: 'Training' }, { nameEn: 'Workshop' }, { nameEn: 'Meeting' }, { nameEn: 'MoU Signing' },
-  { nameEn: 'Exposure Visit' }, { nameEn: 'Field Visit' }, { nameEn: 'Conference' },
-  { nameEn: 'Awareness Programme' }, { nameEn: 'Other Institutional Activity' },
-];
-
-const TRAINING_TYPES: NameRow[] = [
-  { nameEn: 'Skill Development' }, { nameEn: 'Capacity Building' }, { nameEn: 'Orientation' },
-  { nameEn: 'Refresher' }, { nameEn: 'Awareness' },
-];
 
 const COMMODITIES: (NameRow & { category: string })[] = [
   { nameEn: 'Lac', nameHi: 'लाख', category: 'Minor Forest Produce' },
@@ -54,35 +45,23 @@ const INSTITUTION_TYPES: NameRow[] = [
   { nameEn: 'Cooperative Federation',     nameHi: 'सहकारी महासंघ' },
 ];
 
-const DOCUMENT_TYPES: NameRow[] = [
-  { nameEn: 'Notice' }, { nameEn: 'Circular' }, { nameEn: 'Office Order' }, { nameEn: 'MoU' },
-  { nameEn: 'Report' }, { nameEn: 'Policy' }, { nameEn: 'Guideline' }, { nameEn: 'SOP' },
-  { nameEn: 'Training Material' }, { nameEn: 'Form' }, { nameEn: 'Publication' }, { nameEn: 'Other' },
-];
-
-const KNOWLEDGE_CATEGORIES: NameRow[] = [
-  { nameEn: 'Acts and Rules' }, { nameEn: 'Bye-laws' }, { nameEn: 'Policies and Guidelines' },
-  { nameEn: 'SOPs and Manuals' }, { nameEn: 'Training Resources' }, { nameEn: 'Research and Reports' },
-  { nameEn: 'Publications' }, { nameEn: 'Forms and Formats' },
-];
-
-const COMMUNICATION_TYPES: NameRow[] = [
-  { nameEn: 'Notice' }, { nameEn: 'Circular' }, { nameEn: 'Office Order' },
-  { nameEn: 'Notification' }, { nameEn: 'Advisory' }, { nameEn: 'Public Announcement' },
-];
-
 const TENDER_TYPES: NameRow[] = [
   { nameEn: 'Goods' }, { nameEn: 'Works' }, { nameEn: 'Services' }, { nameEn: 'Consultancy' },
 ];
 
-const PROCUREMENT_UPDATE_TYPES: NameRow[] = [
-  { nameEn: 'Procurement Rate' }, { nameEn: 'Procurement Announcement' }, { nameEn: 'Procurement Schedule' },
-  { nameEn: 'Procurement Centre Update' }, { nameEn: 'Trade Opportunity' }, { nameEn: 'Procurement Achievement' },
+const PROCUREMENT_UPDATE_CATEGORIES: NameRow[] = [
+  { nameEn: 'Rates & Trade', nameHi: 'दरें एवं व्यापार' },
+  { nameEn: 'Announcements & Schedules', nameHi: 'घोषणाएँ एवं कार्यक्रम' },
+  { nameEn: 'Achievements', nameHi: 'उपलब्धियाँ' },
 ];
 
-const FAQ_CATEGORIES: NameRow[] = [
-  { nameEn: 'General' }, { nameEn: 'Membership' }, { nameEn: 'Training' },
-  { nameEn: 'Procurement' }, { nameEn: 'Schemes' }, { nameEn: 'Digital Services' },
+const PROCUREMENT_UPDATE_TYPES: (NameRow & { category: string })[] = [
+  { nameEn: 'Procurement Rate', category: 'Rates & Trade' },
+  { nameEn: 'Procurement Announcement', category: 'Announcements & Schedules' },
+  { nameEn: 'Procurement Schedule', category: 'Announcements & Schedules' },
+  { nameEn: 'Procurement Centre Update', category: 'Announcements & Schedules' },
+  { nameEn: 'Trade Opportunity', category: 'Rates & Trade' },
+  { nameEn: 'Procurement Achievement', category: 'Achievements' },
 ];
 
 const ENQUIRY_TYPES: NameRow[] = [
@@ -122,10 +101,7 @@ const DISTRICTS: NameRow[] = [
 export async function seedMasters(prisma: PrismaClient): Promise<void> {
   console.log('Seeding master data (idempotent)…');
 
-  await seedNameMaster('event types', EVENT_TYPES, (r) =>
-    prisma.eventType.upsert({ where: { slug: r.slug }, update: { nameEn: r.nameEn, displayOrder: r.displayOrder }, create: r }));
-  await seedNameMaster('training types', TRAINING_TYPES, (r) =>
-    prisma.trainingType.upsert({ where: { slug: r.slug }, update: { nameEn: r.nameEn, displayOrder: r.displayOrder }, create: r }));
+  await seedContentClassification(prisma);
   await seedNameMaster('commodities', COMMODITIES, (r) =>
     prisma.commodity.upsert({
       where: { slug: r.slug },
@@ -134,18 +110,25 @@ export async function seedMasters(prisma: PrismaClient): Promise<void> {
     }));
   await seedNameMaster('institution types', INSTITUTION_TYPES, (r) =>
     prisma.institutionType.upsert({ where: { slug: r.slug }, update: { nameEn: r.nameEn, displayOrder: r.displayOrder }, create: r }));
-  await seedNameMaster('document types', DOCUMENT_TYPES, (r) =>
-    prisma.documentType.upsert({ where: { slug: r.slug }, update: { nameEn: r.nameEn, displayOrder: r.displayOrder }, create: r }));
-  await seedNameMaster('knowledge categories', KNOWLEDGE_CATEGORIES, (r) =>
-    prisma.knowledgeCategory.upsert({ where: { slug: r.slug }, update: { nameEn: r.nameEn, displayOrder: r.displayOrder }, create: r }));
-  await seedNameMaster('communication types', COMMUNICATION_TYPES, (r) =>
-    prisma.communicationType.upsert({ where: { slug: r.slug }, update: { nameEn: r.nameEn, displayOrder: r.displayOrder }, create: r }));
   await seedNameMaster('tender types', TENDER_TYPES, (r) =>
     prisma.tenderType.upsert({ where: { slug: r.slug }, update: { nameEn: r.nameEn, displayOrder: r.displayOrder }, create: r }));
-  await seedNameMaster('procurement update types', PROCUREMENT_UPDATE_TYPES, (r) =>
-    prisma.procurementUpdateType.upsert({ where: { slug: r.slug }, update: { nameEn: r.nameEn, displayOrder: r.displayOrder }, create: r }));
-  await seedNameMaster('faq categories', FAQ_CATEGORIES, (r) =>
-    prisma.faqCategory.upsert({ where: { slug: r.slug }, update: { nameEn: r.nameEn, displayOrder: r.displayOrder }, create: r }));
+  await seedNameMaster('procurement update categories', PROCUREMENT_UPDATE_CATEGORIES, (r) =>
+    prisma.procurementUpdateCategory.upsert({
+      where: { slug: r.slug },
+      update: { nameEn: r.nameEn, nameHi: r.nameHi ?? null, displayOrder: r.displayOrder },
+      create: r,
+    }));
+  const procurementUpdateCategories = await prisma.procurementUpdateCategory.findMany({ select: { id: true, nameEn: true } });
+  const procurementUpdateCategoryByName = new Map(procurementUpdateCategories.map((c) => [c.nameEn, c.id]));
+  await seedNameMaster('procurement update types', PROCUREMENT_UPDATE_TYPES, (r) => {
+    const procurementUpdateCategoryId = procurementUpdateCategoryByName.get(r.category);
+    if (!procurementUpdateCategoryId) throw new Error(`Unknown procurement update category: ${r.category}`);
+    return prisma.procurementUpdateType.upsert({
+      where: { slug: r.slug },
+      update: { nameEn: r.nameEn, displayOrder: r.displayOrder, procurementUpdateCategoryId },
+      create: { nameEn: r.nameEn, slug: r.slug, displayOrder: r.displayOrder, procurementUpdateCategoryId },
+    });
+  });
   await seedNameMaster('enquiry types', ENQUIRY_TYPES, (r) =>
     prisma.enquiryType.upsert({ where: { slug: r.slug }, update: { nameEn: r.nameEn, displayOrder: r.displayOrder }, create: r }));
 

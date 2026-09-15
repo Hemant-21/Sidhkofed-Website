@@ -1,21 +1,18 @@
 /**
- * FAQ DTOs + mappers (API spec §5/§6 + §1.4 reference shapes).
- *
- * Shapes: admin summary (list), admin detail (single), public summary, public detail. FAQs carry a
- * full answer in every shape (they are short Q&A records), so the public list returns answers too.
- * Public responses never expose `created_by`/`updated_by`.
+ * FAQ DTOs + mappers. Shapes: admin summary (list), admin detail (single), public summary/detail.
+ * FAQs carry a full answer in every shape (they are short Q&A records), so the public list returns
+ * answers too. Public responses never expose `created_by`/`updated_by`, or page assignments (those
+ * are an admin-management concern; public consumers ask for a specific `page_key` instead).
  */
 import type { FaqRow } from './faqs.repository';
 
-interface MasterRef {
-  id: string;
-  slug: string;
-  name_en: string;
-  name_hi: string | null;
+export interface FaqPageAssignmentDto {
+  page_key: string;
+  display_order: number;
 }
-function masterRef(m: { id: string; slug: string; nameEn: string; nameHi: string | null } | null): MasterRef | null {
-  if (!m) return null;
-  return { id: m.id, slug: m.slug, name_en: m.nameEn, name_hi: m.nameHi };
+
+function pageAssignments(f: FaqRow): FaqPageAssignmentDto[] {
+  return f.pageAssignments.map((a) => ({ page_key: a.pageKey, display_order: a.displayOrder }));
 }
 
 const iso = (d: Date | null): string | null => (d ? d.toISOString() : null);
@@ -26,10 +23,9 @@ export interface FaqSummaryDto {
   slug: string;
   question_en: string;
   question_hi: string | null;
-  faq_category: MasterRef | null;
+  page_assignments: FaqPageAssignmentDto[];
   publication_state: string;
   public_visibility: boolean;
-  show_on_homepage: boolean;
   highlight_type: string | null;
   display_order: number | null;
   published_at: string | null;
@@ -44,10 +40,9 @@ export function toFaqSummaryDto(f: FaqRow): FaqSummaryDto {
     slug: f.slug,
     question_en: f.questionEn,
     question_hi: f.questionHi,
-    faq_category: masterRef(f.faqCategory),
+    page_assignments: pageAssignments(f),
     publication_state: f.publicationState,
     public_visibility: f.publicVisibility,
-    show_on_homepage: f.showOnHomepage,
     highlight_type: f.highlightType,
     display_order: f.displayOrder,
     published_at: iso(f.publishedAt),
@@ -89,7 +84,6 @@ export interface PublicFaqDto {
   question_hi: string | null;
   answer_en: string;
   answer_hi: string | null;
-  faq_category: MasterRef | null;
   highlight_type: string | null;
 }
 
@@ -101,7 +95,6 @@ export function toPublicFaqDto(f: FaqRow): PublicFaqDto {
     question_hi: f.questionHi,
     answer_en: f.answerEn,
     answer_hi: f.answerHi,
-    faq_category: masterRef(f.faqCategory),
     highlight_type: f.highlightType,
   };
 }

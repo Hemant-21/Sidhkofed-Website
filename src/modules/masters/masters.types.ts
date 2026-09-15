@@ -7,6 +7,7 @@
  * generic and read everything they need from the definition registry.
  */
 import type { ZodTypeAny } from 'zod';
+import type { Prisma } from '@prisma/client';
 
 /** A master row as returned by Prisma — kept structural so the framework stays generic. */
 export type MasterRow = Record<string, unknown>;
@@ -32,6 +33,13 @@ export interface MasterValidationContext {
   existing?: MasterRow;
   /** The master's own definition — lets the hook run repository lookups for itself. */
   def: MasterDefinition;
+  /**
+   * Present only when `def.requiresTransaction` is set. Lets `validate` take a row lock
+   * (`FOR UPDATE`) on a referenced parent inside the same transaction as the write, so it
+   * serializes against that parent's own `guardDeactivate` lock instead of only checking a
+   * point-in-time snapshot.
+   */
+  tx?: Prisma.TransactionClient;
 }
 
 /** A resolved list filter: the Prisma `where` fragment plus a cache-key suffix. */
@@ -61,7 +69,7 @@ export interface MasterDefinition {
   hasDisplayOrder: boolean;
   /** Cache the public active list in in-process cache (TASK 21). */
   cacheable: boolean;
-  /** Exposed under `/public/masters/{key}` (tags are internal-only). */
+  /** Exposed under `/public/masters/{key}` (some masters are internal-only). */
   isPublic: boolean;
   /** Prisma `include` for relations returned in the DTO (e.g. commodity icon, block district). */
   include?: Record<string, unknown>;
@@ -81,6 +89,20 @@ export interface MasterDefinition {
   duplicateWhere(input: MasterInput): Record<string, unknown> | null;
   /** Optional referential / cross-field validation needing DB lookups. */
   validate?(ctx: MasterValidationContext): Promise<void>;
+  /**
+   * When true, `create`/`update`/`setActive` run `validate` and the write inside one
+   * `prisma.$transaction`, so a `validate` that row-locks a referenced parent closes the
+   * race against that parent being deactivated concurrently. Opt-in — most masters don't
+   * need it; set it for masters whose `validate` locks another master's row.
+   */
+  requiresTransaction?: boolean;
+  /**
+   * Optional in-use guard run inside the same transaction as a deactivation (both the
+   * dedicated `/deactivate` route and a generic PATCH `is_active: false`). Should lock the
+   * master row (`FOR UPDATE`) and throw a `ConflictError` when active content still
+   * references it, closing the race between concurrent archival and assignment.
+   */
+  guardDeactivate?(id: string, tx: Prisma.TransactionClient): Promise<void>;
   /** Row → snake_case API DTO. */
   serialize(row: MasterRow): Record<string, unknown>;
   /** Columns (camelCase) scanned by `?search=`. */

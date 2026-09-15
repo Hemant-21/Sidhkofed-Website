@@ -9,7 +9,8 @@ export const EVENT_ENTITY = 'event';
 
 export interface EventFilters {
   publicationState?: PublicationState;
-  eventType?: string; // id or slug
+  eventType?: string; // id or slug, comma-separated for multi
+  eventCategory?: string; // id or slug, comma-separated for multi
   eventStatus?: EventStatus;
   district?: string; // id or slug
   block?: string; // id or slug

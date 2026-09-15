@@ -35,7 +35,8 @@
     "db:test:seed": "tsx scripts/db/with-test-env.ts prisma db seed",
     "db:test:setup": "npm run db:test:create && npm run db:test:migrate && npm run db:test:seed",
     "db:test:reset": "psql -U postgres -d postgres -v ON_ERROR_STOP=1 -c \"DROP DATABASE IF EXISTS sidhkofed_test WITH (FORCE);\" && npm run db:test:setup",
-    "media:backfill-thumbnails": "tsx scripts/media/backfill-variants.ts"
+    "media:backfill-thumbnails": "tsx scripts/media/backfill-variants.ts",
+    "db:seed:classification": "tsx scripts/seed-content-classification.ts"
   },
   "prisma": {
     "schema": "prisma/schema.prisma",

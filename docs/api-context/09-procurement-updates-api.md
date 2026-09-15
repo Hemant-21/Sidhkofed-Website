@@ -72,12 +72,27 @@ POST  /api/admin/procurement-updates/{id}/restore
 ## Filters
 
 ```http
-?type=procurement-rate
+?procurement_update_type=procurement-rate
+?procurement_update_category=rates-trade
 ?commodity=honey
 ?district=gumla
 ?status=active
 ?year=2026
 ```
+
+`procurement_update_category` and `procurement_update_type` compose with AND semantics (both
+resolve through the update's `procurement_update_type` relation — see
+`16-masters-api.md#procurement-update-category--procurement-update-type`): category alone matches
+every update whose type belongs to it; category + type narrows to that type only when it is
+actually a child of the given category (an invalid/cross-category pairing returns zero rows, never
+a broader result).
+
+## Ordering
+
+- Admin default: `-effective_date` (unchanged).
+- Public default: `-published_at`, with null `published_at` sorted last and a stable `id`
+  ascending tie-break. `date_from`/`date_to`/`year` filters and the `-effective_date` /
+  `effective_date` explicit ordering (used by the Upcoming view) are unaffected.
 
 ## Permissions
 

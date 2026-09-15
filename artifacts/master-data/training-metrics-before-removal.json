@@ -1,0 +1,129 @@
+[
+  {
+    "id": "4ae435bb-a80f-4744-ba68-5859ba71cdcf",
+    "metricKey": "homepage-total-events-test",
+    "reportKey": "event_activity_outcomes",
+    "measureKey": "total_events",
+    "calculationVersion": 1,
+    "filterConfig": {},
+    "periodConfig": {
+      "mode": "current_financial_year"
+    },
+    "labelEn": "Total Events Test",
+    "labelHi": null,
+    "placementKey": "homepage",
+    "displayOrder": 0,
+    "isEnabled": true,
+    "isArchived": false,
+    "configRevision": 1,
+    "currentSnapshotId": null,
+    "createdById": "04a27c8c-5001-4c9c-a597-e4b5a9fb7411",
+    "updatedById": "04a27c8c-5001-4c9c-a597-e4b5a9fb7411",
+    "createdAt": "2026-09-12T02:48:35.110Z",
+    "updatedAt": "2026-09-12T02:48:35.110Z",
+    "snapshots": []
+  },
+  {
+    "id": "de79487d-7dd6-48fe-9e88-e5cd13fc2058",
+    "metricKey": "homepage-recorded-attendance",
+    "reportKey": "training_attendance",
+    "measureKey": "recorded_attendance",
+    "calculationVersion": 1,
+    "filterConfig": {},
+    "periodConfig": {
+      "mode": "current_financial_year"
+    },
+    "labelEn": "Recorded attendance",
+    "labelHi": null,
+    "placementKey": "homepage",
+    "displayOrder": 0,
+    "isEnabled": true,
+    "isArchived": false,
+    "configRevision": 1,
+    "currentSnapshotId": null,
+    "createdById": "04a27c8c-5001-4c9c-a597-e4b5a9fb7411",
+    "updatedById": "04a27c8c-5001-4c9c-a597-e4b5a9fb7411",
+    "createdAt": "2026-09-12T08:08:56.944Z",
+    "updatedAt": "2026-09-12T08:08:56.944Z",
+    "snapshots": []
+  },
+  {
+    "id": "843249fd-3f30-4993-8853-9d849e007dfd",
+    "metricKey": "homepage-recorded-attendance-2",
+    "reportKey": "training_attendance",
+    "measureKey": "recorded_attendance",
+    "calculationVersion": 1,
+    "filterConfig": {},
+    "periodConfig": {
+      "mode": "current_financial_year"
+    },
+    "labelEn": "Recorded attendance",
+    "labelHi": null,
+    "placementKey": "homepage",
+    "displayOrder": 0,
+    "isEnabled": true,
+    "isArchived": false,
+    "configRevision": 1,
+    "currentSnapshotId": null,
+    "createdById": "04a27c8c-5001-4c9c-a597-e4b5a9fb7411",
+    "updatedById": "04a27c8c-5001-4c9c-a597-e4b5a9fb7411",
+    "createdAt": "2026-09-12T08:09:01.227Z",
+    "updatedAt": "2026-09-12T08:09:01.227Z",
+    "snapshots": []
+  },
+  {
+    "id": "3381d226-1a6b-4eab-8099-a735d4f46a64",
+    "metricKey": "homepage-total-events-in-period",
+    "reportKey": "event_activity_outcomes",
+    "measureKey": "total_events",
+    "calculationVersion": 1,
+    "filterConfig": {},
+    "periodConfig": {
+      "mode": "current_financial_year"
+    },
+    "labelEn": "Total events (in period)",
+    "labelHi": null,
+    "placementKey": "homepage",
+    "displayOrder": 0,
+    "isEnabled": true,
+    "isArchived": false,
+    "configRevision": 1,
+    "currentSnapshotId": "991410f3-5025-4ed1-b73e-42c391f0e040",
+    "createdById": "04a27c8c-5001-4c9c-a597-e4b5a9fb7411",
+    "updatedById": "04a27c8c-5001-4c9c-a597-e4b5a9fb7411",
+    "createdAt": "2026-09-15T03:18:59.028Z",
+    "updatedAt": "2026-09-15T03:19:21.128Z",
+    "snapshots": [
+      {
+        "id": "991410f3-5025-4ed1-b73e-42c391f0e040",
+        "metricId": "3381d226-1a6b-4eab-8099-a735d4f46a64",
+        "configRevision": 1,
+        "resolvedFilters": {},
+        "resolvedPeriod": {
+          "end": "2027-03-31T00:00:00.000Z",
+          "mode": "current_financial_year",
+          "start": "2026-04-01T00:00:00.000Z",
+          "basisDescription": "Current financial year 2026-2027 (2026-04-01 to 2027-03-31).",
+          "financialYearLabel": "2026-2027"
+        },
+        "value": "41",
+        "unit": "events",
+        "labelEn": "Total events (in period)",
+        "labelHi": null,
+        "definitionNoteEn": "Count of events whose start date falls within the resolved period, in scope (published, non-archived).",
+        "definitionNoteHi": null,
+        "completeness": {
+          "known": 41,
+          "missing": 0,
+          "undated": 0
+        },
+        "publicScopePolicyVersion": 1,
+        "calculatedAt": "2026-09-15T03:19:10.213Z",
+        "publishedAt": "2026-09-15T03:19:21.114Z",
+        "publishedById": "04a27c8c-5001-4c9c-a597-e4b5a9fb7411",
+        "flaggedForReview": false,
+        "createdAt": "2026-09-15T03:19:21.114Z"
+      }
+    ]
+  }
+]

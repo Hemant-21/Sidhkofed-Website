@@ -2,10 +2,14 @@
  * FAQ routes.
  *   /api/v1/admin/faqs/*  — authenticated; create/update/view = Super Admin + Content Editor +
  *                           Publisher; lifecycle = Super Admin + Publisher.
- *   /api/v1/public/faqs   — unauthenticated; published only; faq_category + search filters.
+ *   /api/v1/public/faqs   — unauthenticated; published only; page_key + search filters.
  *
  * Authorization reuses the shared role/permission middleware exactly like tenders/pages.
  * Logical `faqs.*` keys are documented in faqs.permissions.ts; no RBAC schema change.
+ *
+ * `/pages` and `/pages/:pageKey/reorder` are registered BEFORE `/:id` — otherwise Express would
+ * match `/pages` against the `:id` route first and `uuidParam` would reject "pages" as an invalid
+ * UUID before the real handler ever runs.
  */
 import { Router } from 'express';
 import { authenticate } from '@/middleware/authenticate';
@@ -21,6 +25,9 @@ const readers = [ROLE_KEYS.superAdmin, ROLE_KEYS.contentEditor, ROLE_KEYS.publis
 export const faqAdminRouter = Router();
 faqAdminRouter.param('id', uuidParam);
 faqAdminRouter.use(authenticate);
+
+faqAdminRouter.get('/pages', authorize(readers), faqController.pages);
+faqAdminRouter.post('/pages/:pageKey/reorder', authorizePermissions(['content.update']), faqController.reorderPage);
 
 faqAdminRouter.get('/', authorize(readers), faqController.list);
 faqAdminRouter.post('/', authorizeAnyPermission(['content.create', 'content.update']), faqController.create);

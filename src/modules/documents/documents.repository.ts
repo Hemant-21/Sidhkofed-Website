@@ -13,6 +13,7 @@
 import type { Prisma, PrismaClient } from '@prisma/client';
 import { prisma } from '@/db/prisma';
 import { publicVisibilityWhere } from '@/shared/visibility';
+import { referenceFilter } from '@/shared/reference-filter';
 import type { DocumentFilters, DocumentOrderingField } from './documents.types';
 
 type Db = PrismaClient | Prisma.TransactionClient;
@@ -20,24 +21,28 @@ type Db = PrismaClient | Prisma.TransactionClient;
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const isUuid = (v: string): boolean => UUID_RE.test(v);
 
-/** Full detail include — every junction reference + masters resolved. */
+/**
+ * Full detail include — every junction reference + masters resolved.
+ *
+ * Classification (Publications vs Notifications, and the knowledge category / communication
+ * type) is entirely derived from `documentType`'s own parent relation, never from the
+ * deprecated `Document.knowledgeCategoryId`/`showInKnowledgeCentre` columns — those columns
+ * are retained on the table only for migration compatibility and are not read here.
+ */
 const documentInclude = {
-  documentType: true,
+  documentType: { include: { knowledgeCategory: true, communicationType: true } },
   fileAsset: true,
-  knowledgeCategory: true,
   financialYear: true,
   commodities: { include: { commodity: true } },
   districts: { include: { district: true } },
-  tags: { include: { tag: true } },
 } satisfies Prisma.DocumentInclude;
 
 export type DocumentRow = Prisma.DocumentGetPayload<{ include: typeof documentInclude }>;
 
 /** Lightweight list summary — masters + file asset, NOT the relation collections. */
 const documentSummaryInclude = {
-  documentType: true,
+  documentType: { include: { knowledgeCategory: true, communicationType: true } },
   fileAsset: true,
-  knowledgeCategory: true,
   financialYear: true,
 } satisfies Prisma.DocumentInclude;
 
@@ -72,24 +77,36 @@ export function buildWhere(f: DocumentFilters, opts: { public?: boolean }): Pris
     where.publicationState = f.publicationState;
   }
 
-  if (f.knowledgeCentre) where.showInKnowledgeCentre = true;
   if (f.language) where.language = f.language;
 
-  if (f.documentType) {
-    where.documentType = isUuid(f.documentType) ? { id: f.documentType } : { slug: f.documentType };
+  // Classification (section/category/communication-type/type) is always resolved through the
+  // `documentType` relation — never the deprecated `Document.knowledgeCategoryId`/
+  // `showInKnowledgeCentre` columns. All predicates below AND together (never OR/broaden):
+  // an absent category means "all eligible documents in the section"; an absent type means
+  // "all eligible documents in the selected category".
+  const documentTypeWhere: Prisma.DocumentTypeWhereInput = {};
+  if (f.documentType) Object.assign(documentTypeWhere, referenceFilter(f.documentType));
+  if (f.knowledgeCategory) documentTypeWhere.knowledgeCategory = referenceFilter(f.knowledgeCategory);
+  if (f.communicationType) documentTypeWhere.communicationType = referenceFilter(f.communicationType);
+  // `knowledgeCentre` is the legacy `?knowledge_centre=true` flag — kept for backwards
+  // compatibility, equivalent to `documentSection: 'publications'`.
+  const section = f.documentSection ?? (f.knowledgeCentre ? 'publications' : undefined);
+  if (section === 'publications' && !f.knowledgeCategory) {
+    documentTypeWhere.knowledgeCategoryId = { not: null };
+  } else if (section === 'notifications' && !f.communicationType) {
+    documentTypeWhere.communicationTypeId = { not: null };
   }
-  if (f.knowledgeCategory) {
-    where.knowledgeCategory = isUuid(f.knowledgeCategory) ? { id: f.knowledgeCategory } : { slug: f.knowledgeCategory };
-  }
+  if (Object.keys(documentTypeWhere).length > 0) where.documentType = documentTypeWhere;
+
   if (f.financialYear) {
     where.financialYear = isUuid(f.financialYear) ? { id: f.financialYear } : { label: f.financialYear };
   }
   if (f.commodity) {
-    const sel = isUuid(f.commodity) ? { id: f.commodity } : { slug: f.commodity };
+    const sel = referenceFilter(f.commodity);
     where.commodities = { some: { commodity: sel } };
   }
   if (f.district) {
-    const sel = isUuid(f.district) ? { id: f.district } : { slug: f.district };
+    const sel = referenceFilter(f.district);
     where.districts = { some: { district: sel } };
   }
 
@@ -98,8 +115,10 @@ export function buildWhere(f: DocumentFilters, opts: { public?: boolean }): Pris
   if (f.dateFrom) dateRange.gte = f.dateFrom;
   if (f.dateTo) dateRange.lte = f.dateTo;
   if (f.year) {
-    dateRange.gte = new Date(Date.UTC(f.year, 0, 1));
-    dateRange.lte = new Date(Date.UTC(f.year, 11, 31, 23, 59, 59, 999));
+    const yearStart = new Date(Date.UTC(f.year, 0, 1));
+    const yearEnd = new Date(Date.UTC(f.year, 11, 31, 23, 59, 59, 999));
+    dateRange.gte = f.dateFrom && f.dateFrom > yearStart ? f.dateFrom : yearStart;
+    dateRange.lte = f.dateTo && f.dateTo < yearEnd ? f.dateTo : yearEnd;
   }
   if (Object.keys(dateRange).length > 0) where.publicationDate = dateRange;
 
@@ -175,13 +194,6 @@ async function setDistricts(documentId: string, districtIds: string[], db: Db): 
     await db.documentDistrict.createMany({ data: districtIds.map((districtId) => ({ documentId, districtId })) });
   }
 }
-async function setTags(documentId: string, tagIds: string[], db: Db): Promise<void> {
-  await db.documentTag.deleteMany({ where: { documentId } });
-  if (tagIds.length > 0) {
-    await db.documentTag.createMany({ data: tagIds.map((tagId) => ({ documentId, tagId })) });
-  }
-}
-
 /**
  * Validate that every referenced master exists AND is active (coding-standards §5 — reject
  * inactive-master references on create/update). FK Restrict already guarantees existence; this
@@ -189,25 +201,26 @@ async function setTags(documentId: string, tagIds: string[], db: Db): Promise<vo
  */
 interface ReferenceRefs {
   documentTypeId?: string;
-  knowledgeCategoryId?: string | null;
   financialYearId?: string | null;
   commodityIds?: string[];
   districtIds?: string[];
-  tagIds?: string[];
 }
 
 async function validateReferences(refs: ReferenceRefs): Promise<Record<string, string[]>> {
   const errors: Record<string, string[]> = {};
 
   if (refs.documentTypeId !== undefined) {
-    const row = await prisma.documentType.findUnique({ where: { id: refs.documentTypeId }, select: { isActive: true } });
+    const row = await prisma.documentType.findUnique({
+      where: { id: refs.documentTypeId },
+      select: { isActive: true, knowledgeCategory: { select: { isActive: true } }, communicationType: { select: { isActive: true } } },
+    });
     if (!row) errors.document_type_id = ['Document type not found.'];
     else if (!row.isActive) errors.document_type_id = ['Document type is inactive.'];
-  }
-  if (refs.knowledgeCategoryId) {
-    const row = await prisma.knowledgeCategory.findUnique({ where: { id: refs.knowledgeCategoryId }, select: { isActive: true } });
-    if (!row) errors.knowledge_category_id = ['Knowledge category not found.'];
-    else if (!row.isActive) errors.knowledge_category_id = ['Knowledge category is inactive.'];
+    else if (row.knowledgeCategory && !row.knowledgeCategory.isActive) {
+      errors.document_type_id = ["This document type's knowledge category is inactive."];
+    } else if (row.communicationType && !row.communicationType.isActive) {
+      errors.document_type_id = ["This document type's communication type is inactive."];
+    }
   }
   if (refs.financialYearId) {
     const row = await prisma.financialYear.findUnique({ where: { id: refs.financialYearId }, select: { isActive: true } });
@@ -219,8 +232,6 @@ async function validateReferences(refs: ReferenceRefs): Promise<Record<string, s
     prisma.commodity.findMany({ where: { id: { in: ids }, isActive: true }, select: { id: true } }), errors);
   await assertActiveSet('district_ids', refs.districtIds, (ids) =>
     prisma.district.findMany({ where: { id: { in: ids }, isActive: true }, select: { id: true } }), errors);
-  await assertActiveSet('tag_ids', refs.tagIds, (ids) =>
-    prisma.tag.findMany({ where: { id: { in: ids }, isActive: true }, select: { id: true } }), errors);
 
   return errors;
 }
@@ -241,6 +252,25 @@ async function assertActiveSet(
   }
 }
 
+/**
+ * The classification a Document derives from its Document Type: which parent family
+ * (knowledge category / communication type) it belongs to, i.e. its Publications/Notifications
+ * section. Returns null when the type itself doesn't exist (caller should have already
+ * validated it via `validateReferences`).
+ */
+interface DocumentTypeClassification {
+  knowledgeCategoryId: string | null;
+  communicationTypeId: string | null;
+}
+
+async function getDocumentTypeClassification(documentTypeId: string): Promise<DocumentTypeClassification | null> {
+  const row = await prisma.documentType.findUnique({
+    where: { id: documentTypeId },
+    select: { knowledgeCategoryId: true, communicationTypeId: true },
+  });
+  return row ? { knowledgeCategoryId: row.knowledgeCategoryId, communicationTypeId: row.communicationTypeId } : null;
+}
+
 export const documentRepository = {
   slugExists,
   create,
@@ -251,6 +281,6 @@ export const documentRepository = {
   transaction,
   setCommodities,
   setDistricts,
-  setTags,
   validateReferences,
+  getDocumentTypeClassification,
 };

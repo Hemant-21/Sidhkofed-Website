@@ -37,9 +37,9 @@ describe('validateDocumentCreate', () => {
     expect(err?.fields).toHaveProperty('file_asset_id');
   });
 
-  it('rejects show_in_knowledge_centre=true without a knowledge category', () => {
+  it('accepts show_in_knowledge_centre=true without a knowledge category (classification now derives from document_type_id; the service rejects a conflicting value)', () => {
     const err = tryCreate({ title_en: 'X', document_type_id: TYPE, file_asset_id: ASSET, show_in_knowledge_centre: true });
-    expect(err?.fields).toHaveProperty('knowledge_category_id');
+    expect(err).toBeNull();
   });
 
   it('accepts show_in_knowledge_centre=true with a category', () => {
@@ -65,6 +65,11 @@ describe('validateDocumentCreate', () => {
     expect(err).toBeInstanceOf(ValidationError);
   });
 
+  it('rejects the retired tag_ids field', () => {
+    const err = tryCreate({ title_en: 'X', document_type_id: TYPE, file_asset_id: ASSET, tag_ids: [] });
+    expect(err).toBeInstanceOf(ValidationError);
+  });
+
   it('rejects a highlight window where end precedes start', () => {
     const err = tryCreate({
       title_en: 'X', document_type_id: TYPE, file_asset_id: ASSET,
@@ -82,6 +87,10 @@ describe('validateDocumentUpdate', () => {
 
   it('still rejects unknown fields', () => {
     expect(() => validateDocumentUpdate({ slug: 'hand-set' })).toThrow(ValidationError);
+  });
+
+  it('rejects the retired tag_ids field', () => {
+    expect(() => validateDocumentUpdate({ tag_ids: [] })).toThrow(ValidationError);
   });
 });
 

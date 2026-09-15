@@ -19,7 +19,7 @@ const PASSWORD = 'Integration#Pass123';
 let app: Express;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let prisma: any;
-const created: { users: string[]; typeId?: string; commodityId?: string; updateId?: string } = { users: [] };
+const created: { users: string[]; categoryId?: string; typeId?: string; commodityId?: string; updateId?: string } = { users: [] };
 
 async function login(email: string): Promise<string> {
   const res = await request(app).post('/api/v1/auth/login').send({ email, password: PASSWORD });
@@ -62,10 +62,17 @@ describe.skipIf(!RUN)('procurement-updates (integration)', () => {
     const editorEmail = await userWithRole('editor', ROLE_KEYS.contentEditor);
     const publisherEmail = await userWithRole('publisher', ROLE_KEYS.publisher);
 
+    const category = await prisma.procurementUpdateCategory.upsert({
+      where: { slug: `it-category-${STAMP}` },
+      update: {},
+      create: { nameEn: `IT Category ${STAMP}`, slug: `it-category-${STAMP}`, isActive: true },
+    });
+    created.categoryId = category.id;
+
     const type = await prisma.procurementUpdateType.upsert({
       where: { slug: `it-rate-${STAMP}` },
       update: {},
-      create: { nameEn: `IT Rate ${STAMP}`, slug: `it-rate-${STAMP}`, isActive: true },
+      create: { nameEn: `IT Rate ${STAMP}`, slug: `it-rate-${STAMP}`, isActive: true, procurementUpdateCategoryId: category.id },
     });
     created.typeId = type.id;
 
@@ -85,6 +92,7 @@ describe.skipIf(!RUN)('procurement-updates (integration)', () => {
     await prisma.procurementUpdate.deleteMany({ where: { procurementUpdateTypeId: created.typeId } }).catch(() => undefined);
     if (created.commodityId) await prisma.commodity.delete({ where: { id: created.commodityId } }).catch(() => undefined);
     if (created.typeId) await prisma.procurementUpdateType.delete({ where: { id: created.typeId } }).catch(() => undefined);
+    if (created.categoryId) await prisma.procurementUpdateCategory.delete({ where: { id: created.categoryId } }).catch(() => undefined);
     for (const id of created.users) {
       await prisma.userRole.deleteMany({ where: { userId: id } }).catch(() => undefined);
       await prisma.auditLog.deleteMany({ where: { userId: id } }).catch(() => undefined);

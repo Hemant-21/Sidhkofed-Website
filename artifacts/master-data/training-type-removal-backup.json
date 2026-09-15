@@ -1,0 +1,344 @@
+{
+  "types": [
+    {
+      "id": "1e243c09-287d-4c5b-aa2a-08216acfd336",
+      "nameEn": "Skill Development",
+      "nameHi": null,
+      "slug": "skill-development",
+      "isActive": true,
+      "displayOrder": 1,
+      "createdAt": "2026-09-03T10:46:21.185Z",
+      "updatedAt": "2026-09-15T07:47:09.510Z"
+    },
+    {
+      "id": "cbc1e659-5cd5-4bc2-98e3-49f4b67477a7",
+      "nameEn": "Capacity Building",
+      "nameHi": null,
+      "slug": "capacity-building",
+      "isActive": true,
+      "displayOrder": 2,
+      "createdAt": "2026-09-03T10:46:21.188Z",
+      "updatedAt": "2026-09-15T07:47:09.511Z"
+    },
+    {
+      "id": "9488cbed-f47b-4821-ba43-7d65313b30c9",
+      "nameEn": "Orientation",
+      "nameHi": null,
+      "slug": "orientation",
+      "isActive": true,
+      "displayOrder": 3,
+      "createdAt": "2026-09-03T10:46:21.189Z",
+      "updatedAt": "2026-09-15T07:47:09.511Z"
+    },
+    {
+      "id": "a4d26748-479e-414c-8b4a-fd79391d86b2",
+      "nameEn": "Refresher",
+      "nameHi": null,
+      "slug": "refresher",
+      "isActive": true,
+      "displayOrder": 4,
+      "createdAt": "2026-09-03T10:46:21.190Z",
+      "updatedAt": "2026-09-15T07:47:09.512Z"
+    },
+    {
+      "id": "cb5f23e6-c91d-4b1a-8654-1e4bfa4868b0",
+      "nameEn": "Awareness",
+      "nameHi": null,
+      "slug": "awareness",
+      "isActive": true,
+      "displayOrder": 5,
+      "createdAt": "2026-09-03T10:46:21.191Z",
+      "updatedAt": "2026-09-15T07:47:09.512Z"
+    }
+  ],
+  "events": [
+    {
+      "id": "17893ef7-0e11-40dd-a145-2c1722199381",
+      "titleEn": "Report Scenario Toolkit Event 1",
+      "trainingTypeId": "1e243c09-287d-4c5b-aa2a-08216acfd336",
+      "eventTypeId": "28474c49-93a4-4d22-a89b-c7dad70bd189"
+    },
+    {
+      "id": "f968d5fb-9e0a-49d2-bc51-9dcc42f8ce97",
+      "titleEn": "Report Scenario Toolkit Event 2",
+      "trainingTypeId": "9488cbed-f47b-4821-ba43-7d65313b30c9",
+      "eventTypeId": "b49865b5-004c-41f1-9d64-72c38425e128"
+    },
+    {
+      "id": "40be3f50-c82f-4e56-9dbd-cb244f5ab918",
+      "titleEn": "Report Scenario Toolkit Event 3",
+      "trainingTypeId": "cb5f23e6-c91d-4b1a-8654-1e4bfa4868b0",
+      "eventTypeId": "cd9aad52-798c-4140-863e-20e6a4395807"
+    },
+    {
+      "id": "b218348b-9c5c-49c0-9bc0-f96b19a5f69b",
+      "titleEn": "Report Scenario Toolkit Event 4",
+      "trainingTypeId": "cbc1e659-5cd5-4bc2-98e3-49f4b67477a7",
+      "eventTypeId": "dc41beb0-f4a8-43ab-a643-b2d3464d18a0"
+    },
+    {
+      "id": "76582456-bc00-4345-9581-4d3525de90f6",
+      "titleEn": "Report Scenario Toolkit Event 5",
+      "trainingTypeId": "a4d26748-479e-414c-8b4a-fd79391d86b2",
+      "eventTypeId": "e158f925-9adb-4529-8bfd-fe8c08929bc6"
+    },
+    {
+      "id": "88f29516-170d-4aab-a21d-15409ec0d7bc",
+      "titleEn": "Report Scenario Toolkit Event 6",
+      "trainingTypeId": "1e243c09-287d-4c5b-aa2a-08216acfd336",
+      "eventTypeId": "6687002d-d1d3-4ef8-a876-121e9857c9a1"
+    },
+    {
+      "id": "772bb911-ef3a-47b4-a795-66ddde7a2f86",
+      "titleEn": "5 Day training Program",
+      "trainingTypeId": "1e243c09-287d-4c5b-aa2a-08216acfd336",
+      "eventTypeId": "6687002d-d1d3-4ef8-a876-121e9857c9a1"
+    },
+    {
+      "id": "e4bb5608-68b1-4d8c-92c3-cc23c0d947e8",
+      "titleEn": "Report Scenario Toolkit Event 8",
+      "trainingTypeId": "cb5f23e6-c91d-4b1a-8654-1e4bfa4868b0",
+      "eventTypeId": "7fa37304-1cb3-4cce-96c8-d24cb60adb71"
+    },
+    {
+      "id": "233c76ad-5ca8-445d-bc1a-7bb56993eee7",
+      "titleEn": "Report Scenario Toolkit Event 9",
+      "trainingTypeId": "cbc1e659-5cd5-4bc2-98e3-49f4b67477a7",
+      "eventTypeId": "16711715-d17a-489d-9bbe-40280a9a4fb1"
+    },
+    {
+      "id": "91a2c1eb-6832-47cc-aa15-c046c4375bcf",
+      "titleEn": "Report Scenario Toolkit Event 10",
+      "trainingTypeId": "a4d26748-479e-414c-8b4a-fd79391d86b2",
+      "eventTypeId": "28474c49-93a4-4d22-a89b-c7dad70bd189"
+    },
+    {
+      "id": "b4d6b115-2234-4279-8f25-140408b7d948",
+      "titleEn": "Report Scenario Toolkit Event 11",
+      "trainingTypeId": "1e243c09-287d-4c5b-aa2a-08216acfd336",
+      "eventTypeId": "b49865b5-004c-41f1-9d64-72c38425e128"
+    },
+    {
+      "id": "a5e25877-6b81-4cf3-8827-82dac5417182",
+      "titleEn": "Report Scenario Toolkit Event 12",
+      "trainingTypeId": "9488cbed-f47b-4821-ba43-7d65313b30c9",
+      "eventTypeId": "cd9aad52-798c-4140-863e-20e6a4395807"
+    },
+    {
+      "id": "f23381cc-376d-49f4-8e43-82f906a2e010",
+      "titleEn": "Report Scenario Toolkit Event 13",
+      "trainingTypeId": "cb5f23e6-c91d-4b1a-8654-1e4bfa4868b0",
+      "eventTypeId": "dc41beb0-f4a8-43ab-a643-b2d3464d18a0"
+    },
+    {
+      "id": "0d0765ce-02e1-457f-884d-27b8a9d6a194",
+      "titleEn": "Report Scenario Toolkit Event 14",
+      "trainingTypeId": "cbc1e659-5cd5-4bc2-98e3-49f4b67477a7",
+      "eventTypeId": "e158f925-9adb-4529-8bfd-fe8c08929bc6"
+    },
+    {
+      "id": "0a44dd7f-340f-41a4-805b-0f618250136a",
+      "titleEn": "Report Scenario Toolkit Event 15",
+      "trainingTypeId": "a4d26748-479e-414c-8b4a-fd79391d86b2",
+      "eventTypeId": "6687002d-d1d3-4ef8-a876-121e9857c9a1"
+    },
+    {
+      "id": "ceeb6396-adfc-4e95-b869-9cfd2116ca44",
+      "titleEn": "Report Scenario Toolkit Event 17",
+      "trainingTypeId": "9488cbed-f47b-4821-ba43-7d65313b30c9",
+      "eventTypeId": "7fa37304-1cb3-4cce-96c8-d24cb60adb71"
+    },
+    {
+      "id": "a4159717-ea4c-4964-aa04-ac22b21228c8",
+      "titleEn": "Report Scenario Toolkit Event 18",
+      "trainingTypeId": "cb5f23e6-c91d-4b1a-8654-1e4bfa4868b0",
+      "eventTypeId": "16711715-d17a-489d-9bbe-40280a9a4fb1"
+    },
+    {
+      "id": "af6606e4-a3ad-42a7-863e-962f37fb7281",
+      "titleEn": "Report Scenario Toolkit Event 19",
+      "trainingTypeId": "cbc1e659-5cd5-4bc2-98e3-49f4b67477a7",
+      "eventTypeId": "28474c49-93a4-4d22-a89b-c7dad70bd189"
+    },
+    {
+      "id": "c25025ff-5899-47eb-9a3c-a3e9c1b49247",
+      "titleEn": "Report Scenario Toolkit Event 20",
+      "trainingTypeId": "a4d26748-479e-414c-8b4a-fd79391d86b2",
+      "eventTypeId": "b49865b5-004c-41f1-9d64-72c38425e128"
+    },
+    {
+      "id": "5d120f7b-e798-4f32-9130-ae4c0e8b2f63",
+      "titleEn": "Report Scenario Toolkit Event 21",
+      "trainingTypeId": "1e243c09-287d-4c5b-aa2a-08216acfd336",
+      "eventTypeId": "cd9aad52-798c-4140-863e-20e6a4395807"
+    },
+    {
+      "id": "2c1bf64d-ff17-474c-b560-c080602efe48",
+      "titleEn": "Report Scenario Toolkit Event 22",
+      "trainingTypeId": "9488cbed-f47b-4821-ba43-7d65313b30c9",
+      "eventTypeId": "dc41beb0-f4a8-43ab-a643-b2d3464d18a0"
+    },
+    {
+      "id": "50f4a65b-6963-4047-9eee-b86af213a348",
+      "titleEn": "Report Scenario Toolkit Event 23",
+      "trainingTypeId": "cb5f23e6-c91d-4b1a-8654-1e4bfa4868b0",
+      "eventTypeId": "e158f925-9adb-4529-8bfd-fe8c08929bc6"
+    },
+    {
+      "id": "9b42d2bb-a589-49de-acf8-be2bac87a786",
+      "titleEn": "Report Scenario Toolkit Event 24",
+      "trainingTypeId": "cbc1e659-5cd5-4bc2-98e3-49f4b67477a7",
+      "eventTypeId": "6687002d-d1d3-4ef8-a876-121e9857c9a1"
+    },
+    {
+      "id": "aa494b37-0a87-4334-b15d-1a8af0d78ca8",
+      "titleEn": "Report Scenario No-Toolkit Event 1",
+      "trainingTypeId": "1e243c09-287d-4c5b-aa2a-08216acfd336",
+      "eventTypeId": "7fa37304-1cb3-4cce-96c8-d24cb60adb71"
+    },
+    {
+      "id": "9f765a29-56ff-4dd6-819a-e4ebd431797e",
+      "titleEn": "Report Scenario No-Toolkit Event 2",
+      "trainingTypeId": "9488cbed-f47b-4821-ba43-7d65313b30c9",
+      "eventTypeId": "16711715-d17a-489d-9bbe-40280a9a4fb1"
+    },
+    {
+      "id": "fa37e5d4-e8a9-4454-b7c3-702de3536dd5",
+      "titleEn": "Report Scenario No-Toolkit Event 3",
+      "trainingTypeId": "cb5f23e6-c91d-4b1a-8654-1e4bfa4868b0",
+      "eventTypeId": "28474c49-93a4-4d22-a89b-c7dad70bd189"
+    },
+    {
+      "id": "80cd66fa-5bd4-4bde-a7cd-d1c0024d499d",
+      "titleEn": "Report Scenario No-Toolkit Event 4",
+      "trainingTypeId": "cbc1e659-5cd5-4bc2-98e3-49f4b67477a7",
+      "eventTypeId": "b49865b5-004c-41f1-9d64-72c38425e128"
+    },
+    {
+      "id": "b4f8d640-e692-4c1e-bfd4-48328d57c23a",
+      "titleEn": "Report Scenario No-Toolkit Event 5",
+      "trainingTypeId": "a4d26748-479e-414c-8b4a-fd79391d86b2",
+      "eventTypeId": "cd9aad52-798c-4140-863e-20e6a4395807"
+    },
+    {
+      "id": "551f459e-5098-4173-ba82-9c6fafbf5731",
+      "titleEn": "Report Scenario No-Toolkit Event 6",
+      "trainingTypeId": "1e243c09-287d-4c5b-aa2a-08216acfd336",
+      "eventTypeId": "dc41beb0-f4a8-43ab-a643-b2d3464d18a0"
+    },
+    {
+      "id": "88af8c7a-c008-41d5-8c83-8db162f4f681",
+      "titleEn": "Report Scenario No-Toolkit Event 7",
+      "trainingTypeId": "9488cbed-f47b-4821-ba43-7d65313b30c9",
+      "eventTypeId": "e158f925-9adb-4529-8bfd-fe8c08929bc6"
+    },
+    {
+      "id": "0d662e2a-55f2-4182-8891-15d6ef258c4f",
+      "titleEn": "Report Scenario No-Toolkit Event 8",
+      "trainingTypeId": "cb5f23e6-c91d-4b1a-8654-1e4bfa4868b0",
+      "eventTypeId": "6687002d-d1d3-4ef8-a876-121e9857c9a1"
+    },
+    {
+      "id": "2c723451-8106-42e4-bf75-c7e1a3a85bec",
+      "titleEn": "Report Scenario No-Toolkit Event 10",
+      "trainingTypeId": "a4d26748-479e-414c-8b4a-fd79391d86b2",
+      "eventTypeId": "7fa37304-1cb3-4cce-96c8-d24cb60adb71"
+    },
+    {
+      "id": "c011a706-f311-4e25-9833-c72aa2283df1",
+      "titleEn": "Report Scenario No-Toolkit Event 12",
+      "trainingTypeId": "9488cbed-f47b-4821-ba43-7d65313b30c9",
+      "eventTypeId": "28474c49-93a4-4d22-a89b-c7dad70bd189"
+    },
+    {
+      "id": "d681982f-724b-4c1b-aedd-079e9c887af0",
+      "titleEn": "Report Scenario No-Toolkit Event 15",
+      "trainingTypeId": "a4d26748-479e-414c-8b4a-fd79391d86b2",
+      "eventTypeId": "dc41beb0-f4a8-43ab-a643-b2d3464d18a0"
+    },
+    {
+      "id": "bbe591b4-3d59-4a15-ad97-649a8849160a",
+      "titleEn": "Report Scenario No-Toolkit Event 11",
+      "trainingTypeId": "1e243c09-287d-4c5b-aa2a-08216acfd336",
+      "eventTypeId": "16711715-d17a-489d-9bbe-40280a9a4fb1"
+    },
+    {
+      "id": "83e215ee-f902-4359-882e-803b1502a750",
+      "titleEn": "Report Scenario No-Toolkit Event 13",
+      "trainingTypeId": "cb5f23e6-c91d-4b1a-8654-1e4bfa4868b0",
+      "eventTypeId": "b49865b5-004c-41f1-9d64-72c38425e128"
+    },
+    {
+      "id": "33d371fb-9e1a-42a2-ba04-cb13f1a36d64",
+      "titleEn": "Report Scenario No-Toolkit Event 14",
+      "trainingTypeId": "cbc1e659-5cd5-4bc2-98e3-49f4b67477a7",
+      "eventTypeId": "cd9aad52-798c-4140-863e-20e6a4395807"
+    },
+    {
+      "id": "86961337-d2c6-44a8-afc5-9003a036dd0f",
+      "titleEn": "Report Scenario Toolkit Event 7",
+      "trainingTypeId": "9488cbed-f47b-4821-ba43-7d65313b30c9",
+      "eventTypeId": "b49865b5-004c-41f1-9d64-72c38425e128"
+    },
+    {
+      "id": "c3234b0c-46a8-454c-a749-77cccffc0355",
+      "titleEn": "Report Scenario Toolkit Event 16",
+      "trainingTypeId": "1e243c09-287d-4c5b-aa2a-08216acfd336",
+      "eventTypeId": "b49865b5-004c-41f1-9d64-72c38425e128"
+    },
+    {
+      "id": "b80f4e34-56ee-4403-bb29-5965df636774",
+      "titleEn": "Report Scenario Toolkit Event 25",
+      "trainingTypeId": "a4d26748-479e-414c-8b4a-fd79391d86b2",
+      "eventTypeId": "b49865b5-004c-41f1-9d64-72c38425e128"
+    },
+    {
+      "id": "2c88c514-8cd1-4971-8c41-63932e6e2a84",
+      "titleEn": "Report Scenario No-Toolkit Event 9",
+      "trainingTypeId": "cbc1e659-5cd5-4bc2-98e3-49f4b67477a7",
+      "eventTypeId": "b49865b5-004c-41f1-9d64-72c38425e128"
+    }
+  ],
+  "programmes": [
+    {
+      "id": "1512b9bb-0f30-47c9-af36-25f62985ad9a",
+      "programmeSchemeId": "bd015632-fb47-4c6e-a9d8-634da1ce742f",
+      "trainingTypeId": "1e243c09-287d-4c5b-aa2a-08216acfd336"
+    },
+    {
+      "id": "241392e1-707b-409f-ac48-5b382951513a",
+      "programmeSchemeId": "e3d2f2f0-fc31-4869-a28b-90fdbb437174",
+      "trainingTypeId": "9488cbed-f47b-4821-ba43-7d65313b30c9"
+    },
+    {
+      "id": "aca68df6-8662-40fe-a920-6798ce959a71",
+      "programmeSchemeId": "d928b641-d016-4724-b384-862e8928f96a",
+      "trainingTypeId": "cb5f23e6-c91d-4b1a-8654-1e4bfa4868b0"
+    },
+    {
+      "id": "b7d1bbbc-119f-4c73-8bb3-3c0e6fa4a9fa",
+      "programmeSchemeId": "36b4e40f-3554-4436-b0bb-8eda7f744a93",
+      "trainingTypeId": "cbc1e659-5cd5-4bc2-98e3-49f4b67477a7"
+    },
+    {
+      "id": "ddbd270b-614f-495f-8a9a-7e6cfc88652d",
+      "programmeSchemeId": "48edeb57-ee1c-45bb-81e2-cf88efd575e0",
+      "trainingTypeId": "a4d26748-479e-414c-8b4a-fd79391d86b2"
+    },
+    {
+      "id": "4aaeba1b-70e8-4d7c-8c41-f36777bdcad1",
+      "programmeSchemeId": "ab3a5238-e7a7-4652-b6bb-96f499a4340f",
+      "trainingTypeId": "1e243c09-287d-4c5b-aa2a-08216acfd336"
+    },
+    {
+      "id": "234ad4b1-017f-4dad-8d46-3c0dc78aa892",
+      "programmeSchemeId": "f11b3f54-0c91-4fef-ab85-fd50e80a7e85",
+      "trainingTypeId": "9488cbed-f47b-4821-ba43-7d65313b30c9"
+    },
+    {
+      "id": "e4344983-8c27-42c4-9e37-048c056d44f5",
+      "programmeSchemeId": "52259f66-c5e7-40ba-8d12-3d6571b0d241",
+      "trainingTypeId": "cb5f23e6-c91d-4b1a-8654-1e4bfa4868b0"
+    }
+  ]
+}

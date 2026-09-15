@@ -1,32 +1,37 @@
 /**
- * Job 4 — Dashboard Refresh (Phase 14), which also covers the homepage-KPI refresh.
+ * Job 4 — Dashboard Refresh (Phase 14), which also covers the public Operational Reports cache
+ * (public website `/impact/dashboard` + homepage) and the Website Metrics cache.
  *
- * Refreshes the CACHED public dashboard aggregates. The dashboard metrics themselves are durable,
- * editor-managed rows (Phase 12) and are invalidated on every admin write; this job exists because
- * the resolved figures are period-relative (Month / Financial Year / Calendar Year / Cumulative),
- * so a clock rollover (new day/month) can make a cached response stale even with no admin edit. It
- * reuses the Phase 12 public dashboard service only — it never computes new metrics or invents
- * reports.
+ * The legacy `DashboardReport`/`DashboardMetric` public dashboard (Phase 12) has been fully retired
+ * — the public website now reads live-calculated Operational Reports directly. This job drops and
+ * re-warms that public cache the same way it always warmed the old dashboard/KPI responses: the
+ * resolved figures are period-relative (current financial year), so a clock rollover (new day/month,
+ * or a financial year boundary) can make a cached response stale even with no admin edit.
  *
- * Behaviour: drop the public dashboard cache family, then warm the two hot, parameter-free
- * responses (`/public/dashboard` and `/public/dashboard/kpis`) so the next visitor hits a warm
- * cache. The KPI set is exactly the homepage-safe subset, so warming it satisfies the
- * "homepage refresh" intent for the cached data that actually exists (Job 3).
+ * Website Metrics: for each allowed placement, drop and re-warm the public website-metrics cache.
+ * This job NEVER touches the Website Metrics preview/publish path — it only re-reads whatever is
+ * currently published (via `websiteMetricsPublicService.getPublicMetrics`) through the same
+ * cache-population code the public endpoint itself uses, so a stale response from a config revision
+ * or clock rollover self-heals without any admin action or new snapshot being created.
  */
-import { invalidateDashboardCache } from '@/modules/dashboard/dashboard.shared';
-import { dashboardPublicService } from '@/modules/dashboard/dashboard.public.service';
+import { operationalReportsPublicService } from '@/modules/dashboard/operational-reports/operational-reports.public.service';
+import { invalidateWebsiteMetricsPublicCache } from '@/modules/dashboard/website-metrics/website-metrics.shared';
+import { websiteMetricsPublicService } from '@/modules/dashboard/website-metrics/website-metrics.public.service';
+import { ALLOWED_PLACEMENTS } from '@/modules/dashboard/website-metrics/website-metrics.types';
 import { emptyResult, type JobContext, type JobRunResult } from '../scheduler.types';
 
 export interface DashboardRefreshDeps {
-  invalidate: typeof invalidateDashboardCache;
-  warmDashboard: typeof dashboardPublicService.dashboard;
-  warmKpis: typeof dashboardPublicService.kpis;
+  invalidateOperationalReports: typeof operationalReportsPublicService.invalidatePublicCache;
+  warmOperationalReports: typeof operationalReportsPublicService.getAllPublicReports;
+  invalidateWebsiteMetrics: typeof invalidateWebsiteMetricsPublicCache;
+  warmWebsiteMetrics: typeof websiteMetricsPublicService.getPublicMetrics;
 }
 
 const defaultDeps: DashboardRefreshDeps = {
-  invalidate: invalidateDashboardCache,
-  warmDashboard: dashboardPublicService.dashboard,
-  warmKpis: dashboardPublicService.kpis,
+  invalidateOperationalReports: operationalReportsPublicService.invalidatePublicCache,
+  warmOperationalReports: operationalReportsPublicService.getAllPublicReports,
+  invalidateWebsiteMetrics: invalidateWebsiteMetricsPublicCache,
+  warmWebsiteMetrics: websiteMetricsPublicService.getPublicMetrics,
 };
 
 export async function runDashboardRefresh(
@@ -34,18 +39,21 @@ export async function runDashboardRefresh(
   deps: DashboardRefreshDeps = defaultDeps,
 ): Promise<JobRunResult> {
   const result = emptyResult();
-  await deps.invalidate();
 
-  let reports = 0;
-  let kpis = 0;
-  // Warm the default (unfiltered) period view; per-period views warm lazily on first request.
-  const dash = await deps.warmDashboard({});
-  reports = dash.reports.length;
-  const kpiResult = await deps.warmKpis({});
-  kpis = kpiResult.kpis.length;
+  await deps.invalidateOperationalReports();
+  const warmed = await deps.warmOperationalReports();
+  const operationalReports = warmed.reports.length;
 
-  result.processed = reports + kpis;
-  result.success = reports + kpis;
-  result.details = { reports_warmed: reports, kpis_warmed: kpis };
+  await deps.invalidateWebsiteMetrics();
+  let websiteMetrics = 0;
+  for (const placement of ALLOWED_PLACEMENTS) {
+    const warmedMetrics = await deps.warmWebsiteMetrics(placement);
+    websiteMetrics += warmedMetrics.metrics.length;
+  }
+
+  const processed = operationalReports + websiteMetrics;
+  result.processed = processed;
+  result.success = processed;
+  result.details = { operational_reports_warmed: operationalReports, website_metrics_warmed: websiteMetrics };
   return result;
 }

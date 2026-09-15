@@ -36,10 +36,15 @@ function publicProgrammeRef(p: ProcurementUpdateRow['programmeScheme']): Program
   return p && isPubliclyVisible(p) ? programmeRef(p) : null;
 }
 
-const publicUrl = (slug: string): string => `/procurement-updates/${slug}`;
+const publicUrl = (slug: string): string => `/procurement/announcements/${slug}`;
 const iso = (d: Date | null): string | null => (d ? d.toISOString() : null);
 const dateOnly = (d: Date | null): string | null => (d ? d.toISOString().slice(0, 10) : null);
 const dec = (d: { toString(): string } | null): number | null => (d === null ? null : Number(d));
+
+/** The update's type's parent category — read-only, derived; never chosen directly on an update. */
+function categoryRef(p: ProcurementUpdateRow): MasterRef {
+  return masterRef(p.procurementUpdateType.procurementUpdateCategory) as MasterRef;
+}
 
 function documentRef(row: ProcurementUpdateRow): DocumentRef | null {
   return row.document ? toDocumentRef(row.document) : null;
@@ -58,6 +63,7 @@ export interface ProcurementUpdateSummaryDto {
   title_hi: string | null;
   summary_en: string | null;
   procurement_update_type: MasterRef;
+  procurement_update_category: MasterRef;
   commodity: MasterRef | null;
   rate: number | null;
   unit: string | null;
@@ -89,6 +95,7 @@ export function toProcurementUpdateSummaryDto(p: ProcurementUpdateRow): Procurem
     title_hi: p.titleHi,
     summary_en: p.summaryEn,
     procurement_update_type: masterRef(p.procurementUpdateType) as MasterRef,
+    procurement_update_category: categoryRef(p),
     commodity: masterRef(p.commodity),
     rate: dec(p.rate),
     unit: p.unit,
@@ -154,6 +161,7 @@ export interface PublicProcurementUpdateSummaryDto {
   summary_en: string | null;
   summary_hi: string | null;
   procurement_update_type: MasterRef;
+  procurement_update_category: MasterRef;
   commodity: MasterRef | null;
   rate: number | null;
   unit: string | null;
@@ -179,6 +187,7 @@ export function toPublicProcurementUpdateSummaryDto(p: ProcurementUpdateRow): Pu
     summary_en: p.summaryEn,
     summary_hi: p.summaryHi,
     procurement_update_type: masterRef(p.procurementUpdateType) as MasterRef,
+    procurement_update_category: categoryRef(p),
     commodity: masterRef(p.commodity),
     rate: dec(p.rate),
     unit: p.unit,

@@ -20,8 +20,12 @@ export const DOCUMENT_ENTITY = 'document';
 export interface DocumentFilters {
   publicationState?: PublicationState;
   documentType?: string; // id or slug
-  knowledgeCategory?: string; // id or slug
-  knowledgeCentre?: boolean; // show_in_knowledge_centre = true
+  knowledgeCategory?: string; // id or slug — filters via documentType.knowledgeCategoryId
+  communicationType?: string; // id or slug — filters via documentType.communicationTypeId
+  /** Publications (knowledge-category parent) or Notifications (communication-type parent). */
+  documentSection?: 'publications' | 'notifications';
+  /** Legacy `?knowledge_centre=true` flag — equivalent to `documentSection: 'publications'`. */
+  knowledgeCentre?: boolean;
   commodity?: string; // id or slug
   district?: string; // id or slug
   financialYear?: string; // id or label

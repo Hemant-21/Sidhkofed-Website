@@ -53,7 +53,9 @@ import {
 } from '@/modules/digital-services/digital-services.routes';
 import { leadershipAdminRouter, leadershipPublicRouter } from '@/modules/leadership/leadership.routes';
 import { membershipAdminRouter, membershipPublicRouter } from '@/modules/memberships/memberships.routes';
-import { dashboardAdminRouter, dashboardPublicRouter } from '@/modules/dashboard/dashboard.routes';
+import { dashboardAdminRouter } from '@/modules/dashboard/dashboard.routes';
+import { operationalReportsPublicRouter } from '@/modules/dashboard/operational-reports/operational-reports.public.routes';
+import { websiteMetricsPublicRouter } from '@/modules/dashboard/website-metrics/website-metrics.routes';
 import { searchAdminRouter, searchPublicRouter } from '@/modules/search/search.routes';
 import { userAdminRouter, profileRouter } from '@/modules/users/users.routes';
 import { enquiryAdminRouter, enquiryPublicRouter } from '@/modules/enquiries/enquiries.routes';
@@ -130,7 +132,11 @@ apiRouter.use('/public/leadership', leadershipPublicRouter);
 apiRouter.use('/public/galleries', galleryPublicRouter);
 apiRouter.use('/public/videos', videoPublicRouter);
 apiRouter.use('/public/memberships', membershipPublicRouter);
-apiRouter.use('/public/dashboard', dashboardPublicRouter);
+// The legacy `/public/dashboard*` routes (DashboardReport/DashboardMetric) are retired — the public
+// website now reads live-calculated Operational Reports (public-eligible measures only) and the
+// curated Website Metrics instead.
+apiRouter.use('/public/operational-reports', operationalReportsPublicRouter);
+apiRouter.use('/public/website-metrics', websiteMetricsPublicRouter);
 apiRouter.use('/public/search', searchPublicRouter);
 apiRouter.use('/public/enquiries', enquiryPublicRouter);
 apiRouter.use('/public/settings', settingsPublicRouter);

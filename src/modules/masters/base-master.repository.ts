@@ -18,6 +18,17 @@ function delegate(def: MasterDefinition): MasterDelegate {
   return delegateFor(def.model);
 }
 
+/** Resolve a model delegate against a transaction client instead of the default `prisma`. */
+function delegateForTx(model: string, tx: Prisma.TransactionClient): MasterDelegate {
+  const d = (tx as unknown as Record<string, MasterDelegate>)[model];
+  if (!d) throw new Error(`Unknown master model "${model}".`);
+  return d;
+}
+
+function delegateOrTx(def: MasterDefinition, tx?: Prisma.TransactionClient): MasterDelegate {
+  return tx ? delegateForTx(def.model, tx) : delegate(def);
+}
+
 /** Camel-case column backing the unique human identity (`name_en` → `nameEn`, or `label`). */
 function identityColumn(def: MasterDefinition): string {
   return def.identity === 'label' ? 'label' : 'nameEn';
@@ -48,21 +59,44 @@ async function findFirstWhere(
   return delegate(def).findFirst({ where });
 }
 
-async function create(def: MasterDefinition, data: Record<string, unknown>): Promise<MasterRow> {
-  return delegate(def).create(withInclude(def, { data }));
+async function create(
+  def: MasterDefinition,
+  data: Record<string, unknown>,
+  tx?: Prisma.TransactionClient,
+): Promise<MasterRow> {
+  return delegateOrTx(def, tx).create(withInclude(def, { data }));
 }
 
 async function update(
   def: MasterDefinition,
   id: string,
   data: Record<string, unknown>,
+  tx?: Prisma.TransactionClient,
 ): Promise<MasterRow> {
-  return delegate(def).update(withInclude(def, { where: { id }, data }));
+  return delegateOrTx(def, tx).update(withInclude(def, { where: { id }, data }));
+}
+
+/**
+ * Update inside a transaction, running `def.guardDeactivate` first when provided. Used for
+ * `is_active: false` writes so the in-use check and the update are atomic.
+ */
+async function updateGuarded(
+  def: MasterDefinition,
+  id: string,
+  data: Record<string, unknown>,
+): Promise<MasterRow> {
+  return prisma.$transaction(async (tx) => {
+    if (def.guardDeactivate) await def.guardDeactivate(id, tx);
+    const txDelegate = (tx as unknown as Record<string, MasterDelegate>)[def.model];
+    if (!txDelegate) throw new Error(`Unknown master model "${def.model}".`);
+    return txDelegate.update(withInclude(def, { where: { id }, data }));
+  });
 }
 
 /** Fetch any master row by id from an arbitrary model (referential checks across masters). */
-async function findRefById(model: string, id: string): Promise<MasterRow | null> {
-  return delegateFor(model).findUnique({ where: { id } });
+async function findRefById(model: string, id: string, tx?: Prisma.TransactionClient): Promise<MasterRow | null> {
+  const d = tx ? delegateForTx(model, tx) : delegateFor(model);
+  return d.findUnique({ where: { id } });
 }
 
 interface ListResult {
@@ -101,6 +135,7 @@ export const baseMasterRepository = {
   findRefById,
   create,
   update,
+  updateGuarded,
   list,
   findAll,
 };

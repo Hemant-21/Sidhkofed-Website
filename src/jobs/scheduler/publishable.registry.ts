@@ -27,7 +27,6 @@ import { procurementUpdateService } from '@/modules/procurement-updates/procurem
 import { faqService } from '@/modules/faqs/faqs.service';
 import { digitalServiceService } from '@/modules/digital-services/digital-services.service';
 import { membershipService } from '@/modules/memberships/memberships.service';
-import { reportService } from '@/modules/dashboard/reports.service';
 import { galleryService } from '@/modules/galleries/gallery.service';
 import { videoService } from '@/modules/videos/video.service';
 
@@ -52,8 +51,12 @@ function resource(key: string, model: MixinModelName, service: LifecycleService)
 /**
  * Every publishable resource, in dependency-tier order. Covers the modules the Phase 14 spec lists
  * for scheduled publishing (Events, News, Programmes, Toolkits, Institutions, Communications,
- * Tenders, Procurement, FAQs, Digital Services, Membership, Dashboard Reports) plus the two
- * remaining mixin-bearing media resources (Galleries, Videos) for completeness.
+ * Tenders, Procurement, FAQs, Digital Services, Membership) plus the two remaining mixin-bearing
+ * media resources (Galleries, Videos) for completeness.
+ *
+ * `dashboard_report` / `DashboardReport` was removed from this list along with the whole legacy
+ * Dashboard Reports concept — there is no longer a `reportService.lifecycle()` to reuse, and the
+ * public website reads live-calculated Operational Reports instead of a scheduled-publish row.
  */
 export const PUBLISHABLE_RESOURCES: readonly PublishableResource[] = [
   resource('document', 'document', documentService),
@@ -70,5 +73,4 @@ export const PUBLISHABLE_RESOURCES: readonly PublishableResource[] = [
   resource('faq', 'faq', faqService),
   resource('digital_service', 'digitalService', digitalServiceService),
   resource('institutional_membership', 'institutionalMembership', membershipService),
-  resource('dashboard_report', 'dashboardReport', reportService),
 ] as const;

@@ -1,0 +1,477 @@
+{
+  "eventCategory": [
+    {
+      "id": "f304f169-785b-43ce-9732-81a0560c104c",
+      "nameEn": "Institutional Activities",
+      "nameHi": "संस्थागत गतिविधियाँ",
+      "slug": "institutional-activities",
+      "isActive": true,
+      "displayOrder": 3,
+      "createdAt": "2026-09-11T15:36:21.674Z",
+      "updatedAt": "2026-09-15T07:47:09.497Z"
+    },
+    {
+      "id": "a97572fb-8fa7-4f76-97ed-e657cf7cb51c",
+      "nameEn": "Trainings",
+      "nameHi": "प्रशिक्षण",
+      "slug": "trainings",
+      "isActive": true,
+      "displayOrder": 1,
+      "createdAt": "2026-09-11T15:36:21.674Z",
+      "updatedAt": "2026-09-15T07:47:09.494Z"
+    },
+    {
+      "id": "8f5ce7f9-17e9-4a6d-b1e7-49fc33836b79",
+      "nameEn": "Workshops & Awareness",
+      "nameHi": "कार्यशाला एवं जागरूकता",
+      "slug": "workshops-awareness",
+      "isActive": true,
+      "displayOrder": 2,
+      "createdAt": "2026-09-11T15:36:21.674Z",
+      "updatedAt": "2026-09-15T07:47:09.496Z"
+    }
+  ],
+  "eventType": [
+    {
+      "id": "e158f925-9adb-4529-8bfd-fe8c08929bc6",
+      "eventCategoryId": "8f5ce7f9-17e9-4a6d-b1e7-49fc33836b79",
+      "nameEn": "Awareness Programme",
+      "nameHi": null,
+      "slug": "awareness-programme",
+      "isActive": true,
+      "displayOrder": 3,
+      "createdAt": "2026-09-03T10:46:21.183Z",
+      "updatedAt": "2026-09-15T07:47:09.503Z"
+    },
+    {
+      "id": "9c5a2da0-3970-4fc0-a70b-891b2ba76bc6",
+      "eventCategoryId": "f304f169-785b-43ce-9732-81a0560c104c",
+      "nameEn": "Conference",
+      "nameHi": null,
+      "slug": "conference",
+      "isActive": true,
+      "displayOrder": 8,
+      "createdAt": "2026-09-03T10:46:21.183Z",
+      "updatedAt": "2026-09-15T07:47:09.508Z"
+    },
+    {
+      "id": "7fa37304-1cb3-4cce-96c8-d24cb60adb71",
+      "eventCategoryId": "f304f169-785b-43ce-9732-81a0560c104c",
+      "nameEn": "Exposure Visit",
+      "nameHi": null,
+      "slug": "exposure-visit",
+      "isActive": true,
+      "displayOrder": 6,
+      "createdAt": "2026-09-03T10:46:21.181Z",
+      "updatedAt": "2026-09-15T07:47:09.506Z"
+    },
+    {
+      "id": "cd9aad52-798c-4140-863e-20e6a4395807",
+      "eventCategoryId": "f304f169-785b-43ce-9732-81a0560c104c",
+      "nameEn": "Field Visit",
+      "nameHi": null,
+      "slug": "field-visit",
+      "isActive": true,
+      "displayOrder": 7,
+      "createdAt": "2026-09-03T10:46:21.182Z",
+      "updatedAt": "2026-09-15T07:47:09.507Z"
+    },
+    {
+      "id": "16711715-d17a-489d-9bbe-40280a9a4fb1",
+      "eventCategoryId": "f304f169-785b-43ce-9732-81a0560c104c",
+      "nameEn": "Meeting",
+      "nameHi": null,
+      "slug": "meeting",
+      "isActive": true,
+      "displayOrder": 4,
+      "createdAt": "2026-09-03T10:46:21.180Z",
+      "updatedAt": "2026-09-15T07:47:09.504Z"
+    },
+    {
+      "id": "dc41beb0-f4a8-43ab-a643-b2d3464d18a0",
+      "eventCategoryId": "f304f169-785b-43ce-9732-81a0560c104c",
+      "nameEn": "MoU Signing",
+      "nameHi": null,
+      "slug": "mou-signing",
+      "isActive": true,
+      "displayOrder": 5,
+      "createdAt": "2026-09-03T10:46:21.181Z",
+      "updatedAt": "2026-09-15T07:47:09.505Z"
+    },
+    {
+      "id": "b49865b5-004c-41f1-9d64-72c38425e128",
+      "eventCategoryId": "f304f169-785b-43ce-9732-81a0560c104c",
+      "nameEn": "Other Institutional Activity",
+      "nameHi": null,
+      "slug": "other-institutional-activity",
+      "isActive": true,
+      "displayOrder": 9,
+      "createdAt": "2026-09-03T10:46:21.184Z",
+      "updatedAt": "2026-09-15T07:47:09.509Z"
+    },
+    {
+      "id": "6687002d-d1d3-4ef8-a876-121e9857c9a1",
+      "eventCategoryId": "a97572fb-8fa7-4f76-97ed-e657cf7cb51c",
+      "nameEn": "Training",
+      "nameHi": null,
+      "slug": "training",
+      "isActive": true,
+      "displayOrder": 1,
+      "createdAt": "2026-09-03T10:46:21.176Z",
+      "updatedAt": "2026-09-15T07:47:09.501Z"
+    },
+    {
+      "id": "28474c49-93a4-4d22-a89b-c7dad70bd189",
+      "eventCategoryId": "8f5ce7f9-17e9-4a6d-b1e7-49fc33836b79",
+      "nameEn": "Workshop",
+      "nameHi": null,
+      "slug": "workshop",
+      "isActive": true,
+      "displayOrder": 2,
+      "createdAt": "2026-09-03T10:46:21.179Z",
+      "updatedAt": "2026-09-15T07:47:09.502Z"
+    }
+  ],
+  "knowledgeCategory": [
+    {
+      "id": "ff30330e-6062-4670-85d6-4ed37772d99d",
+      "nameEn": "Acts and Rules",
+      "nameHi": null,
+      "slug": "acts-and-rules",
+      "isActive": true,
+      "displayOrder": 1,
+      "createdAt": "2026-09-03T10:46:21.223Z",
+      "updatedAt": "2026-09-15T07:47:09.526Z"
+    },
+    {
+      "id": "7f54819f-ee75-497c-8c41-cc198599ddf4",
+      "nameEn": "Bye-laws",
+      "nameHi": null,
+      "slug": "bye-laws",
+      "isActive": true,
+      "displayOrder": 2,
+      "createdAt": "2026-09-03T10:46:21.227Z",
+      "updatedAt": "2026-09-15T07:47:09.528Z"
+    },
+    {
+      "id": "9288edac-7a4e-425a-863d-b7a53aa28b34",
+      "nameEn": "Forms and Formats",
+      "nameHi": null,
+      "slug": "forms-and-formats",
+      "isActive": true,
+      "displayOrder": 8,
+      "createdAt": "2026-09-03T10:46:21.232Z",
+      "updatedAt": "2026-09-15T07:47:09.531Z"
+    },
+    {
+      "id": "57c0603f-915e-4b5e-9e4d-e9c1dfece26c",
+      "nameEn": "Policies and Guidelines",
+      "nameHi": null,
+      "slug": "policies-and-guidelines",
+      "isActive": true,
+      "displayOrder": 3,
+      "createdAt": "2026-09-03T10:46:21.228Z",
+      "updatedAt": "2026-09-15T07:47:09.528Z"
+    },
+    {
+      "id": "8a3b6971-33c4-4dc7-b048-53cfafc53dda",
+      "nameEn": "Publications",
+      "nameHi": null,
+      "slug": "publications",
+      "isActive": true,
+      "displayOrder": 7,
+      "createdAt": "2026-09-03T10:46:21.232Z",
+      "updatedAt": "2026-09-15T07:47:09.531Z"
+    },
+    {
+      "id": "1558384c-b759-4cfd-b7bd-ddb6901459f4",
+      "nameEn": "Research and Reports",
+      "nameHi": null,
+      "slug": "research-and-reports",
+      "isActive": true,
+      "displayOrder": 6,
+      "createdAt": "2026-09-03T10:46:21.230Z",
+      "updatedAt": "2026-09-15T07:47:09.530Z"
+    },
+    {
+      "id": "ba1d776d-b886-43e3-b265-ad4c13979d84",
+      "nameEn": "SOPs and Manuals",
+      "nameHi": null,
+      "slug": "sops-and-manuals",
+      "isActive": true,
+      "displayOrder": 4,
+      "createdAt": "2026-09-03T10:46:21.229Z",
+      "updatedAt": "2026-09-15T07:47:09.529Z"
+    },
+    {
+      "id": "23998635-c1c6-45e1-843b-269b23664ffb",
+      "nameEn": "Training Resources",
+      "nameHi": null,
+      "slug": "training-resources",
+      "isActive": true,
+      "displayOrder": 5,
+      "createdAt": "2026-09-03T10:46:21.229Z",
+      "updatedAt": "2026-09-15T07:47:09.530Z"
+    }
+  ],
+  "documentType": [
+    {
+      "id": "293535d6-0a04-4112-b18f-0bfc0f191df2",
+      "nameEn": "Circular",
+      "nameHi": null,
+      "slug": "circular",
+      "isActive": true,
+      "displayOrder": 2,
+      "knowledgeCategoryId": null,
+      "communicationTypeId": "54cc9e53-12ba-4fb4-8bfd-664b21bc9192",
+      "createdAt": "2026-09-03T10:46:21.215Z",
+      "updatedAt": "2026-09-15T07:47:09.543Z"
+    },
+    {
+      "id": "3e5ce2fe-a37c-4b15-982b-617b6776b0c9",
+      "nameEn": "Form",
+      "nameHi": null,
+      "slug": "form",
+      "isActive": true,
+      "displayOrder": 10,
+      "knowledgeCategoryId": "9288edac-7a4e-425a-863d-b7a53aa28b34",
+      "communicationTypeId": null,
+      "createdAt": "2026-09-03T10:46:21.221Z",
+      "updatedAt": "2026-09-15T07:47:09.550Z"
+    },
+    {
+      "id": "9f881f42-e8d2-48e8-96d6-8cc4b29b999b",
+      "nameEn": "Guideline",
+      "nameHi": null,
+      "slug": "guideline",
+      "isActive": true,
+      "displayOrder": 7,
+      "knowledgeCategoryId": "57c0603f-915e-4b5e-9e4d-e9c1dfece26c",
+      "communicationTypeId": null,
+      "createdAt": "2026-09-03T10:46:21.219Z",
+      "updatedAt": "2026-09-15T07:47:09.547Z"
+    },
+    {
+      "id": "44ea4cee-2bf5-4063-9a0e-56d5a2116f1a",
+      "nameEn": "MoU",
+      "nameHi": null,
+      "slug": "mou",
+      "isActive": true,
+      "displayOrder": 4,
+      "knowledgeCategoryId": "ff30330e-6062-4670-85d6-4ed37772d99d",
+      "communicationTypeId": null,
+      "createdAt": "2026-09-03T10:46:21.217Z",
+      "updatedAt": "2026-09-15T07:47:09.545Z"
+    },
+    {
+      "id": "a9452ef5-9385-463e-bfa1-e9f05d212307",
+      "nameEn": "Notice",
+      "nameHi": null,
+      "slug": "notice",
+      "isActive": true,
+      "displayOrder": 1,
+      "knowledgeCategoryId": null,
+      "communicationTypeId": "179fc477-9a75-4e25-ab68-6f333aed0e4e",
+      "createdAt": "2026-09-03T10:46:21.212Z",
+      "updatedAt": "2026-09-15T07:47:09.541Z"
+    },
+    {
+      "id": "6b0e2c3f-abf5-4fa5-904b-4fb5be884256",
+      "nameEn": "Office Order",
+      "nameHi": null,
+      "slug": "office-order",
+      "isActive": true,
+      "displayOrder": 3,
+      "knowledgeCategoryId": null,
+      "communicationTypeId": "363eab8d-be03-4a2b-9800-cfbc5e75d86c",
+      "createdAt": "2026-09-03T10:46:21.217Z",
+      "updatedAt": "2026-09-15T07:47:09.544Z"
+    },
+    {
+      "id": "de27c0ff-bbd1-422a-83ad-48c93c0f169a",
+      "nameEn": "Other",
+      "nameHi": null,
+      "slug": "other",
+      "isActive": true,
+      "displayOrder": 12,
+      "knowledgeCategoryId": "7f54819f-ee75-497c-8c41-cc198599ddf4",
+      "communicationTypeId": null,
+      "createdAt": "2026-09-03T10:46:21.222Z",
+      "updatedAt": "2026-09-15T07:47:09.551Z"
+    },
+    {
+      "id": "de281c81-de39-46b7-93ac-5586f8051ddb",
+      "nameEn": "Policy",
+      "nameHi": null,
+      "slug": "policy",
+      "isActive": true,
+      "displayOrder": 6,
+      "knowledgeCategoryId": "57c0603f-915e-4b5e-9e4d-e9c1dfece26c",
+      "communicationTypeId": null,
+      "createdAt": "2026-09-03T10:46:21.219Z",
+      "updatedAt": "2026-09-15T07:47:09.547Z"
+    },
+    {
+      "id": "01d6702e-4b92-423e-933e-906cb4f9ec8a",
+      "nameEn": "Publication",
+      "nameHi": null,
+      "slug": "publication",
+      "isActive": true,
+      "displayOrder": 11,
+      "knowledgeCategoryId": "8a3b6971-33c4-4dc7-b048-53cfafc53dda",
+      "communicationTypeId": null,
+      "createdAt": "2026-09-03T10:46:21.222Z",
+      "updatedAt": "2026-09-15T07:47:09.550Z"
+    },
+    {
+      "id": "f625d2cc-b2fa-40fd-ae4a-7860744e2659",
+      "nameEn": "Report",
+      "nameHi": null,
+      "slug": "report",
+      "isActive": true,
+      "displayOrder": 5,
+      "knowledgeCategoryId": "1558384c-b759-4cfd-b7bd-ddb6901459f4",
+      "communicationTypeId": null,
+      "createdAt": "2026-09-03T10:46:21.218Z",
+      "updatedAt": "2026-09-15T07:47:09.546Z"
+    },
+    {
+      "id": "f88bd3d0-8551-4db0-9a6a-035e28052f21",
+      "nameEn": "SOP",
+      "nameHi": null,
+      "slug": "sop",
+      "isActive": true,
+      "displayOrder": 8,
+      "knowledgeCategoryId": "ba1d776d-b886-43e3-b265-ad4c13979d84",
+      "communicationTypeId": null,
+      "createdAt": "2026-09-03T10:46:21.220Z",
+      "updatedAt": "2026-09-15T07:47:09.548Z"
+    },
+    {
+      "id": "e27df513-6e8a-4719-af9a-d57fe0ce3500",
+      "nameEn": "Training Material",
+      "nameHi": null,
+      "slug": "training-material",
+      "isActive": true,
+      "displayOrder": 9,
+      "knowledgeCategoryId": "23998635-c1c6-45e1-843b-269b23664ffb",
+      "communicationTypeId": null,
+      "createdAt": "2026-09-03T10:46:21.220Z",
+      "updatedAt": "2026-09-15T07:47:09.549Z"
+    }
+  ],
+  "communicationType": [
+    {
+      "id": "49d27972-d9ba-4762-b5b2-75f5144939a8",
+      "nameEn": "Advisory",
+      "nameHi": null,
+      "slug": "advisory",
+      "isActive": true,
+      "displayOrder": 5,
+      "createdAt": "2026-09-03T10:46:21.239Z",
+      "updatedAt": "2026-09-15T07:47:09.535Z"
+    },
+    {
+      "id": "54cc9e53-12ba-4fb4-8bfd-664b21bc9192",
+      "nameEn": "Circular",
+      "nameHi": null,
+      "slug": "circular",
+      "isActive": true,
+      "displayOrder": 2,
+      "createdAt": "2026-09-03T10:46:21.237Z",
+      "updatedAt": "2026-09-15T07:47:09.533Z"
+    },
+    {
+      "id": "179fc477-9a75-4e25-ab68-6f333aed0e4e",
+      "nameEn": "Notice",
+      "nameHi": null,
+      "slug": "notice",
+      "isActive": true,
+      "displayOrder": 1,
+      "createdAt": "2026-09-03T10:46:21.233Z",
+      "updatedAt": "2026-09-15T07:47:09.532Z"
+    },
+    {
+      "id": "6fed2b08-0a83-4666-a45e-f9f8897219e8",
+      "nameEn": "Notification",
+      "nameHi": null,
+      "slug": "notification",
+      "isActive": true,
+      "displayOrder": 4,
+      "createdAt": "2026-09-03T10:46:21.239Z",
+      "updatedAt": "2026-09-15T07:47:09.534Z"
+    },
+    {
+      "id": "363eab8d-be03-4a2b-9800-cfbc5e75d86c",
+      "nameEn": "Office Order",
+      "nameHi": null,
+      "slug": "office-order",
+      "isActive": true,
+      "displayOrder": 3,
+      "createdAt": "2026-09-03T10:46:21.238Z",
+      "updatedAt": "2026-09-15T07:47:09.534Z"
+    },
+    {
+      "id": "1547a834-6f92-4cfd-b99d-30aac9bdb029",
+      "nameEn": "Public Announcement",
+      "nameHi": null,
+      "slug": "public-announcement",
+      "isActive": true,
+      "displayOrder": 6,
+      "createdAt": "2026-09-03T10:46:21.240Z",
+      "updatedAt": "2026-09-15T07:47:09.536Z"
+    }
+  ],
+  "trainingType": [
+    {
+      "id": "cb5f23e6-c91d-4b1a-8654-1e4bfa4868b0",
+      "nameEn": "Awareness",
+      "nameHi": null,
+      "slug": "awareness",
+      "isActive": true,
+      "displayOrder": 5,
+      "createdAt": "2026-09-03T10:46:21.191Z",
+      "updatedAt": "2026-09-15T07:47:09.512Z"
+    },
+    {
+      "id": "cbc1e659-5cd5-4bc2-98e3-49f4b67477a7",
+      "nameEn": "Capacity Building",
+      "nameHi": null,
+      "slug": "capacity-building",
+      "isActive": true,
+      "displayOrder": 2,
+      "createdAt": "2026-09-03T10:46:21.188Z",
+      "updatedAt": "2026-09-15T07:47:09.511Z"
+    },
+    {
+      "id": "9488cbed-f47b-4821-ba43-7d65313b30c9",
+      "nameEn": "Orientation",
+      "nameHi": null,
+      "slug": "orientation",
+      "isActive": true,
+      "displayOrder": 3,
+      "createdAt": "2026-09-03T10:46:21.189Z",
+      "updatedAt": "2026-09-15T07:47:09.511Z"
+    },
+    {
+      "id": "a4d26748-479e-414c-8b4a-fd79391d86b2",
+      "nameEn": "Refresher",
+      "nameHi": null,
+      "slug": "refresher",
+      "isActive": true,
+      "displayOrder": 4,
+      "createdAt": "2026-09-03T10:46:21.190Z",
+      "updatedAt": "2026-09-15T07:47:09.512Z"
+    },
+    {
+      "id": "1e243c09-287d-4c5b-aa2a-08216acfd336",
+      "nameEn": "Skill Development",
+      "nameHi": null,
+      "slug": "skill-development",
+      "isActive": true,
+      "displayOrder": 1,
+      "createdAt": "2026-09-03T10:46:21.185Z",
+      "updatedAt": "2026-09-15T07:47:09.510Z"
+    }
+  ]
+}

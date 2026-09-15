@@ -86,7 +86,6 @@ async function create(input: EventCreateInput, ctx: AuditContext): Promise<Event
   if (input.cover_media_id) await assertLinkableCover(input.cover_media_id);
   await assertReferencesValid({
     eventTypeId: input.event_type_id,
-    trainingTypeId: input.training_type_id ?? null,
     districtId: input.district_id ?? null,
     blockId: input.block_id ?? null,
     commodityIds: input.commodity_ids,
@@ -95,8 +94,6 @@ async function create(input: EventCreateInput, ctx: AuditContext): Promise<Event
     documentIds: input.document_ids,
     galleryIds: input.gallery_ids,
   });
-  const ttErrors = await eventRepository.validateTrainingTypeAgainstProgrammes(input.training_type_id ?? null, input.programme_ids);
-  if (Object.keys(ttErrors).length > 0) throw new ValidationError(ttErrors);
 
   const dynamicValues = await validateDynamic(input.event_type_id, input.dynamic_values);
   const statusOverride = input.status_override ?? false;
@@ -112,7 +109,6 @@ async function create(input: EventCreateInput, ctx: AuditContext): Promise<Event
     const created = await eventRepository.create(
       {
         eventTypeId: input.event_type_id,
-        trainingTypeId: input.training_type_id ?? null,
         titleEn: input.title_en,
         titleHi: input.title_hi ?? null,
         summaryEn: input.summary_en ?? null,
@@ -171,7 +167,6 @@ async function update(id: string, input: EventUpdateInput, ctx: AuditContext): P
 
   await assertReferencesValid({
     eventTypeId: input.event_type_id,
-    trainingTypeId: input.training_type_id ?? undefined,
     districtId: input.district_id ?? undefined,
     blockId: input.block_id ?? undefined,
     commodityIds: input.commodity_ids,
@@ -193,12 +188,6 @@ async function update(id: string, input: EventUpdateInput, ctx: AuditContext): P
     throw new ValidationError({ end_date: ['Must be on or after start_date.'] });
   }
 
-  const trainingTypeId = input.training_type_id !== undefined ? input.training_type_id : existing.trainingTypeId;
-  const programmeIds = input.programme_ids; // only re-checked when provided
-  if (programmeIds !== undefined) {
-    const ttErrors = await eventRepository.validateTrainingTypeAgainstProgrammes(trainingTypeId ?? null, programmeIds);
-    if (Object.keys(ttErrors).length > 0) throw new ValidationError(ttErrors);
-  }
 
   // Re-validate dynamic values when supplied OR when the event type changes.
   let dynamicValues: Prisma.InputJsonValue | undefined;
@@ -222,7 +211,6 @@ async function update(id: string, input: EventUpdateInput, ctx: AuditContext): P
       id,
       {
         eventTypeId: input.event_type_id,
-        trainingTypeId: input.training_type_id,
         titleEn: input.title_en,
         titleHi: input.title_hi,
         summaryEn: input.summary_en,

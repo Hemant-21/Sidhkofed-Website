@@ -9,8 +9,8 @@ import type { DocumentRow } from './documents.repository';
 const { repo, media, usage, audit, cache } = vi.hoisted(() => ({
   repo: {
     slugExists: vi.fn(), create: vi.fn(), findById: vi.fn(), findBySlug: vi.fn(), update: vi.fn(),
-    list: vi.fn(), transaction: vi.fn(), setCommodities: vi.fn(), setDistricts: vi.fn(), setTags: vi.fn(),
-    validateReferences: vi.fn(),
+    list: vi.fn(), transaction: vi.fn(), setCommodities: vi.fn(), setDistricts: vi.fn(),
+    validateReferences: vi.fn(), getDocumentTypeClassification: vi.fn(),
   },
   media: { getById: vi.fn() },
   usage: { registerUsage: vi.fn(), removeUsage: vi.fn() },
@@ -43,7 +43,7 @@ function makeDoc(over: Partial<DocumentRow> = {}): DocumentRow {
     createdAt: now, updatedAt: now,
     documentType: { id: TYPE, slug: 'report', nameEn: 'Report', nameHi: null } as never,
     fileAsset: { id: ASSET, url: '/file', fileName: 'a.pdf', mimeType: 'application/pdf', fileSizeBytes: BigInt(10), title: null } as never,
-    knowledgeCategory: null, financialYear: null, commodities: [], districts: [], tags: [],
+    knowledgeCategory: null, financialYear: null, commodities: [], districts: [],
     ...over,
   } as DocumentRow;
 }
@@ -52,6 +52,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   repo.slugExists.mockResolvedValue(false);
   repo.validateReferences.mockResolvedValue({});
+  repo.getDocumentTypeClassification.mockResolvedValue({ knowledgeCategoryId: null, communicationTypeId: 'ct1' });
   repo.transaction.mockImplementation(async (fn: (tx: unknown) => Promise<unknown>) => fn({}));
   media.getById.mockResolvedValue({ archived_at: null, mime_type: 'application/pdf' });
   cache.getJson.mockResolvedValue(null);
@@ -101,13 +102,27 @@ describe('documentService.create', () => {
     ).rejects.toBeInstanceOf(ValidationError);
   });
 
-  it('enforces the Knowledge-Centre category rule', async () => {
+  it('rejects a legacy show_in_knowledge_centre value that conflicts with the type-derived classification', async () => {
+    // The document type's classification is derived from its own parent (mocked above as
+    // communication-family, so show_in_knowledge_centre must derive to false).
     await expect(
       documentService.create(
         { title_en: 'Doc', document_type_id: TYPE, file_asset_id: ASSET, show_in_knowledge_centre: true },
         CTX,
       ),
     ).rejects.toBeInstanceOf(ValidationError);
+  });
+
+  it('accepts a legacy show_in_knowledge_centre value that agrees with the type-derived classification', async () => {
+    const created = makeDoc();
+    repo.create.mockResolvedValue(created);
+    repo.findById.mockResolvedValue(created);
+    await expect(
+      documentService.create(
+        { title_en: 'Doc', document_type_id: TYPE, file_asset_id: ASSET, show_in_knowledge_centre: false },
+        CTX,
+      ),
+    ).resolves.toBeDefined();
   });
 });
 

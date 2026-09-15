@@ -14,6 +14,7 @@ export const PROCUREMENT_UPDATE_ENTITY = 'procurement_update';
 export interface ProcurementUpdateFilters {
   publicationState?: PublicationState;
   procurementUpdateType?: string; // id or slug
+  procurementUpdateCategory?: string; // id or slug (type's parent category)
   commodity?: string; // id or slug
   district?: string; // id or slug
   block?: string; // id or slug

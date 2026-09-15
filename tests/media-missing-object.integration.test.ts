@@ -99,10 +99,12 @@ describe.skipIf(!RUN)('public media missing-object handling (integration)', () =
         create: { userId: user.id, roleId: role.id },
       });
     }
+    // Every document type must have exactly one parent family (DB CHECK constraint).
+    const knowledgeCategory = await prisma.knowledgeCategory.findFirstOrThrow({ where: { isActive: true } });
     const docType = await prisma.documentType.upsert({
       where: { slug: `it-missing-type-${STAMP}` },
       update: {},
-      create: { nameEn: `IT Missing Type ${STAMP}`, slug: `it-missing-type-${STAMP}`, isActive: true },
+      create: { nameEn: `IT Missing Type ${STAMP}`, slug: `it-missing-type-${STAMP}`, isActive: true, knowledgeCategoryId: knowledgeCategory.id },
     });
     created.typeId = docType.id;
 

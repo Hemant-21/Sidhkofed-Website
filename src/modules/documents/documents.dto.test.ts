@@ -1,8 +1,8 @@
 /**
- * Unit tests — document DTO tag visibility contract.
+ * Unit tests — document DTO admin/public visibility contract.
  *
- * Admin detail includes tags (internal CMS classification).
- * Public detail must NOT include tags (isPublic: false in the masters registry).
+ * Admin detail includes internal-only fields (created_by, updated_by).
+ * Public detail must NOT include them.
  * DB-free.
  */
 import { describe, it, expect } from 'vitest';
@@ -11,7 +11,6 @@ import type { DocumentRow } from './documents.repository';
 
 const TYPE = '11111111-1111-4111-8111-111111111111';
 const ASSET = '22222222-2222-4222-8222-222222222222';
-const TAG_ID = '33333333-3333-4333-8333-333333333333';
 
 function makeRow(over: Partial<DocumentRow> = {}): DocumentRow {
   const now = new Date();
@@ -26,34 +25,37 @@ function makeRow(over: Partial<DocumentRow> = {}): DocumentRow {
     documentType: { id: TYPE, slug: 'report', nameEn: 'Report', nameHi: null } as never,
     fileAsset: { id: ASSET, url: '/file', fileName: 'a.pdf', mimeType: 'application/pdf', fileSizeBytes: BigInt(10), title: null } as never,
     knowledgeCategory: null, financialYear: null, commodities: [], districts: [],
-    tags: [{ tag: { id: TAG_ID, slug: 'internal', nameEn: 'Internal', nameHi: null } }] as never,
     ...over,
   } as DocumentRow;
 }
 
-describe('toPublicDocumentDetailDto — tags are excluded', () => {
-  it('does not include a tags key in the public DTO', () => {
+describe('toPublicDocumentDetailDto — internal fields are excluded', () => {
+  it('does not include admin-only keys in the public DTO', () => {
     const dto = toPublicDocumentDetailDto(makeRow());
-    expect(dto).not.toHaveProperty('tags');
+    expect(dto).not.toHaveProperty('created_by');
+    expect(dto).not.toHaveProperty('updated_by');
+    expect(dto).not.toHaveProperty('publish_start_at');
   });
 
-  it('does not leak any tag slugs in the serialised public response', () => {
+  it('does not leak the internal author id in the serialised public response', () => {
     const json = JSON.stringify(toPublicDocumentDetailDto(makeRow()));
-    expect(json).not.toContain('internal');
-    expect(json).not.toContain(TAG_ID);
+    expect(json).not.toContain('u1');
   });
 });
 
-describe('toDocumentDetailDto — tags are present for admin', () => {
-  it('includes the tags array in the admin DTO', () => {
+describe('toDocumentDetailDto — admin fields are present', () => {
+  it('includes created_by/updated_by in the admin DTO', () => {
     const dto = toDocumentDetailDto(makeRow());
-    expect(dto).toHaveProperty('tags');
-    expect(dto.tags).toHaveLength(1);
-    expect(dto.tags[0]).toMatchObject({ slug: 'internal', name_en: 'Internal' });
+    expect(dto).toHaveProperty('created_by', 'u1');
+    expect(dto).toHaveProperty('updated_by', 'u1');
   });
 
-  it('returns an empty tags array when there are no tags', () => {
-    const dto = toDocumentDetailDto(makeRow({ tags: [] as never }));
-    expect(dto.tags).toEqual([]);
+  it('includes the commodities and districts arrays for both admin and public DTOs', () => {
+    const admin = toDocumentDetailDto(makeRow());
+    const pub = toPublicDocumentDetailDto(makeRow());
+    expect(admin.commodities).toEqual([]);
+    expect(admin.districts).toEqual([]);
+    expect(pub.commodities).toEqual([]);
+    expect(pub.districts).toEqual([]);
   });
 });

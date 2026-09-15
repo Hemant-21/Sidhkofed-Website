@@ -1,10 +1,13 @@
 /**
  * FAQ service — all business logic for the FAQ operation. No HTTP, no Prisma here (repository owns
- * Prisma; controllers own HTTP). Owns: CRUD + lifecycle, stable slug generation, FAQ-category
- * activation validation, audit logging, and in-process cache invalidation of public reads.
+ * Prisma; controllers own HTTP). Owns: CRUD + lifecycle, stable slug generation, page-assignment
+ * writes (transactional with the FAQ row), page-scoped reordering, audit logging, and in-process
+ * cache invalidation of public reads.
  *
- * Key rules (CMS requirements §4.13): FAQs reuse the FAQ Category master; there are no nested FAQs;
- * public search covers question + answer; ordering follows category + display order.
+ * Page-assignment PATCH semantics: omitting `page_assignments` from the request leaves existing
+ * assignments untouched; sending `[]` explicitly clears them all. This is `!== undefined` on the
+ * *validated* input (matches `documents.service.ts`'s `district_ids` pattern) — zod's `.partial()`
+ * leaves the key absent (`undefined`) when the client didn't send it at all.
  */
 import { NotFoundError, ValidationError } from '@/shared/errors';
 import { uniqueSlug } from '@/utils/slug';
@@ -13,15 +16,10 @@ import { assertEditableByActor } from '@/shared/content-guard';
 import { cacheService } from '@/services/cache';
 import { auditService, type AuditContext } from '@/modules/audit/audit.service';
 import { faqRepository, type FaqRow } from './faqs.repository';
-import {
-  toFaqDetailDto,
-  toFaqSummaryDto,
-  toPublicFaqDto,
-  type FaqDetailDto,
-} from './faqs.dto';
+import { toFaqDetailDto, toFaqSummaryDto, toPublicFaqDto, type FaqDetailDto } from './faqs.dto';
 import { FAQ_ENTITY, type FaqFilters, type FaqOrderingField } from './faqs.types';
 import { FAQ_PERMISSIONS, FAQ_PERMISSION_TO_CONTENT } from './faqs.permissions';
-import type { FaqCreateInput, FaqUpdateInput } from './faqs.validators';
+import type { FaqCreateInput, FaqUpdateInput, FaqPageReorderInput } from './faqs.validators';
 
 const PUBLIC_CACHE_PREFIX = 'faqs:public';
 const PUBLISH_PERMISSION = FAQ_PERMISSION_TO_CONTENT[FAQ_PERMISSIONS.publish] ?? 'content.publish';
@@ -40,39 +38,39 @@ function requireUser(ctx: AuditContext): string {
   return ctx.userId;
 }
 
-async function assertReferencesValid(refs: Parameters<typeof faqRepository.validateReferences>[0]): Promise<void> {
-  const errors = await faqRepository.validateReferences(refs);
-  if (Object.keys(errors).length > 0) throw new ValidationError(errors);
-}
-
 // ── Create ────────────────────────────────────────────────────────────────────
 async function create(input: FaqCreateInput, ctx: AuditContext): Promise<FaqDetailDto> {
   const userId = requireUser(ctx);
-  await assertReferencesValid({ faqCategoryId: input.faq_category_id ?? null });
-
   const slug = await uniqueSlug(input.question_en, faqRepository.slugExists);
 
-  const created = await faqRepository.create({
-    faqCategoryId: input.faq_category_id ?? null,
-    questionEn: input.question_en,
-    questionHi: input.question_hi ?? null,
-    answerEn: input.answer_en,
-    answerHi: input.answer_hi ?? null,
-    slug,
-    publicVisibility: input.public_visibility ?? true,
-    publishStartAt: input.publish_start_at ?? null,
-    highlightType: input.highlight_type ?? null,
-    highlightStartAt: input.highlight_start_at ?? null,
-    highlightEndAt: input.highlight_end_at ?? null,
-    displayOrder: input.display_order ?? null,
-    showOnHomepage: input.show_on_homepage ?? false,
-    createdById: userId,
-    updatedById: userId,
+  const created = await faqRepository.transaction(async (tx) => {
+    const row = await faqRepository.create(
+      {
+        questionEn: input.question_en,
+        questionHi: input.question_hi ?? null,
+        answerEn: input.answer_en,
+        answerHi: input.answer_hi ?? null,
+        slug,
+        publicVisibility: input.public_visibility ?? true,
+        publishStartAt: input.publish_start_at ?? null,
+        highlightType: input.highlight_type ?? null,
+        highlightStartAt: input.highlight_start_at ?? null,
+        highlightEndAt: input.highlight_end_at ?? null,
+        displayOrder: input.display_order ?? null,
+        createdById: userId,
+        updatedById: userId,
+      },
+      tx,
+    );
+    if (input.page_assignments?.length) {
+      await faqRepository.setPageAssignments(row.id, input.page_assignments, tx);
+    }
+    return row;
   });
 
   await auditService.create(ctx, FAQ_ENTITY, created.id, { question_en: created.questionEn, slug: created.slug });
   await invalidatePublicCache();
-  return toFaqDetailDto(created);
+  return toFaqDetailDto(loaded(await faqRepository.findById(created.id)));
 }
 
 // ── Update (PATCH — partial; never transitions publication state, never changes slug) ──
@@ -81,26 +79,30 @@ async function update(id: string, input: FaqUpdateInput, ctx: AuditContext): Pro
   const existing = loaded(await faqRepository.findById(id));
   assertEditableByActor(ctx.authz, existing.publicationState, PUBLISH_PERMISSION);
 
-  if (input.faq_category_id !== undefined) {
-    await assertReferencesValid({ faqCategoryId: input.faq_category_id });
-  }
-
-  const updated = await faqRepository.update(id, {
-    faqCategoryId: input.faq_category_id,
-    questionEn: input.question_en,
-    questionHi: input.question_hi,
-    answerEn: input.answer_en,
-    answerHi: input.answer_hi,
-    publicVisibility: input.public_visibility,
-    publishStartAt: input.publish_start_at,
-    highlightType: input.highlight_type,
-    highlightStartAt: input.highlight_start_at,
-    highlightEndAt: input.highlight_end_at,
-    displayOrder: input.display_order,
-    showOnHomepage: input.show_on_homepage,
-    updatedById: userId,
+  await faqRepository.transaction(async (tx) => {
+    await faqRepository.update(
+      id,
+      {
+        questionEn: input.question_en,
+        questionHi: input.question_hi,
+        answerEn: input.answer_en,
+        answerHi: input.answer_hi,
+        publicVisibility: input.public_visibility,
+        publishStartAt: input.publish_start_at,
+        highlightType: input.highlight_type,
+        highlightStartAt: input.highlight_start_at,
+        highlightEndAt: input.highlight_end_at,
+        displayOrder: input.display_order,
+        updatedById: userId,
+      },
+      tx,
+    );
+    if (input.page_assignments !== undefined) {
+      await faqRepository.setPageAssignments(id, input.page_assignments, tx);
+    }
   });
 
+  const updated = loaded(await faqRepository.findById(id));
   await auditService.update(ctx, FAQ_ENTITY, id, undefined, { question_en: updated.questionEn });
   await invalidatePublicCache();
   return toFaqDetailDto(updated);
@@ -145,6 +147,26 @@ async function lifecycle(id: string, action: LifecycleAction, ctx: AuditContext)
   return toFaqDetailDto(updated);
 }
 
+// ── Page-scoped reorder (whole-list resubmission, scoped to one page — API spec) ────
+async function reorderPage(pageKey: string, input: FaqPageReorderInput, ctx: AuditContext): Promise<void> {
+  await faqRepository.transaction(async (tx) => {
+    for (const item of input.order) {
+      const assignment = await faqRepository.findAssignment(item.id, pageKey, tx);
+      if (!assignment) {
+        throw new ValidationError({ order: [`FAQ ${item.id} is not assigned to page "${pageKey}".`] });
+      }
+      await faqRepository.updateAssignmentOrder(item.id, pageKey, item.display_order, tx);
+    }
+  });
+  await auditService.log('UPDATE', ctx, {
+    module: FAQ_ENTITY,
+    recordId: null,
+    summary: `Reordered ${input.order.length} FAQ(s) on page "${pageKey}".`,
+    metadata: { page_key: pageKey, reordered: input.order.length },
+  });
+  await invalidatePublicCache();
+}
+
 // ── Public reads (visibility predicate + in-process cache) ──────────────────────────
 async function publicList(
   filters: FaqFilters,
@@ -166,5 +188,6 @@ export const faqService = {
   getById,
   list,
   lifecycle,
+  reorderPage,
   publicList,
 };

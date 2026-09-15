@@ -101,11 +101,16 @@ export interface DocumentSummaryDto {
   title_en: string;
   title_hi: string | null;
   document_type: MasterRef;
+  /** Derived from `document_type`'s parent — never the deprecated per-document column. */
   knowledge_category: MasterRef | null;
+  communication_type: MasterRef | null;
+  /** 'publications' when the type parents to a knowledge category, else 'notifications'. */
+  document_section: 'publications' | 'notifications';
   financial_year: FinancialYearRef | null;
   language: string;
   publication_date: string | null;
   is_public: boolean;
+  /** Deprecated compatibility field — derived, equivalent to `document_section === 'publications'`. */
   show_in_knowledge_centre: boolean;
   file: DocumentFileRef;
   publication_state: string;
@@ -120,18 +125,22 @@ export interface DocumentSummaryDto {
 }
 
 export function toDocumentSummaryDto(d: DocumentSummaryRow): DocumentSummaryDto {
+  const knowledgeCategory = d.documentType.knowledgeCategory ? masterRef(d.documentType.knowledgeCategory) : null;
+  const communicationType = d.documentType.communicationType ? masterRef(d.documentType.communicationType) : null;
   return {
     id: d.id,
     slug: d.slug,
     title_en: d.titleEn,
     title_hi: d.titleHi,
     document_type: masterRef(d.documentType),
-    knowledge_category: d.knowledgeCategory ? masterRef(d.knowledgeCategory) : null,
+    knowledge_category: knowledgeCategory,
+    communication_type: communicationType,
+    document_section: knowledgeCategory ? 'publications' : 'notifications',
     financial_year: fyRef(d.financialYear),
     language: d.language,
     publication_date: dateOnly(d.publicationDate),
     is_public: d.isPublic,
-    show_in_knowledge_centre: d.showInKnowledgeCentre,
+    show_in_knowledge_centre: knowledgeCategory !== null,
     file: fileRef(d.fileAsset),
     publication_state: d.publicationState,
     public_visibility: d.publicVisibility,
@@ -151,7 +160,6 @@ export interface DocumentDetailDto extends DocumentSummaryDto {
   description_hi: string | null;
   commodities: MasterRef[];
   districts: MasterRef[];
-  tags: MasterRef[];
   publish_start_at: string | null;
   highlight_start_at: string | null;
   highlight_end_at: string | null;
@@ -167,7 +175,6 @@ export function toDocumentDetailDto(d: DocumentRow): DocumentDetailDto {
     description_hi: d.descriptionHi,
     commodities: d.commodities.map((c) => masterRef(c.commodity)),
     districts: d.districts.map((x) => masterRef(x.district)),
-    tags: d.tags.map((t) => masterRef(t.tag)),
     publish_start_at: iso(d.publishStartAt),
     highlight_start_at: iso(d.highlightStartAt),
     highlight_end_at: iso(d.highlightEndAt),
@@ -185,6 +192,8 @@ export interface PublicDocumentSummaryDto {
   title_hi: string | null;
   document_type: MasterRef;
   knowledge_category: MasterRef | null;
+  communication_type: MasterRef | null;
+  document_section: 'publications' | 'notifications';
   financial_year: FinancialYearRef | null;
   language: string;
   publication_date: string | null;
@@ -196,17 +205,21 @@ export interface PublicDocumentSummaryDto {
 }
 
 export function toPublicDocumentSummaryDto(d: DocumentSummaryRow): PublicDocumentSummaryDto {
+  const knowledgeCategory = d.documentType.knowledgeCategory ? masterRef(d.documentType.knowledgeCategory) : null;
+  const communicationType = d.documentType.communicationType ? masterRef(d.documentType.communicationType) : null;
   return {
     id: d.id,
     slug: d.slug,
     title_en: d.titleEn,
     title_hi: d.titleHi,
     document_type: masterRef(d.documentType),
-    knowledge_category: d.knowledgeCategory ? masterRef(d.knowledgeCategory) : null,
+    knowledge_category: knowledgeCategory,
+    communication_type: communicationType,
+    document_section: knowledgeCategory ? 'publications' : 'notifications',
     financial_year: fyRef(d.financialYear),
     language: d.language,
     publication_date: dateOnly(d.publicationDate),
-    show_in_knowledge_centre: d.showInKnowledgeCentre,
+    show_in_knowledge_centre: knowledgeCategory !== null,
     file: fileRef(d.fileAsset),
     highlight_type: d.highlightType,
     published_at: iso(d.publishedAt),
@@ -215,8 +228,6 @@ export function toPublicDocumentSummaryDto(d: DocumentSummaryRow): PublicDocumen
 }
 
 // ── Public detail (single) ────────────────────────────────────────────────────
-// Tags are intentionally omitted: they are internal CMS classification (isPublic: false in the
-// masters registry) and must not appear in any public-facing response.
 export interface PublicDocumentDetailDto extends PublicDocumentSummaryDto {
   description_en: string | null;
   description_hi: string | null;

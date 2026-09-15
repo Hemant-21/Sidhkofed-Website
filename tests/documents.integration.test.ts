@@ -65,10 +65,18 @@ describe.skipIf(!RUN)('documents (integration)', () => {
     const editorEmail = await userWithRole('editor', ROLE_KEYS.contentEditor);
     const publisherEmail = await userWithRole('publisher', ROLE_KEYS.publisher);
 
+    // Every document type must have exactly one parent family (DB CHECK constraint) — reuse a
+    // seeded Knowledge Category so this fixture type parents to Publications.
+    const knowledgeCategory = await prisma.knowledgeCategory.findFirstOrThrow({ where: { isActive: true } });
     const docType = await prisma.documentType.upsert({
       where: { slug: `it-report-${STAMP}` },
       update: {},
-      create: { nameEn: `IT Report ${STAMP}`, slug: `it-report-${STAMP}`, isActive: true },
+      create: {
+        nameEn: `IT Report ${STAMP}`,
+        slug: `it-report-${STAMP}`,
+        isActive: true,
+        knowledgeCategoryId: knowledgeCategory.id,
+      },
     });
     created.documentTypeId = docType.id;
 
@@ -156,6 +164,13 @@ describe.skipIf(!RUN)('documents (integration)', () => {
     expect(res.status).toBe(200);
     expect(res.body.data.id).toBe(created.documentId);
     expect(res.body.data).not.toHaveProperty('created_by');
+    // Classification is derived from the document type's parent (a Knowledge Category here).
+    expect(res.body.data.document_section).toBe('publications');
+    expect(res.body.data.knowledge_category).toBeTruthy();
+    expect(res.body.data.communication_type).toBeNull();
+
+    const kc = await request(app).get('/api/v1/public/knowledge-centre');
+    expect((kc.body.data as Array<{ id: string }>).map((d) => d.id)).toContain(created.documentId);
   });
 
   it('requires authentication for the admin list', async () => {

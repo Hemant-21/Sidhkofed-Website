@@ -28,9 +28,9 @@ const URL_PREFIX: Record<ContentType, string> = {
   news: '/news',
   programme: '/programmes',
   document: '/documents',
-  official_communication: '/official-communications',
-  tender: '/tenders',
-  procurement_update: '/procurement-updates',
+  official_communication: '/notifications/notices',
+  tender: '/notifications/tenders',
+  procurement_update: '/procurement/announcements',
 };
 
 export function publicUrlFor(type: ContentType, slug: string): string {

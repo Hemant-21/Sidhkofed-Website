@@ -68,7 +68,6 @@ async function create(input: ProgrammeCreateInput, ctx: AuditContext): Promise<P
   if (input.cover_media_id) await assertLinkableCover(input.cover_media_id);
   await assertReferencesValid({
     commodityIds: input.commodity_ids,
-    permittedTrainingTypeIds: input.permitted_training_type_ids,
   });
 
   const slug = await uniqueSlug(input.title_en, programmeRepository.slugExists);
@@ -109,9 +108,6 @@ async function create(input: ProgrammeCreateInput, ctx: AuditContext): Promise<P
       tx,
     );
     if (input.commodity_ids?.length) await programmeRepository.setCommodities(created.id, input.commodity_ids, tx);
-    if (input.permitted_training_type_ids?.length) {
-      await programmeRepository.setPermittedTrainingTypes(created.id, input.permitted_training_type_ids, tx);
-    }
     if (input.cover_media_id) {
       await mediaUsageService.registerUsage(
         { mediaId: input.cover_media_id, entityType: PROGRAMME_ENTITY, entityId: created.id, field: COVER_FIELD },
@@ -142,7 +138,6 @@ async function update(id: string, input: ProgrammeUpdateInput, ctx: AuditContext
   if (coverChanging && input.cover_media_id) await assertLinkableCover(input.cover_media_id);
   await assertReferencesValid({
     commodityIds: input.commodity_ids,
-    permittedTrainingTypeIds: input.permitted_training_type_ids,
   });
 
   // End/start consistency against merged state (a partial update may change only one date).
@@ -187,9 +182,6 @@ async function update(id: string, input: ProgrammeUpdateInput, ctx: AuditContext
       tx,
     );
     if (input.commodity_ids !== undefined) await programmeRepository.setCommodities(id, input.commodity_ids, tx);
-    if (input.permitted_training_type_ids !== undefined) {
-      await programmeRepository.setPermittedTrainingTypes(id, input.permitted_training_type_ids, tx);
-    }
     if (coverChanging) {
       if (existing.coverMediaId) {
         await mediaUsageService.removeUsage(

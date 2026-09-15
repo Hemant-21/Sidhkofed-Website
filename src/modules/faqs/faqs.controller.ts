@@ -6,10 +6,12 @@ import type { Request, Response, NextFunction } from 'express';
 import { success, paginated } from '@/shared/envelope';
 import { resolvePageParams, buildPagination } from '@/shared/pagination';
 import { auditContext } from '@/shared/request-context';
+import { ValidationError } from '@/shared/errors';
 import type { LifecycleAction } from '@/shared/publishing';
 import { faqService } from './faqs.service';
-import { validateFaqCreate, validateFaqUpdate } from './faqs.validators';
+import { validateFaqCreate, validateFaqUpdate, validateFaqPageReorder } from './faqs.validators';
 import { parseFaqFilters, parseFaqOrdering } from './faqs.query';
+import { FAQ_PAGE_REGISTRY, isRegisteredFaqPageKey } from './faqs.pages.registry';
 
 const wrap =
   (fn: (req: Request) => Promise<{ status: number; body: unknown }>) =>
@@ -31,6 +33,21 @@ const list = wrap(async (req) => {
   const ordering = parseFaqOrdering(req);
   const { items, total } = await faqService.list(filters, ordering, page.skip, page.take);
   return { status: 200, body: paginated(items, buildPagination(total, page), String(req.id)) };
+});
+
+/** GET /admin/faqs/pages — the registered main-page options the CMS multiselect/filter reads. */
+const pages = wrap(async (req) => {
+  const items = FAQ_PAGE_REGISTRY.map((p) => ({ page_key: p.key, path: p.path, label_en: p.labelEn, label_hi: p.labelHi }));
+  return { status: 200, body: success(items, String(req.id)) };
+});
+
+/** POST /admin/faqs/pages/:pageKey/reorder */
+const reorderPage = wrap(async (req) => {
+  const pageKey = req.params.pageKey as string;
+  if (!isRegisteredFaqPageKey(pageKey)) throw new ValidationError({ page_key: ['Unknown page key.'] });
+  const input = validateFaqPageReorder(req.body);
+  await faqService.reorderPage(pageKey, input, auditContext(req));
+  return { status: 200, body: success({ page_key: pageKey, reordered: input.order.length }, String(req.id), 'FAQs reordered.') };
 });
 
 const detail = wrap(async (req) => {
@@ -55,4 +72,4 @@ const unpublish = lifecycle('unpublish');
 const archive = lifecycle('archive');
 const restore = lifecycle('restore');
 
-export const faqController = { create, list, detail, patch, publish, unpublish, archive, restore };
+export const faqController = { create, list, pages, reorderPage, detail, patch, publish, unpublish, archive, restore };

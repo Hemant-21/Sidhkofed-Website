@@ -98,7 +98,13 @@ POST  /api/admin/communications/{id}/restore
 - `title_en`, `communication_type_id`, `issue_date`, and `issuing_authority`
   are required.
 - `expiry_date` must not be before `issue_date` when supplied.
-- `document_id` must reference an existing reusable Document record.
+- `document_id` must reference an existing reusable Document record. This module is unaffected
+  by the Document Type → Knowledge Category/Communication Type classification change (see
+  `16-masters-api.md`) — a Communication keeps choosing its own `communication_type_id`
+  independently and a linked Document's Publications/Notifications classification (via its own
+  `document_type_id`) has no bearing on this record. The one shared effect: a `communication-
+  types` master value cannot be archived while either a Document Type still parents to it or an
+  Official Communication still references it — see `16-masters-api.md`'s guardDeactivate rule.
 
 ## Non-Goals
 

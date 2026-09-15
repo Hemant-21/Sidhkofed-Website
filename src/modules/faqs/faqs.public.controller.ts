@@ -1,8 +1,10 @@
 /**
  * FAQ public controller — `/api/v1/public/faqs` (API spec §5). No authentication; returns only
  * published, publicly-visible, non-archived, due FAQs (the visibility predicate is enforced in the
- * repository), grouped by category/display order. Supports `faq_category` and `search` filters.
- * Responses are in-process cached and invalidated on any admin write.
+ * repository). Supports `page_key` (assigned FAQs for one registered main page, in that page's own
+ * order) and `search`; without `page_key`, returns the global /faqs directory ordering. The cache
+ * key is derived from the full filter/ordering/page payload, so `page_key` is part of cache
+ * identity automatically. Responses are in-process cached and invalidated on any admin write.
  */
 import { createHash } from 'node:crypto';
 import type { Request, Response, NextFunction } from 'express';

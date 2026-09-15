@@ -21,8 +21,11 @@ import { prisma } from '@/db/prisma';
 import { ROLE_KEYS } from '@/modules/auth/auth.permissions';
 
 /**
- * Prisma client property names for the 16 models carrying the publishing-workflow mixin. Kept as a
- * typed union so the registry can only ever name a real, mixin-bearing delegate.
+ * Prisma client property names for the 14 models carrying the publishing-workflow mixin that are
+ * still scheduled here. (`dashboardReport` carries the same mixin at the schema level but was
+ * removed from scheduled publishing along with the retired legacy Dashboard Reports concept — see
+ * `publishable.registry.ts`.) Kept as a typed union so the registry can only ever name a real,
+ * mixin-bearing delegate.
  */
 export type MixinModelName =
   | 'event'
@@ -37,7 +40,6 @@ export type MixinModelName =
   | 'faq'
   | 'digitalService'
   | 'institutionalMembership'
-  | 'dashboardReport'
   | 'gallery'
   | 'video';
 

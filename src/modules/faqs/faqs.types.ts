@@ -1,7 +1,8 @@
 /**
  * FAQs module shared types — the framework-free filter/ordering contract used by the controller,
- * service, and repository. FAQs reuse the FAQ Category master (CMS requirements §4.13 / API spec §6).
- * No nested FAQs; public search covers question + answer; ordering follows category + display order.
+ * service, and repository. An FAQ may be assigned to zero or more registered main pages (see
+ * faqs.pages.registry.ts), each with its own independent order; the central /faqs directory keeps
+ * its own separate `display_order`. No nested FAQs; public search covers question + answer.
  */
 import type { PublicationState } from '@/shared/publishing';
 
@@ -11,12 +12,11 @@ export const FAQ_ENTITY = 'faq';
 /** Admin/public list filters. All optional; the repository only reads known keys. */
 export interface FaqFilters {
   publicationState?: PublicationState;
-  faqCategory?: string; // id or slug
-  showOnHomepage?: boolean;
+  pageKey?: string; // registered FAQ page key
   search?: string; // question + answer keyword
 }
 
-/** Allowed ordering fields. Public default follows category then display order (API spec §5). */
+/** Allowed ordering fields. Default follows the central directory's display order. */
 export const FAQ_ORDERING_FIELDS = [
   'display_order',
   'published_at',

@@ -5,10 +5,10 @@
  *
  * Canonical keys/fields follow database-schema-design.md Part 4/13 and api-specification.md
  * §4. Cacheable set (TASK 21): commodities, districts, blocks, event-types, training-types,
- * reporting-periods. Public set: every master except `tags` (internal document classification).
+ * reporting-periods.
  */
 import { z } from 'zod';
-import { ValidationError } from '@/shared/errors';
+import { ConflictError, ValidationError } from '@/shared/errors';
 import { standardSchemas, parse, nameEn, nameHi, optionalSlug, isActive, displayOrder, dateString } from './base-master.validator';
 import { baseMasterRepository as repo } from './base-master.repository';
 import {
@@ -16,6 +16,9 @@ import {
   serializeCommodity,
   serializeDistrict,
   serializeBlock,
+  serializeEventType,
+  serializeProcurementUpdateType,
+  serializeDocumentType,
   serializeFinancialYear,
   serializeReportingPeriod,
 } from './masters.dto';
@@ -74,35 +77,338 @@ function standardMaster(p: {
   };
 }
 
-// ── The 10 plain masters (TASK 5,6,9,10,11,12,13,14,15) ─────────────────────
-const eventTypes = standardMaster({ key: 'event-types', model: 'eventType', module: 'event_types', label: 'Event type', cacheable: true });
-const trainingTypes = standardMaster({ key: 'training-types', model: 'trainingType', module: 'training_types', label: 'Training type', cacheable: true });
-const institutionTypes = standardMaster({ key: 'institution-types', model: 'institutionType', module: 'institution_types', label: 'Institution type' });
-const documentTypes = standardMaster({ key: 'document-types', model: 'documentType', module: 'document_types', label: 'Document type' });
-const knowledgeCategories = standardMaster({ key: 'knowledge-categories', model: 'knowledgeCategory', module: 'knowledge_categories', label: 'Knowledge category' });
-const communicationTypes = standardMaster({ key: 'communication-types', model: 'communicationType', module: 'communication_types', label: 'Communication type' });
-const tenderTypes = standardMaster({ key: 'tender-types', model: 'tenderType', module: 'tender_types', label: 'Tender type' });
-const procurementUpdateTypes = standardMaster({ key: 'procurement-update-types', model: 'procurementUpdateType', module: 'procurement_update_types', label: 'Procurement update type' });
-const faqCategories = standardMaster({ key: 'faq-categories', model: 'faqCategory', module: 'faq_categories', label: 'FAQ category' });
-const enquiryTypes = standardMaster({ key: 'enquiry-types', model: 'enquiryType', module: 'enquiry_types', label: 'Enquiry type' });
+// ── Event Category — parents Event Type; a standard master, no FK of its own ─
+const eventCategories: MasterDefinition = {
+  ...standardMaster({ key: 'event-categories', model: 'eventCategory', module: 'event_categories', label: 'Event category', cacheable: true }),
+  // Block archival while any event still references any child event type. Locks the
+  // category row first so a concurrent type reassignment/reparenting can't slip past the count.
+  guardDeactivate: async (id, tx) => {
+    await tx.$queryRaw`SELECT id FROM "event_categories" WHERE id = ${id}::uuid FOR UPDATE`;
+    const count = await tx.event.count({ where: { eventType: { eventCategoryId: id } } });
+    if (count > 0) {
+      throw new ConflictError(`This event category is used by ${count} event(s) via its event types. Reassign them before archiving.`);
+    }
+  },
+};
 
-// Tags — internal document classification only; no public route (API spec §4).
-const tags: MasterDefinition = {
-  ...standardMaster({ key: 'tags', model: 'tag', module: 'tags', label: 'Tag', isPublic: false }),
-  hasDisplayOrder: false,
+// ── Event Type — belongs to an Event Category; orphan-proof; archive-guarded ─
+const eventTypeSchemas = standardSchemas({ event_category_id: z.string().uuid() });
+const eventTypeUpdateSchema = z
+  .object({ name_en: nameEn, name_hi: nameHi, is_active: isActive, display_order: displayOrder, event_category_id: z.string().uuid() })
+  .partial()
+  .strict();
+const eventTypes: MasterDefinition = {
+  key: 'event-types',
+  model: 'eventType',
+  module: 'event_types',
+  label: 'Event type',
+  identity: 'name_en',
+  hasSlug: true,
+  hasDisplayOrder: true,
+  cacheable: true,
+  isPublic: true,
+  include: { eventCategory: true },
+  createSchema: eventTypeSchemas.createSchema,
+  updateSchema: eventTypeUpdateSchema,
   buildCreateData: (input) => {
-    const data: Record<string, unknown> = { nameEn: input.name_en, nameHi: input.name_hi ?? null };
-    if (input.is_active !== undefined) data.isActive = input.is_active;
+    const data = buildStandardCreate(input);
+    data.eventCategoryId = input.event_category_id;
     return data;
   },
   buildUpdateData: (input) => {
-    const data: Record<string, unknown> = {};
-    if (input.name_en !== undefined) data.nameEn = input.name_en;
-    if (input.name_hi !== undefined) data.nameHi = input.name_hi;
-    if (input.is_active !== undefined) data.isActive = input.is_active;
+    const data = buildStandardUpdate(input);
+    if (input.event_category_id !== undefined) data.eventCategoryId = input.event_category_id;
     return data;
   },
+  duplicateWhere: standardDuplicateWhere,
+  // Prevent orphan/inactive-parent types: the category must exist and be active whenever
+  // it is being set (on create, or on reassignment/reactivation via PATCH).
+  validate: async (ctx: MasterValidationContext) => {
+    const eventCategoryId = ctx.input.event_category_id;
+    if (typeof eventCategoryId !== 'string') return;
+    const category = await repo.findRefById('eventCategory', eventCategoryId);
+    if (!category) throw new ValidationError({ event_category_id: ['Event category not found.'] });
+    if (category.isActive === false) {
+      throw new ValidationError({ event_category_id: ['Cannot attach an event type to an inactive event category.'] });
+    }
+  },
+  // Block archival while any event (any publication/lifecycle state) still references this
+  // type. Locks the type row first so a concurrent event assignment can't slip past the count.
+  guardDeactivate: async (id, tx) => {
+    await tx.$queryRaw`SELECT id FROM "event_types" WHERE id = ${id}::uuid FOR UPDATE`;
+    const count = await tx.event.count({ where: { eventTypeId: id } });
+    if (count > 0) {
+      throw new ConflictError(`This event type is used by ${count} event(s). Reassign them to another type before archiving.`);
+    }
+  },
+  serialize: serializeEventType,
+  searchFields: ['nameEn', 'nameHi'],
+  orderingAllowList: STANDARD_ORDERING,
+  defaultOrder: { field: 'name_en', direction: 'asc' },
+  resolveFilter: (query) => {
+    if (typeof query.event_category_id === 'string') {
+      return { where: { eventCategoryId: query.event_category_id }, cacheSuffix: `:event_category_id=${query.event_category_id}` };
+    }
+    if (typeof query.event_category === 'string') {
+      return { where: { eventCategory: { slug: query.event_category } }, cacheSuffix: `:event_category=${query.event_category}` };
+    }
+    return { where: {}, cacheSuffix: '' };
+  },
 };
+
+// ── The other plain masters (TASK 6,9,10,11,12,13,14,15) ────────────────────
+const institutionTypes = standardMaster({ key: 'institution-types', model: 'institutionType', module: 'institution_types', label: 'Institution type' });
+
+// ── Knowledge Category — parents Document Type (family: knowledge); Publications ────
+const knowledgeCategories: MasterDefinition = {
+  ...standardMaster({ key: 'knowledge-categories', model: 'knowledgeCategory', module: 'knowledge_categories', label: 'Knowledge category', cacheable: true }),
+  // Block archival while any Document Type still parents to this category (the family that
+  // ultimately gates Publications). Locks the category row first so a concurrent Document
+  // Type create/reparent can't slip past the count.
+  guardDeactivate: async (id, tx) => {
+    await tx.$queryRaw`SELECT id FROM "knowledge_categories" WHERE id = ${id}::uuid FOR UPDATE`;
+    const count = await tx.documentType.count({ where: { knowledgeCategoryId: id } });
+    if (count > 0) {
+      throw new ConflictError(`This knowledge category is used by ${count} document type(s). Reassign them before archiving.`);
+    }
+  },
+};
+
+// ── Communication Type — parents Document Type (family: communication) AND is still
+// referenced directly by legacy OfficialCommunication records; Notifications ──────────
+const communicationTypes: MasterDefinition = {
+  ...standardMaster({ key: 'communication-types', model: 'communicationType', module: 'communication_types', label: 'Communication type', cacheable: true }),
+  guardDeactivate: async (id, tx) => {
+    await tx.$queryRaw`SELECT id FROM "communication_types" WHERE id = ${id}::uuid FOR UPDATE`;
+    const [documentTypeCount, communicationCount] = await Promise.all([
+      tx.documentType.count({ where: { communicationTypeId: id } }),
+      tx.officialCommunication.count({ where: { communicationTypeId: id } }),
+    ]);
+    const count = documentTypeCount + communicationCount;
+    if (count > 0) {
+      throw new ConflictError(
+        `This communication type is used by ${documentTypeCount} document type(s) and ${communicationCount} official communication(s). Reassign them before archiving.`,
+      );
+    }
+  },
+};
+
+// ── Document Type — belongs to exactly one parent family: a Knowledge Category
+// (-> Publications) or a Communication Type (-> Notifications). Enforced by a DB CHECK
+// constraint (migration `document_type_parents`); `validate` mirrors the same rule at the
+// API layer and additionally rejects/reassigns against an inactive parent. ──────────────
+const documentTypeSchemas = standardSchemas({
+  knowledge_category_id: z.string().uuid().nullable().optional(),
+  communication_type_id: z.string().uuid().nullable().optional(),
+});
+const documentTypes: MasterDefinition = {
+  key: 'document-types',
+  model: 'documentType',
+  module: 'document_types',
+  label: 'Document type',
+  identity: 'name_en',
+  hasSlug: true,
+  hasDisplayOrder: true,
+  cacheable: true,
+  isPublic: true,
+  include: { knowledgeCategory: true, communicationType: true },
+  createSchema: documentTypeSchemas.createSchema,
+  updateSchema: documentTypeSchemas.updateSchema,
+  buildCreateData: (input) => {
+    const data = buildStandardCreate(input);
+    data.knowledgeCategoryId = input.knowledge_category_id ?? null;
+    data.communicationTypeId = input.communication_type_id ?? null;
+    return data;
+  },
+  buildUpdateData: (input) => {
+    const data = buildStandardUpdate(input);
+    // Setting one parent family field clears the other in the same update, unless the
+    // caller explicitly set both (which `validate` below rejects as a conflict).
+    if (input.knowledge_category_id !== undefined) {
+      data.knowledgeCategoryId = input.knowledge_category_id;
+      if (input.communication_type_id === undefined) data.communicationTypeId = null;
+    }
+    if (input.communication_type_id !== undefined) {
+      data.communicationTypeId = input.communication_type_id;
+      if (input.knowledge_category_id === undefined) data.knowledgeCategoryId = null;
+    }
+    return data;
+  },
+  duplicateWhere: standardDuplicateWhere,
+  requiresTransaction: true,
+  // Exactly one parent family, and it must exist and be active. Re-checked on create, on
+  // reassignment (either parent field present), and on activation (is_active: true) even
+  // when the parent fields aren't resent, since the stored parent may have gone inactive
+  // since this type was last saved.
+  validate: async (ctx: MasterValidationContext) => {
+    const existing = ctx.existing;
+    const knowledgeCategoryId =
+      ctx.input.knowledge_category_id !== undefined
+        ? (ctx.input.knowledge_category_id as string | null)
+        : ((existing?.knowledgeCategoryId as string | null | undefined) ?? null);
+    const communicationTypeId =
+      ctx.input.communication_type_id !== undefined
+        ? (ctx.input.communication_type_id as string | null)
+        : ((existing?.communicationTypeId as string | null | undefined) ?? null);
+
+    const parentFieldsProvided = ctx.input.knowledge_category_id !== undefined || ctx.input.communication_type_id !== undefined;
+    const activating = ctx.input.is_active === true;
+    if (ctx.mode === 'update' && !parentFieldsProvided && !activating) return;
+
+    if (knowledgeCategoryId && communicationTypeId) {
+      throw new ValidationError({
+        knowledge_category_id: ['A document type cannot have both a knowledge category and a communication type.'],
+      });
+    }
+    if (!knowledgeCategoryId && !communicationTypeId) {
+      throw new ValidationError({
+        knowledge_category_id: ['A document type must have exactly one parent: a knowledge category or a communication type.'],
+      });
+    }
+
+    if (knowledgeCategoryId) {
+      if (ctx.tx) await ctx.tx.$queryRaw`SELECT id FROM "knowledge_categories" WHERE id = ${knowledgeCategoryId}::uuid FOR UPDATE`;
+      const parent = await repo.findRefById('knowledgeCategory', knowledgeCategoryId, ctx.tx);
+      if (!parent) throw new ValidationError({ knowledge_category_id: ['Knowledge category not found.'] });
+      if (parent.isActive === false) {
+        throw new ValidationError({ knowledge_category_id: ['Cannot attach a document type to an inactive knowledge category.'] });
+      }
+    } else if (communicationTypeId) {
+      if (ctx.tx) await ctx.tx.$queryRaw`SELECT id FROM "communication_types" WHERE id = ${communicationTypeId}::uuid FOR UPDATE`;
+      const parent = await repo.findRefById('communicationType', communicationTypeId, ctx.tx);
+      if (!parent) throw new ValidationError({ communication_type_id: ['Communication type not found.'] });
+      if (parent.isActive === false) {
+        throw new ValidationError({ communication_type_id: ['Cannot attach a document type to an inactive communication type.'] });
+      }
+    }
+  },
+  // Block archival while any Document (any publication/lifecycle state, including drafts
+  // and archived) still references this type. Locks the type row first so a concurrent
+  // document create/retype can't slip past the count.
+  guardDeactivate: async (id, tx) => {
+    await tx.$queryRaw`SELECT id FROM "document_types" WHERE id = ${id}::uuid FOR UPDATE`;
+    const count = await tx.document.count({ where: { documentTypeId: id } });
+    if (count > 0) {
+      throw new ConflictError(`This document type is used by ${count} document(s). Reassign them before archiving.`);
+    }
+  },
+  serialize: serializeDocumentType,
+  searchFields: ['nameEn', 'nameHi'],
+  orderingAllowList: STANDARD_ORDERING,
+  defaultOrder: { field: 'name_en', direction: 'asc' },
+  resolveFilter: (query) => {
+    const where: Record<string, unknown> = {};
+    const parts: string[] = [];
+    if (typeof query.knowledge_category_id === 'string') {
+      where.knowledgeCategoryId = query.knowledge_category_id;
+      parts.push(`knowledge_category_id=${query.knowledge_category_id}`);
+    } else if (typeof query.knowledge_category === 'string') {
+      where.knowledgeCategory = { slug: query.knowledge_category };
+      parts.push(`knowledge_category=${query.knowledge_category}`);
+    }
+    if (typeof query.communication_type_id === 'string') {
+      where.communicationTypeId = query.communication_type_id;
+      parts.push(`communication_type_id=${query.communication_type_id}`);
+    } else if (typeof query.communication_type === 'string') {
+      where.communicationType = { slug: query.communication_type };
+      parts.push(`communication_type=${query.communication_type}`);
+    }
+    const hasKnowledgeCategoryFilter = typeof query.knowledge_category_id === 'string' || typeof query.knowledge_category === 'string';
+    const hasCommunicationTypeFilter = typeof query.communication_type_id === 'string' || typeof query.communication_type === 'string';
+    if (query.document_section === 'publications' && !hasKnowledgeCategoryFilter) {
+      where.knowledgeCategoryId = { not: null };
+      parts.push('document_section=publications');
+    } else if (query.document_section === 'notifications' && !hasCommunicationTypeFilter) {
+      where.communicationTypeId = { not: null };
+      parts.push('document_section=notifications');
+    }
+    return { where, cacheSuffix: parts.length ? `:${parts.join('&')}` : '' };
+  },
+};
+
+const tenderTypes = standardMaster({ key: 'tender-types', model: 'tenderType', module: 'tender_types', label: 'Tender type' });
+
+// ── Procurement Update Category — parents Procurement Update Type; a standard master, no FK of its own ─
+const procurementUpdateCategories: MasterDefinition = {
+  ...standardMaster({ key: 'procurement-update-categories', model: 'procurementUpdateCategory', module: 'procurement_update_categories', label: 'Procurement update category', cacheable: true }),
+  // Block archival while any procurement update type still parents to this category. Locks the
+  // category row first so a concurrent type reassignment/reparenting can't slip past the count.
+  guardDeactivate: async (id, tx) => {
+    await tx.$queryRaw`SELECT id FROM "procurement_update_categories" WHERE id = ${id}::uuid FOR UPDATE`;
+    const count = await tx.procurementUpdateType.count({ where: { procurementUpdateCategoryId: id } });
+    if (count > 0) {
+      throw new ConflictError(`This procurement update category is used by ${count} procurement update type(s). Reassign them before archiving.`);
+    }
+  },
+};
+
+// ── Procurement Update Type — belongs to a Procurement Update Category; orphan-proof; archive-guarded ─
+const procurementUpdateTypeSchemas = standardSchemas({ procurement_update_category_id: z.string().uuid() });
+const procurementUpdateTypeUpdateSchema = z
+  .object({ name_en: nameEn, name_hi: nameHi, is_active: isActive, display_order: displayOrder, procurement_update_category_id: z.string().uuid() })
+  .partial()
+  .strict();
+const procurementUpdateTypes: MasterDefinition = {
+  key: 'procurement-update-types',
+  model: 'procurementUpdateType',
+  module: 'procurement_update_types',
+  label: 'Procurement update type',
+  identity: 'name_en',
+  hasSlug: true,
+  hasDisplayOrder: true,
+  cacheable: true,
+  isPublic: true,
+  include: { procurementUpdateCategory: true },
+  createSchema: procurementUpdateTypeSchemas.createSchema,
+  updateSchema: procurementUpdateTypeUpdateSchema,
+  buildCreateData: (input) => {
+    const data = buildStandardCreate(input);
+    data.procurementUpdateCategoryId = input.procurement_update_category_id;
+    return data;
+  },
+  buildUpdateData: (input) => {
+    const data = buildStandardUpdate(input);
+    if (input.procurement_update_category_id !== undefined) data.procurementUpdateCategoryId = input.procurement_update_category_id;
+    return data;
+  },
+  duplicateWhere: standardDuplicateWhere,
+  // Prevent orphan/inactive-parent types: the category must exist and be active whenever
+  // it is being set (on create, or on reassignment/reactivation via PATCH).
+  validate: async (ctx: MasterValidationContext) => {
+    const procurementUpdateCategoryId = ctx.input.procurement_update_category_id;
+    if (typeof procurementUpdateCategoryId !== 'string') return;
+    const category = await repo.findRefById('procurementUpdateCategory', procurementUpdateCategoryId);
+    if (!category) throw new ValidationError({ procurement_update_category_id: ['Procurement update category not found.'] });
+    if (category.isActive === false) {
+      throw new ValidationError({ procurement_update_category_id: ['Cannot attach a procurement update type to an inactive procurement update category.'] });
+    }
+  },
+  // Block archival while any procurement update (any publication/lifecycle state) still
+  // references this type. Locks the type row first so a concurrent update assignment can't
+  // slip past the count.
+  guardDeactivate: async (id, tx) => {
+    await tx.$queryRaw`SELECT id FROM "procurement_update_types" WHERE id = ${id}::uuid FOR UPDATE`;
+    const count = await tx.procurementUpdate.count({ where: { procurementUpdateTypeId: id } });
+    if (count > 0) {
+      throw new ConflictError(`This procurement update type is used by ${count} procurement update(s). Reassign them to another type before archiving.`);
+    }
+  },
+  serialize: serializeProcurementUpdateType,
+  searchFields: ['nameEn', 'nameHi'],
+  orderingAllowList: STANDARD_ORDERING,
+  defaultOrder: { field: 'name_en', direction: 'asc' },
+  resolveFilter: (query) => {
+    if (typeof query.procurement_update_category_id === 'string') {
+      return { where: { procurementUpdateCategoryId: query.procurement_update_category_id }, cacheSuffix: `:procurement_update_category_id=${query.procurement_update_category_id}` };
+    }
+    if (typeof query.procurement_update_category === 'string') {
+      return { where: { procurementUpdateCategory: { slug: query.procurement_update_category } }, cacheSuffix: `:procurement_update_category=${query.procurement_update_category}` };
+    }
+    return { where: {}, cacheSuffix: '' };
+  },
+};
+
+const enquiryTypes = standardMaster({ key: 'enquiry-types', model: 'enquiryType', module: 'enquiry_types', label: 'Enquiry type' });
 
 // ── Commodity (TASK 7) — adds description + icon media ───────────────────────
 const commodityExtra = {
@@ -401,8 +707,8 @@ const reportingPeriods: MasterDefinition = {
 
 // ── The registry ────────────────────────────────────────────────────────────
 export const MASTER_DEFINITIONS: MasterDefinition[] = [
+  eventCategories,
   eventTypes,
-  trainingTypes,
   commodities,
   districts,
   blocks,
@@ -411,12 +717,11 @@ export const MASTER_DEFINITIONS: MasterDefinition[] = [
   knowledgeCategories,
   communicationTypes,
   tenderTypes,
+  procurementUpdateCategories,
   procurementUpdateTypes,
-  faqCategories,
   enquiryTypes,
   financialYears,
   reportingPeriods,
-  tags,
 ];
 
 const BY_KEY = new Map(MASTER_DEFINITIONS.map((d) => [d.key, d]));

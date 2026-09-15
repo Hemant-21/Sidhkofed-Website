@@ -50,6 +50,7 @@ export interface EventSummaryDto {
   title_hi: string | null;
   summary_en: string | null;
   event_type: MasterRef;
+  event_category: MasterRef;
   event_status: string;
   date_mode: string;
   start_date: string;
@@ -76,6 +77,7 @@ export function toEventSummaryDto(e: EventSummaryRow): EventSummaryDto {
     title_hi: e.titleHi,
     summary_en: e.summaryEn,
     event_type: masterRef(e.eventType),
+    event_category: masterRef(e.eventType.eventCategory),
     event_status: e.eventStatus,
     date_mode: e.dateMode,
     start_date: dateOnly(e.startDate) as string,
@@ -100,7 +102,6 @@ export interface EventDetailDto extends EventSummaryDto {
   summary_hi: string | null;
   description_en: string | null;
   description_hi: string | null;
-  training_type: MasterRef | null;
   block: MasterRef | null;
   status_override: boolean;
   cancellation_reason: string | null;
@@ -178,7 +179,6 @@ export function toEventDetailDto(e: EventRow): EventDetailDto {
     summary_hi: e.summaryHi,
     description_en: e.descriptionEn,
     description_hi: e.descriptionHi,
-    training_type: e.trainingType ? masterRef(e.trainingType) : null,
     block: e.block ? masterRef(e.block) : null,
     status_override: e.statusOverride,
     cancellation_reason: e.cancellationReason,
@@ -229,6 +229,7 @@ export interface PublicEventSummaryDto {
   title_hi: string | null;
   summary_en: string | null;
   event_type: MasterRef;
+  event_category: MasterRef;
   event_status: string;
   date_mode: string;
   start_date: string;
@@ -248,6 +249,7 @@ export function toPublicEventSummaryDto(e: EventSummaryRow): PublicEventSummaryD
     title_hi: e.titleHi,
     summary_en: e.summaryEn,
     event_type: masterRef(e.eventType),
+    event_category: masterRef(e.eventType.eventCategory),
     event_status: e.eventStatus,
     date_mode: e.dateMode,
     start_date: dateOnly(e.startDate) as string,
@@ -265,7 +267,6 @@ export interface PublicEventDetailDto extends PublicEventSummaryDto {
   summary_hi: string | null;
   description_en: string | null;
   description_hi: string | null;
-  training_type: MasterRef | null;
   block: MasterRef | null;
   dynamic_values: Record<string, unknown>;
   outcome_summary_en: string | null;
@@ -289,7 +290,6 @@ export function toPublicEventDetailDto(e: EventRow): PublicEventDetailDto {
     summary_hi: e.summaryHi,
     description_en: e.descriptionEn,
     description_hi: e.descriptionHi,
-    training_type: e.trainingType ? masterRef(e.trainingType) : null,
     block: e.block ? masterRef(e.block) : null,
     dynamic_values: dynamic(e.dynamicValues),
     outcome_summary_en: e.outcomeSummaryEn,

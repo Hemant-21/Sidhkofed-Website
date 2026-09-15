@@ -81,7 +81,6 @@ export interface ProgrammeDetailDto extends ProgrammeSummaryDto {
   application_process_en: string | null;
   application_process_hi: string | null;
   commodities: MasterRef[];
-  permitted_training_types: MasterRef[];
   publish_start_at: string | null;
   highlight_start_at: string | null;
   highlight_end_at: string | null;
@@ -105,7 +104,6 @@ export function toProgrammeDetailDto(p: ProgrammeRow): ProgrammeDetailDto {
     application_process_en: p.applicationProcessEn,
     application_process_hi: p.applicationProcessHi,
     commodities: p.commodities.map((c) => masterRef(c.commodity)),
-    permitted_training_types: p.permittedTrainingTypes.map((t) => masterRef(t.trainingType)),
     publish_start_at: iso(p.publishStartAt),
     highlight_start_at: iso(p.highlightStartAt),
     highlight_end_at: iso(p.highlightEndAt),
@@ -162,7 +160,6 @@ export interface PublicProgrammeDetailDto extends PublicProgrammeSummaryDto {
   application_process_hi: string | null;
   funding_source: string | null;
   commodities: MasterRef[];
-  permitted_training_types: MasterRef[];
 }
 
 export function toPublicProgrammeDetailDto(p: ProgrammeRow): PublicProgrammeDetailDto {
@@ -180,6 +177,5 @@ export function toPublicProgrammeDetailDto(p: ProgrammeRow): PublicProgrammeDeta
     application_process_hi: p.applicationProcessHi,
     funding_source: p.fundingSource,
     commodities: p.commodities.map((c) => masterRef(c.commodity)),
-    permitted_training_types: p.permittedTrainingTypes.map((t) => masterRef(t.trainingType)),
   };
 }

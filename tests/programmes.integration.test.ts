@@ -19,7 +19,7 @@ const PASSWORD = 'Integration#Pass123';
 let app: Express;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let prisma: any;
-const created: { users: string[]; commodityId?: string; trainingTypeId?: string; programmeId?: string } = { users: [] };
+const created: { users: string[]; commodityId?: string; programmeId?: string } = { users: [] };
 
 async function login(email: string): Promise<string> {
   const res = await request(app).post('/api/v1/auth/login').send({ email, password: PASSWORD });
@@ -69,12 +69,6 @@ describe.skipIf(!RUN)('programmes (integration)', () => {
     });
     created.commodityId = commodity.id;
 
-    const tt = await prisma.trainingType.upsert({
-      where: { slug: `it-skill-${STAMP}` },
-      update: {},
-      create: { nameEn: `IT Skill ${STAMP}`, slug: `it-skill-${STAMP}`, isActive: true },
-    });
-    created.trainingTypeId = tt.id;
 
     editorToken = await login(editorEmail);
     publisherToken = await login(publisherEmail);
@@ -84,11 +78,9 @@ describe.skipIf(!RUN)('programmes (integration)', () => {
     if (!prisma) return;
     if (created.programmeId) {
       await prisma.programmeCommodity.deleteMany({ where: { programmeSchemeId: created.programmeId } }).catch(() => undefined);
-      await prisma.programmePermittedTrainingType.deleteMany({ where: { programmeSchemeId: created.programmeId } }).catch(() => undefined);
       await prisma.programmeScheme.delete({ where: { id: created.programmeId } }).catch(() => undefined);
     }
     if (created.commodityId) await prisma.commodity.delete({ where: { id: created.commodityId } }).catch(() => undefined);
-    if (created.trainingTypeId) await prisma.trainingType.delete({ where: { id: created.trainingTypeId } }).catch(() => undefined);
     for (const id of created.users) {
       await prisma.userRole.deleteMany({ where: { userId: id } }).catch(() => undefined);
       await prisma.auditLog.deleteMany({ where: { userId: id } }).catch(() => undefined);
@@ -115,12 +107,10 @@ describe.skipIf(!RUN)('programmes (integration)', () => {
         start_date: '2026-04-01',
         end_date: '2027-03-31',
         commodity_ids: [created.commodityId],
-        permitted_training_type_ids: [created.trainingTypeId],
       });
     expect(res.status).toBe(201);
     expect(res.body.data.publication_state).toBe('draft');
     expect(res.body.data.commodities.map((c: { id: string }) => c.id)).toContain(created.commodityId);
-    expect(res.body.data.permitted_training_types.map((t: { id: string }) => t.id)).toContain(created.trainingTypeId);
     created.programmeId = res.body.data.id;
   });
 

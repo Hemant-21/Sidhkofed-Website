@@ -37,7 +37,6 @@ const baseShape = {
   end_date: dateOnly.nullable().optional(),
   cover_media_id: uuid.nullable().optional(),
   commodity_ids: uuidArray.optional(),
-  permitted_training_type_ids: uuidArray.optional(),
   ...workflowShape,
 };
 

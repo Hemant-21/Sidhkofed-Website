@@ -41,12 +41,21 @@ function langOf(v: unknown): 'en' | 'hi' | undefined {
   return undefined;
 }
 
+function documentSectionOf(v: unknown): 'publications' | 'notifications' | undefined {
+  const s = str(v);
+  if (s === 'publications' || s === 'notifications') return s;
+  if (s !== undefined) throw new ValidationError({ document_section: ['document_section must be "publications" or "notifications".'] });
+  return undefined;
+}
+
 /** Common filters shared by admin + public lists. `publication_state` is admin-only. */
 export function parseDocumentFilters(req: Request, opts: { admin: boolean }): DocumentFilters {
   const q = req.query;
   const filters: DocumentFilters = {
     documentType: str(q.document_type),
     knowledgeCategory: str(q.knowledge_category),
+    communicationType: str(q.communication_type),
+    documentSection: documentSectionOf(q.document_section),
     knowledgeCentre: boolFlag(q.knowledge_centre),
     commodity: str(q.commodity),
     district: str(q.district),

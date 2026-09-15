@@ -30,7 +30,7 @@ function listCacheKey(filters: ProcurementUpdateFilters, ordering: unknown, page
 const list = wrap(async (req) => {
   const page = resolvePageParams(req.query.page, req.query.page_size);
   const filters = parseProcurementUpdateFilters(req, { admin: false });
-  const ordering = parseProcurementUpdateOrdering(req);
+  const ordering = parseProcurementUpdateOrdering(req, false);
   const key = listCacheKey(filters, ordering, page.page, page.pageSize);
   const { items, total } = await procurementUpdateService.publicList(
     filters,

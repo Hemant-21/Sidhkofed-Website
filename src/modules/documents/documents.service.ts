@@ -73,10 +73,27 @@ async function assertReferencesValid(refs: Parameters<typeof documentRepository.
   if (Object.keys(errors).length > 0) throw new ValidationError(errors);
 }
 
-/** Knowledge-Centre tag requires a category (API spec §6). Checked against the MERGED state. */
-function assertKnowledgeCentreRule(showInKc: boolean, knowledgeCategoryId: string | null): void {
-  if (showInKc && !knowledgeCategoryId) {
-    throw new ValidationError({ knowledge_category_id: ['A knowledge category is required when show_in_knowledge_centre is true.'] });
+/**
+ * Classification (Publications vs Notifications, knowledge category vs communication type) is
+ * entirely derived from the resolved Document Type's own parent — `show_in_knowledge_centre`/
+ * `knowledge_category_id` are deprecated, non-authoritative document fields kept only for
+ * backwards compatibility. A caller may still send them, but only when they agree with what
+ * the type derives; a conflicting value is rejected rather than silently overridden.
+ */
+function assertClassificationConsistency(
+  input: { show_in_knowledge_centre?: boolean; knowledge_category_id?: string | null },
+  derived: { knowledgeCategoryId: string | null },
+): void {
+  const derivedShowInKc = derived.knowledgeCategoryId !== null;
+  if (input.show_in_knowledge_centre !== undefined && input.show_in_knowledge_centre !== derivedShowInKc) {
+    throw new ValidationError({
+      show_in_knowledge_centre: ['show_in_knowledge_centre is derived from document_type_id and cannot be set to a conflicting value.'],
+    });
+  }
+  if (input.knowledge_category_id !== undefined && input.knowledge_category_id !== derived.knowledgeCategoryId) {
+    throw new ValidationError({
+      knowledge_category_id: ['knowledge_category_id is derived from document_type_id and cannot be set to a conflicting value.'],
+    });
   }
 }
 
@@ -89,17 +106,17 @@ function requireUser(ctx: AuditContext): string {
 async function create(input: DocumentCreateInput, ctx: AuditContext): Promise<DocumentDetailDto> {
   const userId = requireUser(ctx);
 
-  // Business rules: file must exist + be document-like; masters active; KC rule.
+  // Business rules: file must exist + be document-like; masters active.
   const mimeType = await assertLinkableDocumentAsset(input.file_asset_id);
   await assertReferencesValid({
     documentTypeId: input.document_type_id,
-    knowledgeCategoryId: input.knowledge_category_id ?? null,
     financialYearId: input.financial_year_id ?? null,
     commodityIds: input.commodity_ids,
     districtIds: input.district_ids,
-    tagIds: input.tag_ids,
   });
-  assertKnowledgeCentreRule(input.show_in_knowledge_centre ?? false, input.knowledge_category_id ?? null);
+  // Classification is derived from the Document Type; reject a conflicting legacy value.
+  const classification = (await documentRepository.getDocumentTypeClassification(input.document_type_id))!;
+  assertClassificationConsistency(input, classification);
 
   const slug = await uniqueSlug(input.title_en, documentRepository.slugExists);
 
@@ -115,8 +132,8 @@ async function create(input: DocumentCreateInput, ctx: AuditContext): Promise<Do
         publicationDate: input.publication_date ?? null,
         language: input.language ?? 'en',
         isPublic: input.is_public ?? true,
-        showInKnowledgeCentre: input.show_in_knowledge_centre ?? false,
-        knowledgeCategoryId: input.knowledge_category_id ?? null,
+        showInKnowledgeCentre: classification.knowledgeCategoryId !== null,
+        knowledgeCategoryId: classification.knowledgeCategoryId,
         financialYearId: input.financial_year_id ?? null,
         slug,
         publicVisibility: input.public_visibility ?? true,
@@ -133,7 +150,6 @@ async function create(input: DocumentCreateInput, ctx: AuditContext): Promise<Do
     );
     if (input.commodity_ids?.length) await documentRepository.setCommodities(created.id, input.commodity_ids, tx);
     if (input.district_ids?.length) await documentRepository.setDistricts(created.id, input.district_ids, tx);
-    if (input.tag_ids?.length) await documentRepository.setTags(created.id, input.tag_ids, tx);
     // Register the file-asset usage so the asset cannot be hard-deleted while linked (TASK 16).
     await mediaUsageService.registerUsage(
       { mediaId: input.file_asset_id, entityType: DOCUMENT_ENTITY, entityId: created.id, field: FILE_FIELD },
@@ -164,18 +180,16 @@ async function update(id: string, input: DocumentUpdateInput, ctx: AuditContext)
   // Validate only the references actually being changed.
   await assertReferencesValid({
     documentTypeId: input.document_type_id,
-    knowledgeCategoryId: input.knowledge_category_id ?? undefined,
     financialYearId: input.financial_year_id ?? undefined,
     commodityIds: input.commodity_ids,
     districtIds: input.district_ids,
-    tagIds: input.tag_ids,
   });
 
-  // Knowledge-Centre rule against the merged state.
-  const mergedShowKc = input.show_in_knowledge_centre ?? existing.showInKnowledgeCentre;
-  const mergedCategory =
-    input.knowledge_category_id !== undefined ? input.knowledge_category_id : existing.knowledgeCategoryId;
-  assertKnowledgeCentreRule(mergedShowKc, mergedCategory);
+  // Classification is derived from the (possibly reassigned) Document Type; reject a
+  // conflicting legacy value.
+  const effectiveDocumentTypeId = input.document_type_id ?? existing.documentTypeId;
+  const classification = (await documentRepository.getDocumentTypeClassification(effectiveDocumentTypeId))!;
+  assertClassificationConsistency(input, classification);
 
   const updated = await documentRepository.transaction(async (tx) => {
     const row = await documentRepository.update(
@@ -190,8 +204,8 @@ async function update(id: string, input: DocumentUpdateInput, ctx: AuditContext)
         publicationDate: input.publication_date,
         language: input.language,
         isPublic: input.is_public,
-        showInKnowledgeCentre: input.show_in_knowledge_centre,
-        knowledgeCategoryId: input.knowledge_category_id,
+        showInKnowledgeCentre: classification.knowledgeCategoryId !== null,
+        knowledgeCategoryId: classification.knowledgeCategoryId,
         financialYearId: input.financial_year_id,
         publicVisibility: input.public_visibility,
         publishStartAt: input.publish_start_at,
@@ -206,7 +220,6 @@ async function update(id: string, input: DocumentUpdateInput, ctx: AuditContext)
     );
     if (input.commodity_ids !== undefined) await documentRepository.setCommodities(id, input.commodity_ids, tx);
     if (input.district_ids !== undefined) await documentRepository.setDistricts(id, input.district_ids, tx);
-    if (input.tag_ids !== undefined) await documentRepository.setTags(id, input.tag_ids, tx);
     // Re-point file-asset usage when the file changes (atomic with the row update).
     if (fileChanging) {
       await mediaUsageService.removeUsage(
@@ -256,8 +269,6 @@ async function lifecycle(id: string, action: LifecycleAction, ctx: AuditContext)
   // Business rule (TASK 16): cannot publish without an uploaded, non-archived file.
   if (action === 'publish') {
     await assertLinkableDocumentAsset(existing.fileAssetId);
-    // Knowledge-Centre integrity must hold at publish time too.
-    assertKnowledgeCentreRule(existing.showInKnowledgeCentre, existing.knowledgeCategoryId);
   }
 
   const change = applyLifecycle(

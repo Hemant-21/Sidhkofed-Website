@@ -7,8 +7,8 @@ import { describe, it, expect } from 'vitest';
 import { PUBLISHABLE_RESOURCES } from './publishable.registry';
 
 describe('PUBLISHABLE_RESOURCES', () => {
-  it('covers all 15 publishing-mixin models', () => {
-    expect(PUBLISHABLE_RESOURCES).toHaveLength(15);
+  it('covers all 14 publishing-mixin models', () => {
+    expect(PUBLISHABLE_RESOURCES).toHaveLength(14);
   });
 
   it('has unique keys and unique Prisma model names', () => {
@@ -32,7 +32,6 @@ describe('PUBLISHABLE_RESOURCES', () => {
       'faq',
       'digitalService',
       'institutionalMembership',
-      'dashboardReport',
       'document',
       'gallery',
       'video',

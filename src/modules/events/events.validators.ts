@@ -21,7 +21,6 @@ const DATE_MODES = ['single', 'range', 'multi_day'] as const;
 
 const baseShape = {
   event_type_id: uuid,
-  training_type_id: uuid.nullable().optional(),
   title_en: requiredText(255),
   title_hi: z.string().trim().max(255).nullable().optional(),
   summary_en: optionalText(),

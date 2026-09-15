@@ -74,6 +74,36 @@ export function serializeBlock(row: MasterRow): Record<string, unknown> {
   };
 }
 
+export function serializeEventType(row: MasterRow): Record<string, unknown> {
+  return {
+    ...serializeStandard(row),
+    event_category_id: str(row.eventCategoryId),
+    event_category: masterRef(row.eventCategory as MasterRow | undefined),
+  };
+}
+
+export function serializeProcurementUpdateType(row: MasterRow): Record<string, unknown> {
+  return {
+    ...serializeStandard(row),
+    procurement_update_category_id: str(row.procurementUpdateCategoryId),
+    procurement_update_category: masterRef(row.procurementUpdateCategory as MasterRow | undefined),
+  };
+}
+
+/** Document Type — exactly one of knowledge_category/communication_type is ever non-null. */
+export function serializeDocumentType(row: MasterRow): Record<string, unknown> {
+  const knowledgeCategory = masterRef(row.knowledgeCategory as MasterRow | undefined);
+  const communicationType = masterRef(row.communicationType as MasterRow | undefined);
+  return {
+    ...serializeStandard(row),
+    knowledge_category_id: nullableStr(row.knowledgeCategoryId),
+    knowledge_category: knowledgeCategory,
+    communication_type_id: nullableStr(row.communicationTypeId),
+    communication_type: communicationType,
+    document_section: knowledgeCategory ? 'publications' : 'notifications',
+  };
+}
+
 export function serializeFinancialYear(row: MasterRow): Record<string, unknown> {
   return {
     id: str(row.id),

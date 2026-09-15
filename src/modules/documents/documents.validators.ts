@@ -49,12 +49,14 @@ const baseDocumentShape = {
   publication_date: dateOnly.nullable().optional(),
   language: z.enum(['en', 'hi']).optional(),
   is_public: z.boolean().optional(),
+  // Deprecated: classification is derived from document_type_id's parent (knowledge category
+  // or communication type). Accepted only for backwards compatibility — the service rejects a
+  // value that conflicts with the type-derived classification (422) rather than persisting it.
   show_in_knowledge_centre: z.boolean().optional(),
   knowledge_category_id: uuid.nullable().optional(),
   financial_year_id: uuid.nullable().optional(),
   commodity_ids: uuidArray.optional(),
   district_ids: uuidArray.optional(),
-  tag_ids: uuidArray.optional(),
   // Workflow fields (accepted but cannot transition publication state — that is the action
   // endpoint's job, API spec §3).
   public_visibility: z.boolean().optional(),
@@ -80,18 +82,7 @@ function refineHighlightWindow(
 const documentCreateSchema = z
   .object(baseDocumentShape)
   .strict()
-  .superRefine((data, ctx) => {
-    refineHighlightWindow(data, ctx);
-    // Knowledge-Centre tag requires a category (API spec §6). Authoritative check is in the
-    // service (it sees merged state on update); this gives the editor immediate create feedback.
-    if (data.show_in_knowledge_centre === true && !data.knowledge_category_id) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ['knowledge_category_id'],
-        message: 'A knowledge category is required when show_in_knowledge_centre is true.',
-      });
-    }
-  });
+  .superRefine((data, ctx) => refineHighlightWindow(data, ctx));
 export type DocumentCreateInput = z.infer<typeof documentCreateSchema>;
 export const validateDocumentCreate = (p: unknown): DocumentCreateInput => parse(documentCreateSchema, p);
 

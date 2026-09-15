@@ -1,0 +1,3 @@
+metric_key,label_en,value,unit,display_order
+karanj_estimated_potential_jharkhand,"Karanj Potential (Jharkhand, Est.)",10000,tonne/year,3
+karanj_future_procurement_target,Karanj Future Target (Proposed),3000,tonne,4

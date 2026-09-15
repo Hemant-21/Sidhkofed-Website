@@ -32,12 +32,12 @@ routes → controller → base-master.service → base-master.repository → Pri
 | `masters.routes.ts` | `/admin/masters/*` (authenticated) and `/public/masters/*` (open). |
 | `masters.permissions.ts` | Named permission keys (`masters.view|create|update|activate|deactivate|restore`). |
 
-### Entities (16)
+### Entities (15)
 
 `event-types`, `training-types`, `commodities`, `districts`, `blocks`, `institution-types`,
 `document-types`, `knowledge-categories`, `communication-types`, `tender-types`,
 `procurement-update-types`, `faq-categories`, `enquiry-types`, `financial-years`,
-`reporting-periods`, `tags`.
+`reporting-periods`.
 
 Shared shape (Part 4): `id`, `name_en` (UNIQUE), `name_hi?`, `slug` (UNIQUE), `is_active`,
 `display_order?`, timestamps. Variants:
@@ -49,7 +49,6 @@ Shared shape (Part 4): `id`, `name_en` (UNIQUE), `name_hi?`, `slug` (UNIQUE), `i
   no overlapping ranges.
 - **reporting-periods** carry `period_type` (`month|financial_year|calendar_year|cumulative`),
   optional `financial_year_id`/`calendar_year`, and `start_date`/`end_date`.
-- **tags** are internal-only (no public route).
 
 > Schema note: the master models were added to `prisma/schema.prisma` with content
 > back-relations **trimmed** to counterparts that exist this phase (only
@@ -150,7 +149,7 @@ Masters are Tier 5 — every content module validates FK references against **ac
 | Events / News | event-types, training-types, districts, blocks, commodities |
 | Programmes | commodities, training-types |
 | Institutions | institution-types, districts |
-| Documents / Knowledge Hub | document-types, knowledge-categories, financial-years, tags, commodities, districts |
+| Documents / Knowledge Hub | document-types, knowledge-categories, financial-years, commodities, districts |
 | Official Communications | communication-types |
 | Tenders | tender-types |
 | Procurement Updates | procurement-update-types, commodities, districts, blocks |

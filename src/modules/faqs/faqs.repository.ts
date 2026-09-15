@@ -1,7 +1,8 @@
 /**
  * FAQ repository — the ONLY Prisma caller for this module (coding-standards §6). Encapsulates the
  * public-visibility predicate so public vs admin queries differ only by it; applies the ordering
- * allow-list; validates master activation. Returns entities, never DTOs.
+ * allow-list. Page-key validity is a pure code-registry check done in the validators/query layer —
+ * no DB lookup is needed for it (unlike master-FK references elsewhere).
  */
 import type { Prisma, PrismaClient } from '@prisma/client';
 import { prisma } from '@/db/prisma';
@@ -10,11 +11,8 @@ import type { FaqFilters, FaqOrderingField } from './faqs.types';
 
 type Db = PrismaClient | Prisma.TransactionClient;
 
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const isUuid = (v: string): boolean => UUID_RE.test(v);
-
-/** Detail/summary include — the FAQ category master only. */
-const faqInclude = { faqCategory: true } satisfies Prisma.FaqInclude;
+/** Detail/summary include — every page assignment for the FAQ, ordered for stable DTO output. */
+const faqInclude = { pageAssignments: { orderBy: { pageKey: 'asc' } } } satisfies Prisma.FaqInclude;
 
 export type FaqRow = Prisma.FaqGetPayload<{ include: typeof faqInclude }>;
 
@@ -41,9 +39,8 @@ export function buildWhere(f: FaqFilters, opts: { public?: boolean }): Prisma.Fa
     where.publicationState = f.publicationState;
   }
 
-  if (f.showOnHomepage !== undefined) where.showOnHomepage = f.showOnHomepage;
-  if (f.faqCategory) {
-    where.faqCategory = isUuid(f.faqCategory) ? { id: f.faqCategory } : { slug: f.faqCategory };
+  if (f.pageKey) {
+    where.pageAssignments = { some: { pageKey: f.pageKey } };
   }
   if (f.search) {
     const q = f.search;
@@ -83,9 +80,11 @@ async function update(id: string, data: Prisma.FaqUncheckedUpdateInput, db: Db =
 }
 
 /**
- * List FAQs. Ordering is the requested field, but FAQs are grouped by their category first (category
- * display order, then name) so the public list reads "by category/display order" (API spec §5). The
- * requested field acts as the within-group ordering.
+ * List FAQs. With `f.pageKey` set: FAQs assigned to that page, ordered by the assignment's own
+ * `display_order` then FAQ id (a one-to-many relation field can't be an `orderBy` target on the
+ * `Faq` side in Prisma, so this path queries `FaqPageAssignment` directly and follows the `faq`
+ * relation back). Without `f.pageKey`: the global /faqs directory, ordered by the requested field
+ * (defaulting to `Faq.displayOrder`) then id.
  */
 async function list(
   f: FaqFilters,
@@ -93,11 +92,26 @@ async function list(
   take: number,
   opts: FaqQueryOptions,
 ): Promise<{ rows: FaqRow[]; total: number }> {
+  if (f.pageKey) {
+    const faqWhere = buildWhere({ ...f, pageKey: undefined }, { public: opts.public });
+    const assignmentWhere: Prisma.FaqPageAssignmentWhereInput = { pageKey: f.pageKey, faq: faqWhere };
+    const [rows, total] = await Promise.all([
+      prisma.faqPageAssignment.findMany({
+        where: assignmentWhere,
+        include: { faq: { include: faqInclude } },
+        orderBy: [{ displayOrder: 'asc' }, { faqId: 'asc' }],
+        skip,
+        take,
+      }),
+      prisma.faqPageAssignment.count({ where: assignmentWhere }),
+    ]);
+    return { rows: rows.map((r) => r.faq), total };
+  }
+
   const where = buildWhere(f, { public: opts.public });
   const orderBy: Prisma.FaqOrderByWithRelationInput[] = [
-    { faqCategory: { displayOrder: 'asc' } },
-    { faqCategory: { nameEn: 'asc' } },
     { [ORDER_COLUMN[opts.ordering.field]]: opts.ordering.direction },
+    { id: 'asc' },
   ];
   const [rows, total] = await Promise.all([
     prisma.faq.findMany({ where, include: faqInclude, orderBy, skip, take }),
@@ -106,19 +120,31 @@ async function list(
   return { rows, total };
 }
 
-/** Validate the FAQ category exists AND is active. Returns field-keyed errors ({} when all valid). */
-interface FaqRefs {
-  faqCategoryId?: string | null;
+/** Run a function inside a transaction (service orchestrates content + assignment writes). */
+function transaction<T>(fn: (tx: Prisma.TransactionClient) => Promise<T>): Promise<T> {
+  return prisma.$transaction(fn);
 }
 
-async function validateReferences(refs: FaqRefs): Promise<Record<string, string[]>> {
-  const errors: Record<string, string[]> = {};
-  if (refs.faqCategoryId) {
-    const row = await prisma.faqCategory.findUnique({ where: { id: refs.faqCategoryId }, select: { isActive: true } });
-    if (!row) errors.faq_category_id = ['FAQ category not found.'];
-    else if (!row.isActive) errors.faq_category_id = ['FAQ category is inactive.'];
+/** Replace all of a FAQ's page assignments (delete + recreate — same shape as document tags/etc). */
+async function setPageAssignments(
+  faqId: string,
+  assignments: Array<{ page_key: string; display_order: number }>,
+  db: Db,
+): Promise<void> {
+  await db.faqPageAssignment.deleteMany({ where: { faqId } });
+  if (assignments.length > 0) {
+    await db.faqPageAssignment.createMany({
+      data: assignments.map((a) => ({ faqId, pageKey: a.page_key, displayOrder: a.display_order })),
+    });
   }
-  return errors;
+}
+
+async function findAssignment(faqId: string, pageKey: string, db: Db = prisma) {
+  return db.faqPageAssignment.findUnique({ where: { faqId_pageKey: { faqId, pageKey } } });
+}
+
+async function updateAssignmentOrder(faqId: string, pageKey: string, displayOrder: number, db: Db): Promise<void> {
+  await db.faqPageAssignment.update({ where: { faqId_pageKey: { faqId, pageKey } }, data: { displayOrder } });
 }
 
 export const faqRepository = {
@@ -128,5 +154,8 @@ export const faqRepository = {
   findBySlug,
   update,
   list,
-  validateReferences,
+  transaction,
+  setPageAssignments,
+  findAssignment,
+  updateAssignmentOrder,
 };

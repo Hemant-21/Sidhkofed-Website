@@ -31,7 +31,7 @@ const create = wrap(async (req) => {
 const list = wrap(async (req) => {
   const page = resolvePageParams(req.query.page, req.query.page_size);
   const filters = parseProcurementUpdateFilters(req, { admin: true });
-  const ordering = parseProcurementUpdateOrdering(req);
+  const ordering = parseProcurementUpdateOrdering(req, true);
   const { items, total } = await procurementUpdateService.list(filters, ordering, page.skip, page.take);
   return { status: 200, body: paginated(items, buildPagination(total, page), String(req.id)) };
 });

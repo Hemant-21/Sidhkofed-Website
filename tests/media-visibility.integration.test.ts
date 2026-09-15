@@ -100,10 +100,12 @@ describe.skipIf(!RUN)('public media visibility — scheduled publishing (integra
         create: { userId: user.id, roleId: role.id },
       });
     }
+    // Every document type must have exactly one parent family (DB CHECK constraint).
+    const knowledgeCategory = await prisma.knowledgeCategory.findFirstOrThrow({ where: { isActive: true } });
     const docType = await prisma.documentType.upsert({
       where: { slug: `it-vis-type-${STAMP}` },
       update: {},
-      create: { nameEn: `IT Vis Type ${STAMP}`, slug: `it-vis-type-${STAMP}`, isActive: true },
+      create: { nameEn: `IT Vis Type ${STAMP}`, slug: `it-vis-type-${STAMP}`, isActive: true, knowledgeCategoryId: knowledgeCategory.id },
     });
     created.typeId = docType.id;
 

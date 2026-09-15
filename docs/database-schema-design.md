@@ -41,7 +41,6 @@
 | `document_programmes` | documents ↔ programme_schemes |
 | `document_institutions` | documents ↔ institutions |
 | `document_districts` | documents ↔ districts |
-| `document_tags` | documents ↔ tags |
 | `gallery_images` | galleries ↔ media_assets (ordered) |
 | `role_permissions` | roles ↔ permissions |
 | `user_roles` | users ↔ roles |
@@ -99,8 +98,7 @@ documents
  ├──< document_commodities  >── commodities
  ├──< document_programmes   >── programme_schemes
  ├──< document_institutions >── institutions
- ├──< document_districts    >── districts
- └──< document_tags         >── tags
+ └──< document_districts    >── districts
 
 official_communications ── communication_type_id ──> communication_types
                         └── document_id ──> documents (optional)
@@ -256,7 +254,6 @@ UNIQUE (name_en)
 | `enquiry_types` | — |
 | `financial_years` | `label VARCHAR(9) UNIQUE` e.g. `2025-2026`, `start_date DATE`, `end_date DATE` |
 | `reporting_periods` | `period_type reporting_period_type_enum` (`month`/`financial_year`/`calendar_year`/`cumulative`), `start_date`, `end_date`, `calendar_year INTEGER NULL`, `financial_year_id UUID` — supports dashboard period granularity Month / Financial Year / Calendar Year / Cumulative |
-| `tags` | free-form labels for documents/knowledge hub |
 
 **Activation/deactivation strategy:** `is_active` flag (never delete). App filters new-entry dropdowns to `is_active=true`; existing FK links survive deactivation. FKs use `ON DELETE RESTRICT` so a master in use cannot be removed.
 
@@ -458,7 +455,7 @@ knowledge_category_id UUID NULL REFERENCES knowledge_categories(id) ON DELETE RE
 financial_year_id UUID NULL REFERENCES financial_years(id)
 -- + mixin
 ```
-Junctions: `document_commodities`, `document_programmes`, `document_institutions`, `document_districts`, `document_tags`.
+Junctions: `document_commodities`, `document_programmes`, `document_institutions`, `document_districts`.
 
 ### official_communications
 ```text
@@ -1211,18 +1208,6 @@ model ReportingPeriod {
   @@map("reporting_periods")
 }
 
-model Tag {
-  id String @id @default(uuid()) @db.Uuid
-  nameEn String @unique @map("name_en")
-  nameHi String? @map("name_hi")
-  slug String @unique
-  isActive Boolean @default(true) @map("is_active")
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-  documentTags DocumentTag[]
-  @@map("tags")
-}
-
 // ─────────────── Events ───────────────
 model Event {
   id              String   @id @default(uuid()) @db.Uuid
@@ -1623,7 +1608,6 @@ model Document {
   programmes DocumentProgramme[]
   institutions DocumentInstitution[]
   districts DocumentDistrict[]
-  tags DocumentTag[]
   events EventDocument[]
   communications OfficialCommunication[]
   procurementUpdates ProcurementUpdate[]
@@ -1670,16 +1654,6 @@ model DocumentDistrict {
   @@unique([documentId, districtId])
   @@map("document_districts")
 }
-model DocumentTag {
-  id String @id @default(uuid()) @db.Uuid
-  documentId String @map("document_id") @db.Uuid
-  tagId String @map("tag_id") @db.Uuid
-  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
-  tag Tag @relation(fields: [tagId], references: [id], onDelete: Restrict)
-  @@unique([documentId, tagId])
-  @@map("document_tags")
-}
-
 // ─────────────── Official Communications ───────────────
 model OfficialCommunication {
   id String @id @default(uuid()) @db.Uuid
