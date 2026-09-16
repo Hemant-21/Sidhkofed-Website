@@ -105,25 +105,21 @@ export const PERMISSIONS: PermissionSeed[] = [
   { key: 'dashboard.archive', module: 'dashboard', action: 'archive', description: 'Archive dashboard reports.' },
   { key: 'dashboard.restore', module: 'dashboard', action: 'restore', description: 'Restore archived dashboard reports.' },
   { key: 'dashboard.manage_data', module: 'dashboard', action: 'manage_data', description: 'Manage dashboard metrics and import datasets.' },
-  // ── Operational Reports (Stage 1 of the Operational Reports / Website Metrics plan). Read-only,
-  // live-calculated reports over operational records — no builder, no manual entry, so (like
-  // `dashboard.*`) it gets its own hand-picked keys rather than the generic 7-action/4-action
-  // shapes above, which don't fit a read+export-only surface. `website_metrics.*` is deliberately
-  // NOT added here — that is Stage 2's module and its own permission set.
-  { key: 'operational_reports.view', module: 'operational_reports', action: 'view', description: 'View and generate live operational reports.' },
-  { key: 'operational_reports.export', module: 'operational_reports', action: 'export', description: 'Export operational reports (XLSX).' },
-  // ── Website Metrics (Stage 2 of the Operational Reports / Website Metrics plan). Admin-configured
-  // pointers at public-eligible operational-report measures, with a preview→publish lifecycle of
-  // their own (not the generic `content.*` shape — there is no draft content, only a configuration
-  // and a series of frozen snapshots). Hand-picked keys, same precedent as `dashboard.*` /
-  // `operational_reports.*`. `.view`/`.manage_data` go to Content Editor + Publisher;
-  // `.publish`/`.unpublish`/`.archive`/`.restore` are Publisher-only (Super Admin implicit).
-  { key: 'website_metrics.view', module: 'website_metrics', action: 'view', description: 'View website metric configurations and their published values.' },
-  { key: 'website_metrics.manage_data', module: 'website_metrics', action: 'manage_data', description: 'Create/update website metric configurations and run previews.' },
-  { key: 'website_metrics.publish', module: 'website_metrics', action: 'publish', description: 'Publish website metrics.' },
-  { key: 'website_metrics.unpublish', module: 'website_metrics', action: 'unpublish', description: 'Unpublish website metrics.' },
-  { key: 'website_metrics.archive', module: 'website_metrics', action: 'archive', description: 'Archive website metrics.' },
-  { key: 'website_metrics.restore', module: 'website_metrics', action: 'restore', description: 'Restore archived website metrics.' },
+  // ── Reports (Programme / District Activity Coverage / Commodity-wise). Read-only, live-calculated
+  // reports over operational records — no builder, no manual entry, so (like `dashboard.*`) it gets
+  // its own hand-picked keys rather than the generic 7-action/4-action shapes above, which don't fit
+  // a read+export-only surface. These keys previously belonged to the retired six-report
+  // "Operational Reports" catalogue and the retired Website Metrics feature (which fed off it) —
+  // reused here rather than churned, since this module replaced both on the same permission surface.
+  { key: 'operational_reports.view', module: 'operational_reports', action: 'view', description: 'View and generate live Programme/District/Commodity reports.' },
+  { key: 'operational_reports.export', module: 'operational_reports', action: 'export', description: 'Export Programme/District/Commodity reports (XLSX).' },
+  // ── Report Publications (Task 5). Approves and publishes the three Reports (Programme/District/
+  // Commodity) together as one immutable FY-wide snapshot for the public site. Same hand-picked
+  // precedent as `dashboard.*`/`operational_reports.*`: `.view` (see publications/history in the
+  // CMS) goes to Content Editor + Publisher; `.publish` (generate preview + approve & publish) is
+  // Publisher-only.
+  { key: 'report_publications.view', module: 'report_publications', action: 'view', description: 'View report publication previews and history.' },
+  { key: 'report_publications.publish', module: 'report_publications', action: 'publish', description: 'Approve and publish the FY report snapshot.' },
 ];
 
 /**
@@ -151,15 +147,14 @@ export const ROLE_PERMISSIONS: Record<Exclude<RoleKey, 'super_admin'>, string[]>
   content_editor: [
     'content.create', 'content.update', 'masters.view',
     'operational_reports.view',
-    'website_metrics.view', 'website_metrics.manage_data',
+    'report_publications.view',
     ...EDITOR_MODULE_GRANTS,
   ],
   publisher: [
     'content.publish', 'content.unpublish', 'content.archive', 'content.restore', 'content.update', 'masters.view',
     'dashboard.publish', 'dashboard.unpublish', 'dashboard.archive', 'dashboard.restore', 'dashboard.manage_data',
     'operational_reports.view', 'operational_reports.export',
-    'website_metrics.view', 'website_metrics.manage_data',
-    'website_metrics.publish', 'website_metrics.unpublish', 'website_metrics.archive', 'website_metrics.restore',
+    'report_publications.view', 'report_publications.publish',
     ...PUBLISHER_MODULE_GRANTS,
   ],
 };

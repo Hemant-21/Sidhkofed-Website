@@ -21,7 +21,6 @@ import { programmeService } from '@/modules/programmes/programmes.service';
 import { institutionService } from '@/modules/institutions/institutions.service';
 import { digitalServiceService } from '@/modules/digital-services/digital-services.service';
 import { videoService } from '@/modules/videos/video.service';
-import { operationalReportsPublicService } from '@/modules/dashboard/operational-reports/operational-reports.public.service';
 
 /** Per-section caps — the homepage shows a small curated slice, not full listings (API spec §15.3). */
 const LIMIT = {
@@ -39,14 +38,6 @@ const LIMIT = {
 const firstPage = (take: number) => ({ skip: 0, take, page: 1, pageSize: take });
 
 interface HomeAggregate {
-  /**
-   * The legacy `DashboardReport`-backed `kpis` section is retired along with that whole concept
-   * (see `operational-reports.public.service.ts`). The homepage now surfaces the same live
-   * Operational Reports (public-eligible measures only, current financial year) the
-   * `/impact/dashboard` page uses, under `operational_reports` — a website rebuild consumes this
-   * new field name instead of the old `kpis` array.
-   */
-  operational_reports: Awaited<ReturnType<typeof operationalReportsPublicService.getAllPublicReports>>['reports'];
   news: Awaited<ReturnType<typeof newsService.publicList>>['items'];
   events: Awaited<ReturnType<typeof eventService.publicList>>['items'];
   communications: Awaited<ReturnType<typeof officialCommunicationService.publicList>>['items'];
@@ -62,9 +53,8 @@ interface HomeAggregate {
  * public service so the visibility predicate, DTO shape, and caching stay single-sourced.
  */
 async function aggregate(): Promise<HomeAggregate> {
-  const [operationalReports, news, events, communications, tenders, programmes, partners, digitalServices, videos] =
+  const [news, events, communications, tenders, programmes, partners, digitalServices, videos] =
     await Promise.all([
-      operationalReportsPublicService.getAllPublicReports(),
       newsService.publicList(
         { showOnHomepage: true },
         { field: 'news_published_at', direction: 'desc' },
@@ -116,7 +106,6 @@ async function aggregate(): Promise<HomeAggregate> {
     ]);
 
   return {
-    operational_reports: operationalReports.reports,
     news: news.items,
     events: events.items,
     communications: communications.items,

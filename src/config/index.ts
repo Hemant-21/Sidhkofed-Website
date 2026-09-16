@@ -121,7 +121,6 @@ export const schedulerConfig = {
     scheduledPublishing: env.SCHEDULER_PUBLISHING_CRON,
     highlightExpiry: env.SCHEDULER_HIGHLIGHT_CRON,
     eventStatus: env.SCHEDULER_EVENT_STATUS_CRON,
-    dashboardRefresh: env.SCHEDULER_DASHBOARD_REFRESH_CRON,
   },
 } as const;
 

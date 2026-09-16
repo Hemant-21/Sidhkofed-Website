@@ -11,7 +11,6 @@ import { SCHEDULER_JOBS, type JobHandler, type SchedulerJobName } from './schedu
 import { runScheduledPublishing } from './jobs/scheduled-publishing.job';
 import { runHighlightExpiry } from './jobs/highlight-expiry.job';
 import { runEventStatusRecompute } from './jobs/event-status.job';
-import { runDashboardRefresh } from './jobs/dashboard-refresh.job';
 
 const schedulerLog = logger.child({ component: 'scheduler' });
 
@@ -23,7 +22,6 @@ const JOBS: Array<{ name: SchedulerJobName; handler: JobHandler; cron: string }>
   { name: SCHEDULER_JOBS.scheduledPublishing, handler: runScheduledPublishing, cron: schedulerConfig.cron.scheduledPublishing },
   { name: SCHEDULER_JOBS.highlightExpiry, handler: runHighlightExpiry, cron: schedulerConfig.cron.highlightExpiry },
   { name: SCHEDULER_JOBS.eventStatus, handler: runEventStatusRecompute, cron: schedulerConfig.cron.eventStatus },
-  { name: SCHEDULER_JOBS.dashboardRefresh, handler: runDashboardRefresh, cron: schedulerConfig.cron.dashboardRefresh },
 ];
 
 function intervalMsFromCron(cron: string): number {

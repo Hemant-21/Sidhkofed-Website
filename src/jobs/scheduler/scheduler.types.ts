@@ -13,7 +13,6 @@ export const SCHEDULER_JOBS = {
   scheduledPublishing: 'scheduled-publishing',
   highlightExpiry: 'highlight-expiry',
   eventStatus: 'event-status-recompute',
-  dashboardRefresh: 'dashboard-refresh',
 } as const;
 
 export type SchedulerJobName = (typeof SCHEDULER_JOBS)[keyof typeof SCHEDULER_JOBS];

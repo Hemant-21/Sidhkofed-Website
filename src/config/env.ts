@@ -143,11 +143,10 @@ const envSchema = z
     // guards against overlapping runs within the API process.
     SCHEDULER_ENABLED: boolish(true),
     SCHEDULER_TIMEZONE: z.string().min(1).default('Asia/Kolkata'),
-    // Default cadence: publishing/highlight every 5 min; status every 15 min; dashboard hourly.
+    // Default cadence: publishing/highlight every 5 min; status every 15 min.
     SCHEDULER_PUBLISHING_CRON: z.string().min(1).default('*/5 * * * *'),
     SCHEDULER_HIGHLIGHT_CRON: z.string().min(1).default('*/5 * * * *'),
     SCHEDULER_EVENT_STATUS_CRON: z.string().min(1).default('*/15 * * * *'),
-    SCHEDULER_DASHBOARD_REFRESH_CRON: z.string().min(1).default('0 * * * *'),
     SCHEDULER_BATCH_SIZE: intWithDefault(100, 1),
     SCHEDULER_LOCK_TTL_SECONDS: intWithDefault(600, 5),
   })

@@ -116,24 +116,38 @@ async function seedSuperAdminUser(roleIds: Map<string, string>): Promise<string>
   return user.id;
 }
 
-async function main(): Promise<void> {
+/**
+ * Identity/RBAC + master/membership data only — no super-admin-dependent content. Exported so
+ * `fixtures.ts` can seed the baseline before layering its own deterministic content fixtures on
+ * top, without duplicating this logic. Returns the super admin user's id.
+ */
+export async function seedBaseline(_db?: PrismaClient): Promise<string> {
   console.log('Seeding identity & RBAC (idempotent)…');
   const roleIds = await seedRoles();
   const permIds = await seedPermissions();
   await seedRolePermissions(roleIds, permIds);
-  await seedSuperAdminUser(roleIds);
+  const userId = await seedSuperAdminUser(roleIds);
   await seedMasters(prisma);
   await seedMemberships(prisma);
   await seedContactDefaults(prisma);
   await seedLeadershipDefaults(prisma);
   console.log('Seed complete.');
+  return userId;
 }
 
-main()
-  .catch((err) => {
-    console.error('Seed failed:', err);
-    process.exitCode = 1;
-  })
-  .finally(() => {
-    void prisma.$disconnect();
-  });
+async function main(): Promise<void> {
+  await seedBaseline();
+}
+
+// Only auto-run when executed directly (`node dist/prisma/seed/index.js` / `npm run db:seed`), not
+// when imported by `fixtures.ts` — importing must not implicitly trigger a second seed run.
+if (require.main === module) {
+  main()
+    .catch((err) => {
+      console.error('Seed failed:', err);
+      process.exitCode = 1;
+    })
+    .finally(() => {
+      void prisma.$disconnect();
+    });
+}

@@ -63,6 +63,7 @@ model User {
   userRoles                     UserRole[]
   createdVideos                 Video[]                      @relation("VideoCreatedBy")
   updatedVideos                 Video[]                      @relation("VideoUpdatedBy")
+  publishedReportPublications   ReportPublication[]          @relation("ReportPublicationPublishedBy")
 
   @@map("users")
 }
@@ -333,8 +334,6 @@ model EventType {
   @@map("event_types")
 }
 
-
-
 model Commodity {
   id                 String               @id @default(uuid()) @db.Uuid
   nameEn             String               @unique @map("name_en")
@@ -551,19 +550,58 @@ model Enquiry {
 }
 
 model FinancialYear {
-  id                String             @id @default(uuid()) @db.Uuid
-  label             String             @unique
-  startDate         DateTime           @map("start_date") @db.Date
-  endDate           DateTime           @map("end_date") @db.Date
-  isActive          Boolean            @default(true) @map("is_active")
-  createdAt         DateTime           @default(now()) @map("created_at")
-  updatedAt         DateTime           @updatedAt @map("updated_at")
-  dashboardDatasets DashboardDataset[]
-  dashboardMetrics  DashboardMetric[]
-  documents         Document[]
-  reportingPeriods  ReportingPeriod[]
+  id                         String              @id @default(uuid()) @db.Uuid
+  label                      String              @unique
+  startDate                  DateTime            @map("start_date") @db.Date
+  endDate                    DateTime            @map("end_date") @db.Date
+  isActive                   Boolean             @default(true) @map("is_active")
+  // A single synthetic row representing "All financial years combined" (Reports feature only).
+  // Its start/end date span every real FY so the exact same date-range queries used for a normal
+  // FY naturally aggregate across all of them — no report/publication code needs to special-case
+  // it. Never counted as "the current FY" and never eligible for auto-selection.
+  isAllYearsAggregate        Boolean             @default(false) @map("is_all_years_aggregate")
+  createdAt                  DateTime            @default(now()) @map("created_at")
+  updatedAt                  DateTime            @updatedAt @map("updated_at")
+  dashboardDatasets          DashboardDataset[]
+  dashboardMetrics           DashboardMetric[]
+  documents                  Document[]
+  reportingPeriods           ReportingPeriod[]
+  // The currently-live approved publication for this FY (Task 5) — null means "not published yet".
+  currentReportPublicationId String?             @unique @map("current_report_publication_id") @db.Uuid
+  currentReportPublication   ReportPublication?  @relation("CurrentReportPublication", fields: [currentReportPublicationId], references: [id])
+  reportPublications         ReportPublication[] @relation("FyReportPublications")
 
   @@map("financial_years")
+}
+
+// An immutable, approved FY-wide snapshot of all three Reports (Programme / District Activity
+// Coverage / Commodity-wise), published together. `programmeReport`/`districtReport`/
+// `commodityReport` each store a full `ReportResult` JSON (see reports.types.ts) computed over the
+// FULL FY with no filters applied, including nested drill-downs and toolkit catalogue-default
+// snapshots — sufficient for the public site to filter/chart/drill down entirely from this row,
+// with no live query. Append-only: publishing never edits an existing row, only writes a new one
+// and repoints `FinancialYear.currentReportPublicationId` at it (same pattern as
+// `WebsiteMetricSnapshot`/`WebsiteMetric.currentSnapshotId`). History is preserved via
+// `financialYearId` + `publishedAt`; "current" is only ever the one row a `FinancialYear` points at.
+model ReportPublication {
+  id                 String         @id @default(uuid()) @db.Uuid
+  financialYearId    String         @map("financial_year_id") @db.Uuid
+  financialYear      FinancialYear  @relation("FyReportPublications", fields: [financialYearId], references: [id])
+  calculationVersion Int            @map("calculation_version")
+  fyStartDate        DateTime       @map("fy_start_date") @db.Date
+  fyEndDate          DateTime       @map("fy_end_date") @db.Date
+  programmeReport    Json           @map("programme_report")
+  districtReport     Json           @map("district_report")
+  commodityReport    Json           @map("commodity_report")
+  generatedAt        DateTime       @map("generated_at")
+  publishedAt        DateTime       @default(now()) @map("published_at")
+  publishedById      String         @map("published_by") @db.Uuid
+  publishedBy        User           @relation("ReportPublicationPublishedBy", fields: [publishedById], references: [id])
+  currentFor         FinancialYear? @relation("CurrentReportPublication")
+  createdAt          DateTime       @default(now()) @map("created_at")
+
+  @@index([financialYearId, publishedAt])
+  @@map("report_publications")
 }
 
 model ReportingPeriod {
@@ -885,51 +923,51 @@ model EventGallery {
 }
 
 model ProgrammeScheme {
-  id                     String                           @id @default(uuid()) @db.Uuid
-  titleEn                String                           @map("title_en")
-  titleHi                String?                          @map("title_hi")
-  shortCode              String?                          @map("short_code")
-  summaryEn              String?                          @map("summary_en")
-  summaryHi              String?                          @map("summary_hi")
-  descriptionEn          String?                          @map("description_en")
-  descriptionHi          String?                          @map("description_hi")
-  objectivesEn           String?                          @map("objectives_en")
-  objectivesHi           String?                          @map("objectives_hi")
-  eligibilityEn          String?                          @map("eligibility_en")
-  eligibilityHi          String?                          @map("eligibility_hi")
-  benefitsEn             String?                          @map("benefits_en")
-  benefitsHi             String?                          @map("benefits_hi")
-  applicationProcessEn   String?                          @map("application_process_en")
-  applicationProcessHi   String?                          @map("application_process_hi")
-  fundingSource          String?                          @map("funding_source")
-  startDate              DateTime?                        @map("start_date") @db.Date
-  endDate                DateTime?                        @map("end_date") @db.Date
-  coverMediaId           String?                          @map("cover_media_id") @db.Uuid
-  slug                   String                           @unique
-  publicationState       PublicationState                 @default(draft) @map("publication_state")
-  publicVisibility       Boolean                          @default(true) @map("public_visibility")
-  publishStartAt         DateTime?                        @map("publish_start_at")
-  publishedAt            DateTime?                        @map("published_at")
-  archivedAt             DateTime?                        @map("archived_at")
-  highlightType          HighlightType?                   @map("highlight_type")
-  highlightStartAt       DateTime?                        @map("highlight_start_at")
-  highlightEndAt         DateTime?                        @map("highlight_end_at")
-  displayOrder           Int?                             @map("display_order")
-  showOnHomepage         Boolean                          @default(false) @map("show_on_homepage")
-  createdById            String?                          @map("created_by") @db.Uuid
-  updatedById            String?                          @map("updated_by") @db.Uuid
-  createdAt              DateTime                         @default(now()) @map("created_at")
-  updatedAt              DateTime                         @updatedAt @map("updated_at")
-  search_vector          Unsupported("tsvector")?         @default(dbgenerated("to_tsvector('simple'::regconfig, ((((((((((((COALESCE(title_en, ''::text) || ' '::text) || COALESCE(title_hi, ''::text)) || ' '::text) || COALESCE(short_code, ''::text)) || ' '::text) || COALESCE(summary_en, ''::text)) || ' '::text) || COALESCE(summary_hi, ''::text)) || ' '::text) || COALESCE(description_en, ''::text)) || ' '::text) || COALESCE(description_hi, ''::text)))"))
-  documents              DocumentProgramme[]
-  events                 EventProgramme[]
-  procurementUpdates     ProcurementUpdate[]
-  commodities            ProgrammeCommodity[]
-  coverMedia             MediaAsset?                      @relation("ProgrammeCover", fields: [coverMediaId], references: [id])
-  createdBy              User?                            @relation("ProgrammeCreatedBy", fields: [createdById], references: [id])
-  updatedBy              User?                            @relation("ProgrammeUpdatedBy", fields: [updatedById], references: [id])
-  toolkits               Toolkit[]
-  enquiries              Enquiry[]
+  id                   String                   @id @default(uuid()) @db.Uuid
+  titleEn              String                   @map("title_en")
+  titleHi              String?                  @map("title_hi")
+  shortCode            String?                  @map("short_code")
+  summaryEn            String?                  @map("summary_en")
+  summaryHi            String?                  @map("summary_hi")
+  descriptionEn        String?                  @map("description_en")
+  descriptionHi        String?                  @map("description_hi")
+  objectivesEn         String?                  @map("objectives_en")
+  objectivesHi         String?                  @map("objectives_hi")
+  eligibilityEn        String?                  @map("eligibility_en")
+  eligibilityHi        String?                  @map("eligibility_hi")
+  benefitsEn           String?                  @map("benefits_en")
+  benefitsHi           String?                  @map("benefits_hi")
+  applicationProcessEn String?                  @map("application_process_en")
+  applicationProcessHi String?                  @map("application_process_hi")
+  fundingSource        String?                  @map("funding_source")
+  startDate            DateTime?                @map("start_date") @db.Date
+  endDate              DateTime?                @map("end_date") @db.Date
+  coverMediaId         String?                  @map("cover_media_id") @db.Uuid
+  slug                 String                   @unique
+  publicationState     PublicationState         @default(draft) @map("publication_state")
+  publicVisibility     Boolean                  @default(true) @map("public_visibility")
+  publishStartAt       DateTime?                @map("publish_start_at")
+  publishedAt          DateTime?                @map("published_at")
+  archivedAt           DateTime?                @map("archived_at")
+  highlightType        HighlightType?           @map("highlight_type")
+  highlightStartAt     DateTime?                @map("highlight_start_at")
+  highlightEndAt       DateTime?                @map("highlight_end_at")
+  displayOrder         Int?                     @map("display_order")
+  showOnHomepage       Boolean                  @default(false) @map("show_on_homepage")
+  createdById          String?                  @map("created_by") @db.Uuid
+  updatedById          String?                  @map("updated_by") @db.Uuid
+  createdAt            DateTime                 @default(now()) @map("created_at")
+  updatedAt            DateTime                 @updatedAt @map("updated_at")
+  search_vector        Unsupported("tsvector")? @default(dbgenerated("to_tsvector('simple'::regconfig, ((((((((((((COALESCE(title_en, ''::text) || ' '::text) || COALESCE(title_hi, ''::text)) || ' '::text) || COALESCE(short_code, ''::text)) || ' '::text) || COALESCE(summary_en, ''::text)) || ' '::text) || COALESCE(summary_hi, ''::text)) || ' '::text) || COALESCE(description_en, ''::text)) || ' '::text) || COALESCE(description_hi, ''::text)))"))
+  documents            DocumentProgramme[]
+  events               EventProgramme[]
+  procurementUpdates   ProcurementUpdate[]
+  commodities          ProgrammeCommodity[]
+  coverMedia           MediaAsset?              @relation("ProgrammeCover", fields: [coverMediaId], references: [id])
+  createdBy            User?                    @relation("ProgrammeCreatedBy", fields: [createdById], references: [id])
+  updatedBy            User?                    @relation("ProgrammeUpdatedBy", fields: [updatedById], references: [id])
+  toolkits             Toolkit[]
+  enquiries            Enquiry[]
 
   @@index([publicationState, publicVisibility, archivedAt, publishedAt])
   @@index([showOnHomepage, displayOrder])
@@ -948,8 +986,6 @@ model ProgrammeCommodity {
   @@index([commodityId, programmeSchemeId])
   @@map("programme_commodities")
 }
-
-
 
 model Toolkit {
   id                String                       @id @default(uuid()) @db.Uuid
@@ -1546,67 +1582,10 @@ model DashboardDataset {
   @@map("dashboard_datasets")
 }
 
-// Website Metrics (Stage 2+ of the Operational Reports / Website Metrics plan). NOT consumed by
-// the Stage 1 `operational-reports` module — added now, additively, so Stage 2 (config/preview/
-// publish + immutable snapshots for the public site) is not blocked on schema work. A metric
-// references a whitelisted report+measure from the `operational-reports` registry (validated in
-// application code, not via FK, since the registry is code not a table) and holds a pointer to its
-// currently-published, immutable snapshot.
-model WebsiteMetric {
-  id                 String                  @id @default(uuid()) @db.Uuid
-  metricKey          String                  @unique @map("metric_key")
-  reportKey          String                  @map("report_key")
-  measureKey         String                  @map("measure_key")
-  calculationVersion Int                     @map("calculation_version")
-  filterConfig       Json                    @map("filter_config")
-  periodConfig       Json                    @map("period_config")
-  labelEn            String                  @map("label_en")
-  labelHi            String?                 @map("label_hi")
-  placementKey       String                  @map("placement_key")
-  displayOrder       Int                     @default(0) @map("display_order")
-  isEnabled          Boolean                 @default(true) @map("is_enabled")
-  isArchived         Boolean                 @default(false) @map("is_archived")
-  configRevision     Int                     @default(1) @map("config_revision")
-  currentSnapshotId  String?                 @unique @map("current_snapshot_id") @db.Uuid
-  currentSnapshot    WebsiteMetricSnapshot?  @relation("CurrentSnapshot", fields: [currentSnapshotId], references: [id])
-  snapshots          WebsiteMetricSnapshot[] @relation("MetricSnapshots")
-  createdById        String?                 @map("created_by") @db.Uuid
-  updatedById        String?                 @map("updated_by") @db.Uuid
-  createdAt          DateTime                @default(now()) @map("created_at")
-  updatedAt          DateTime                @updatedAt @map("updated_at")
-
-  @@index([placementKey, isEnabled, isArchived])
-  @@map("website_metrics")
-}
-
-// Immutable, append-only. A publish writes a new row and repoints `WebsiteMetric.currentSnapshotId`;
-// existing snapshot rows are never edited (source-data edits after publication never mutate an
-// already-published figure — only `flaggedForReview` may be set later by Stage 2's review sweep).
-model WebsiteMetricSnapshot {
-  id                       String         @id @default(uuid()) @db.Uuid
-  metricId                 String         @map("metric_id") @db.Uuid
-  metric                   WebsiteMetric  @relation("MetricSnapshots", fields: [metricId], references: [id])
-  configRevision           Int            @map("config_revision")
-  resolvedFilters          Json           @map("resolved_filters")
-  resolvedPeriod           Json           @map("resolved_period")
-  value                    Decimal        @db.Decimal(18, 4)
-  unit                     String?
-  labelEn                  String         @map("label_en")
-  labelHi                  String?        @map("label_hi")
-  definitionNoteEn         String         @map("definition_note_en")
-  definitionNoteHi         String?        @map("definition_note_hi")
-  completeness             Json
-  publicScopePolicyVersion Int            @map("public_scope_policy_version")
-  calculatedAt             DateTime       @map("calculated_at")
-  publishedAt              DateTime       @default(now()) @map("published_at")
-  publishedById            String         @map("published_by") @db.Uuid
-  flaggedForReview         Boolean        @default(false) @map("flagged_for_review")
-  currentFor               WebsiteMetric? @relation("CurrentSnapshot")
-  createdAt                DateTime       @default(now()) @map("created_at")
-
-  @@index([metricId, publishedAt])
-  @@map("website_metric_snapshots")
-}
+// Website Metrics (`website_metrics`/`website_metric_snapshots`) — removed (Task 7). The curated
+// public-figure feature was retired in favor of the Reports FY snapshot publication
+// (`ReportPublication`, above) driving the public site directly. Dropped via migration
+// `20260916030000_drop_website_metrics`.
 
 enum Language {
   en

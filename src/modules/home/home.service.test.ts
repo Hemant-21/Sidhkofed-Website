@@ -15,7 +15,6 @@ const services = vi.hoisted(() => ({
   institutions: { publicList: vi.fn() },
   digital: { publicList: vi.fn() },
   videos: { publicList: vi.fn() },
-  operationalReports: { getAllPublicReports: vi.fn() },
 }));
 
 vi.mock('@/modules/events/events.service', () => ({ eventService: services.events }));
@@ -26,9 +25,6 @@ vi.mock('@/modules/programmes/programmes.service', () => ({ programmeService: se
 vi.mock('@/modules/institutions/institutions.service', () => ({ institutionService: services.institutions }));
 vi.mock('@/modules/digital-services/digital-services.service', () => ({ digitalServiceService: services.digital }));
 vi.mock('@/modules/videos/video.service', () => ({ videoService: services.videos }));
-vi.mock('@/modules/dashboard/operational-reports/operational-reports.public.service', () => ({
-  operationalReportsPublicService: services.operationalReports,
-}));
 
 import { homeService } from './home.service';
 
@@ -37,25 +33,20 @@ beforeEach(() => {
   for (const s of [services.events, services.news, services.comms, services.tenders, services.programmes, services.institutions, services.digital, services.videos]) {
     s.publicList.mockResolvedValue({ items: [], total: 0 });
   }
-  services.operationalReports.getAllPublicReports.mockResolvedValue({ reports: [] });
 });
 
 describe('home aggregate', () => {
   it('composes every curated section and surfaces no success-stories key', async () => {
     services.news.publicList.mockResolvedValue({ items: [{ id: 'n1' }], total: 1 });
     services.videos.publicList.mockResolvedValue({ items: [{ id: 'v1' }], total: 1 });
-    services.operationalReports.getAllPublicReports.mockResolvedValue({
-      reports: [{ report_key: 'training_attendance' }],
-    });
 
     const out = await homeService.aggregate();
 
     expect(Object.keys(out).sort()).toEqual(
-      ['communications', 'digital_services', 'events', 'operational_reports', 'news', 'partners', 'programmes', 'tenders', 'videos'].sort(),
+      ['communications', 'digital_services', 'events', 'news', 'partners', 'programmes', 'tenders', 'videos'].sort(),
     );
     expect(out.news).toEqual([{ id: 'n1' }]);
     expect(out.videos).toEqual([{ id: 'v1' }]);
-    expect(out.operational_reports).toEqual([{ report_key: 'training_attendance' }]);
     expect(out).not.toHaveProperty('success_stories');
   });
 
