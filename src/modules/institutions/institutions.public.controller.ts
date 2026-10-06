@@ -8,11 +8,12 @@ import { createHash } from 'node:crypto';
 import type { Request, Response, NextFunction } from 'express';
 import { success, paginated } from '@/shared/envelope';
 import { resolvePageParams, buildPagination } from '@/shared/pagination';
+import { settingsService } from '@/modules/settings/settings.service';
 import { institutionService } from './institutions.service';
 import { parseInstitutionFilters, parseInstitutionOrdering } from './institutions.query';
 import type { InstitutionFilters } from './institutions.types';
 
-const PARTNERS_LIMIT = 24; // capped lightweight partner list for the homepage
+const PARTNERS_HARD_CAP = 24; // absolute ceiling regardless of the configurable limit below
 
 const wrap =
   (fn: (req: Request) => Promise<{ status: number; body: unknown }>) =>
@@ -41,12 +42,15 @@ const list = wrap(async (req) => {
   return { status: 200, body: paginated(items, buildPagination(total, page), String(req.id)) };
 });
 
-/** GET /public/home/partners — capped, homepage-flagged partner list. */
+/** GET /public/home/partners — capped, homepage-flagged partner list. Capped by the
+ *  CMS-configurable `homepage.featured_partners_limit` setting (default 8), itself
+ *  bounded by `PARTNERS_HARD_CAP`. */
 const homePartners = wrap(async (req) => {
-  const page = { skip: 0, take: PARTNERS_LIMIT, page: 1, pageSize: PARTNERS_LIMIT };
+  const limit = Math.min(await settingsService.getFeaturedPartnersLimit(), PARTNERS_HARD_CAP);
+  const page = { skip: 0, take: limit, page: 1, pageSize: limit };
   const filters: InstitutionFilters = { showOnHomepage: true };
   const ordering = { field: 'display_order' as const, direction: 'asc' as const };
-  const key = listCacheKey('partners', filters, ordering, 1, PARTNERS_LIMIT);
+  const key = listCacheKey('partners', filters, ordering, 1, limit);
   const { items, total } = await institutionService.publicList(filters, ordering, page, key);
   return { status: 200, body: paginated(items, buildPagination(total, page), String(req.id)) };
 });

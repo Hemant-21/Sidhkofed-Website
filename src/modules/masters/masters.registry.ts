@@ -587,9 +587,12 @@ const financialYears: MasterDefinition = {
       throw new ValidationError({ end_date: ['Must be on or after start_date.'] });
     }
     // No overlapping financial years (TASK 16): another FY whose range intersects [start,end].
+    // The seeded "All Financial Years" aggregate row spans 2000-2099 by design and must be
+    // excluded, or it would overlap (and block) every real financial year.
     const where: Record<string, unknown> = {
       startDate: { lte: end },
       endDate: { gte: start },
+      isAllYearsAggregate: false,
     };
     if (existing?.id) where.id = { not: existing.id };
     const clash = await repo.findFirstWhere(ctx.def, where);

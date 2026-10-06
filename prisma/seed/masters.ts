@@ -38,15 +38,24 @@ const COMMODITIES: (NameRow & { category: string })[] = [
 ];
 
 const INSTITUTION_TYPES: NameRow[] = [
-  { nameEn: 'Government Department' }, { nameEn: 'Training Institution' }, { nameEn: 'University' },
-  { nameEn: 'NGO' }, { nameEn: 'Corporate Buyer' }, { nameEn: 'Financial Institution' },
-  { nameEn: 'Technical Agency' }, { nameEn: 'Cooperative Organization' }, { nameEn: 'Other Partner' },
+  { nameEn: 'Government Department', nameHi: 'सरकारी विभाग' },
+  { nameEn: 'Training Institution', nameHi: 'प्रशिक्षण संस्था' },
+  { nameEn: 'University', nameHi: 'विश्वविद्यालय' },
+  { nameEn: 'NGO', nameHi: 'गैर-सरकारी संगठन' },
+  { nameEn: 'Corporate Buyer', nameHi: 'कॉर्पोरेट खरीदार' },
+  { nameEn: 'Financial Institution', nameHi: 'वित्तीय संस्था' },
+  { nameEn: 'Technical Agency', nameHi: 'तकनीकी एजेंसी' },
+  { nameEn: 'Cooperative Organization', nameHi: 'सहकारी संगठन' },
+  { nameEn: 'Other Partner', nameHi: 'अन्य साझेदार' },
   { nameEn: 'District Cooperative Union', nameHi: 'जिला सहकारी संघ' },
   { nameEn: 'Cooperative Federation',     nameHi: 'सहकारी महासंघ' },
 ];
 
 const TENDER_TYPES: NameRow[] = [
-  { nameEn: 'Goods' }, { nameEn: 'Works' }, { nameEn: 'Services' }, { nameEn: 'Consultancy' },
+  { nameEn: 'Goods', nameHi: 'वस्तुएँ' },
+  { nameEn: 'Works', nameHi: 'कार्य' },
+  { nameEn: 'Services', nameHi: 'सेवाएँ' },
+  { nameEn: 'Consultancy', nameHi: 'परामर्श सेवा' },
 ];
 
 const PROCUREMENT_UPDATE_CATEGORIES: NameRow[] = [
@@ -56,17 +65,21 @@ const PROCUREMENT_UPDATE_CATEGORIES: NameRow[] = [
 ];
 
 const PROCUREMENT_UPDATE_TYPES: (NameRow & { category: string })[] = [
-  { nameEn: 'Procurement Rate', category: 'Rates & Trade' },
-  { nameEn: 'Procurement Announcement', category: 'Announcements & Schedules' },
-  { nameEn: 'Procurement Schedule', category: 'Announcements & Schedules' },
-  { nameEn: 'Procurement Centre Update', category: 'Announcements & Schedules' },
-  { nameEn: 'Trade Opportunity', category: 'Rates & Trade' },
-  { nameEn: 'Procurement Achievement', category: 'Achievements' },
+  { nameEn: 'Procurement Rate', nameHi: 'खरीद दर', category: 'Rates & Trade' },
+  { nameEn: 'Procurement Announcement', nameHi: 'खरीद घोषणा', category: 'Announcements & Schedules' },
+  { nameEn: 'Procurement Schedule', nameHi: 'खरीद कार्यक्रम', category: 'Announcements & Schedules' },
+  { nameEn: 'Procurement Centre Update', nameHi: 'खरीद केंद्र अद्यतन', category: 'Announcements & Schedules' },
+  { nameEn: 'Trade Opportunity', nameHi: 'व्यापार अवसर', category: 'Rates & Trade' },
+  { nameEn: 'Procurement Achievement', nameHi: 'खरीद उपलब्धि', category: 'Achievements' },
 ];
 
 const ENQUIRY_TYPES: NameRow[] = [
-  { nameEn: 'General Enquiry' }, { nameEn: 'Buyer Enquiry' }, { nameEn: 'Seller Enquiry' },
-  { nameEn: 'Storage / Godown Enquiry' }, { nameEn: 'Membership Enquiry' }, { nameEn: 'Partnership Enquiry' },
+  { nameEn: 'General Enquiry', nameHi: 'सामान्य पूछताछ' },
+  { nameEn: 'Buyer Enquiry', nameHi: 'खरीदार पूछताछ' },
+  { nameEn: 'Seller Enquiry', nameHi: 'विक्रेता पूछताछ' },
+  { nameEn: 'Storage / Godown Enquiry', nameHi: 'भंडारण / गोदाम पूछताछ' },
+  { nameEn: 'Membership Enquiry', nameHi: 'सदस्यता पूछताछ' },
+  { nameEn: 'Partnership Enquiry', nameHi: 'साझेदारी पूछताछ' },
 ];
 
 /** All 24 districts of Jharkhand (bilingual). */
@@ -105,18 +118,18 @@ export async function seedMasters(prisma: PrismaClient): Promise<void> {
   await seedNameMaster('commodities', COMMODITIES, (r) =>
     prisma.commodity.upsert({
       where: { slug: r.slug },
-      update: { nameEn: r.nameEn, nameHi: r.nameHi ?? null, displayOrder: r.displayOrder, category: r.category },
-      create: r,
+      update: { nameEn: r.nameEn, nameHi: r.nameHi ?? null, displayOrder: r.displayOrder, category: r.category, isActive: true },
+      create: { ...r, isActive: true },
     }));
   await seedNameMaster('institution types', INSTITUTION_TYPES, (r) =>
-    prisma.institutionType.upsert({ where: { slug: r.slug }, update: { nameEn: r.nameEn, displayOrder: r.displayOrder }, create: r }));
+    prisma.institutionType.upsert({ where: { slug: r.slug }, update: { nameEn: r.nameEn, nameHi: r.nameHi ?? null, displayOrder: r.displayOrder, isActive: true }, create: { ...r, isActive: true } }));
   await seedNameMaster('tender types', TENDER_TYPES, (r) =>
-    prisma.tenderType.upsert({ where: { slug: r.slug }, update: { nameEn: r.nameEn, displayOrder: r.displayOrder }, create: r }));
+    prisma.tenderType.upsert({ where: { slug: r.slug }, update: { nameEn: r.nameEn, nameHi: r.nameHi ?? null, displayOrder: r.displayOrder, isActive: true }, create: { ...r, isActive: true } }));
   await seedNameMaster('procurement update categories', PROCUREMENT_UPDATE_CATEGORIES, (r) =>
     prisma.procurementUpdateCategory.upsert({
       where: { slug: r.slug },
-      update: { nameEn: r.nameEn, nameHi: r.nameHi ?? null, displayOrder: r.displayOrder },
-      create: r,
+      update: { nameEn: r.nameEn, nameHi: r.nameHi ?? null, displayOrder: r.displayOrder, isActive: true },
+      create: { ...r, isActive: true },
     }));
   const procurementUpdateCategories = await prisma.procurementUpdateCategory.findMany({ select: { id: true, nameEn: true } });
   const procurementUpdateCategoryByName = new Map(procurementUpdateCategories.map((c) => [c.nameEn, c.id]));
@@ -125,38 +138,63 @@ export async function seedMasters(prisma: PrismaClient): Promise<void> {
     if (!procurementUpdateCategoryId) throw new Error(`Unknown procurement update category: ${r.category}`);
     return prisma.procurementUpdateType.upsert({
       where: { slug: r.slug },
-      update: { nameEn: r.nameEn, displayOrder: r.displayOrder, procurementUpdateCategoryId },
-      create: { nameEn: r.nameEn, slug: r.slug, displayOrder: r.displayOrder, procurementUpdateCategoryId },
+      update: { nameEn: r.nameEn, nameHi: r.nameHi ?? null, displayOrder: r.displayOrder, procurementUpdateCategoryId, isActive: true },
+      create: { nameEn: r.nameEn, nameHi: r.nameHi ?? null, slug: r.slug, displayOrder: r.displayOrder, procurementUpdateCategoryId, isActive: true },
     });
   });
   await seedNameMaster('enquiry types', ENQUIRY_TYPES, (r) =>
-    prisma.enquiryType.upsert({ where: { slug: r.slug }, update: { nameEn: r.nameEn, displayOrder: r.displayOrder }, create: r }));
+    prisma.enquiryType.upsert({ where: { slug: r.slug }, update: { nameEn: r.nameEn, nameHi: r.nameHi ?? null, displayOrder: r.displayOrder, isActive: true }, create: { ...r, isActive: true } }));
 
   // Districts, then all 264 official blocks.
   await seedNameMaster('districts', DISTRICTS, (r) =>
-    prisma.district.upsert({ where: { slug: r.slug }, update: { nameEn: r.nameEn, nameHi: r.nameHi ?? null, displayOrder: r.displayOrder }, create: r }));
+    prisma.district.upsert({
+      where: { slug: r.slug },
+      update: { nameEn: r.nameEn, nameHi: r.nameHi ?? null, state: 'Jharkhand', displayOrder: r.displayOrder, isActive: true },
+      create: { ...r, state: 'Jharkhand', isActive: true },
+    }));
   await seedBlocks(prisma);
 
   // Financial years (Indian FY: 1 Apr – 31 Mar).
   const FINANCIAL_YEARS = [
-    { label: '2024-2025', startDate: new Date('2024-04-01'), endDate: new Date('2025-03-31') },
-    { label: '2025-2026', startDate: new Date('2025-04-01'), endDate: new Date('2026-03-31') },
-    { label: '2026-2027', startDate: new Date('2026-04-01'), endDate: new Date('2027-03-31') },
+    { label: 'All Financial Years', startDate: new Date('2000-01-01'), endDate: new Date('2099-12-31'), isAllYearsAggregate: true },
+    { label: '2023-2024', startDate: new Date('2023-04-01'), endDate: new Date('2024-03-31'), isAllYearsAggregate: false },
+    { label: '2024-2025', startDate: new Date('2024-04-01'), endDate: new Date('2025-03-31'), isAllYearsAggregate: false },
+    { label: '2025-2026', startDate: new Date('2025-04-01'), endDate: new Date('2026-03-31'), isAllYearsAggregate: false },
+    { label: '2026-2027', startDate: new Date('2026-04-01'), endDate: new Date('2027-03-31'), isAllYearsAggregate: false },
   ];
   for (const fy of FINANCIAL_YEARS) {
-    await prisma.financialYear.upsert({ where: { label: fy.label }, update: { startDate: fy.startDate, endDate: fy.endDate }, create: fy });
+    await prisma.financialYear.upsert({
+      where: { label: fy.label },
+      update: { startDate: fy.startDate, endDate: fy.endDate, isActive: true, isAllYearsAggregate: fy.isAllYearsAggregate },
+      create: { ...fy, isActive: true },
+    });
   }
   console.log(`  ✓ financial years: ${FINANCIAL_YEARS.length}`);
 
   const currentFy = await prisma.financialYear.findUnique({ where: { label: '2025-2026' } });
   const REPORTING_PERIODS = [
-    { nameEn: 'Cumulative', slug: 'cumulative', periodType: 'cumulative' as const, financialYearId: null, calendarYear: null, startDate: new Date('2020-04-01'), endDate: new Date('2030-03-31') },
-    { nameEn: 'FY 2025-2026', slug: 'fy-2025-2026', periodType: 'financial_year' as const, financialYearId: currentFy?.id ?? null, calendarYear: null, startDate: new Date('2025-04-01'), endDate: new Date('2026-03-31') },
-    { nameEn: 'Calendar Year 2025', slug: 'calendar-year-2025', periodType: 'calendar_year' as const, financialYearId: null, calendarYear: 2025, startDate: new Date('2025-01-01'), endDate: new Date('2025-12-31') },
-    { nameEn: 'April 2025', slug: 'april-2025', periodType: 'month' as const, financialYearId: currentFy?.id ?? null, calendarYear: null, startDate: new Date('2025-04-01'), endDate: new Date('2025-04-30') },
+    { nameEn: 'Cumulative', nameHi: 'संचयी', slug: 'cumulative', periodType: 'cumulative' as const, financialYearId: null, calendarYear: null, startDate: new Date('2020-04-01'), endDate: new Date('2030-03-31') },
+    { nameEn: 'FY 2025-2026', nameHi: 'वित्तीय वर्ष 2025-2026', slug: 'fy-2025-2026', periodType: 'financial_year' as const, financialYearId: currentFy?.id ?? null, calendarYear: null, startDate: new Date('2025-04-01'), endDate: new Date('2026-03-31') },
+    { nameEn: 'Calendar Year 2025', nameHi: 'कैलेंडर वर्ष 2025', slug: 'calendar-year-2025', periodType: 'calendar_year' as const, financialYearId: null, calendarYear: 2025, startDate: new Date('2025-01-01'), endDate: new Date('2025-12-31') },
+    { nameEn: 'April 2025', nameHi: 'अप्रैल 2025', slug: 'april-2025', periodType: 'month' as const, financialYearId: currentFy?.id ?? null, calendarYear: null, startDate: new Date('2025-04-01'), endDate: new Date('2025-04-30') },
+    { nameEn: 'May 2025', nameHi: 'मई 2025', slug: 'may-2025', periodType: 'month' as const, financialYearId: currentFy?.id ?? null, calendarYear: null, startDate: new Date('2025-05-01'), endDate: new Date('2025-05-31') },
+    { nameEn: 'June 2025', nameHi: 'जून 2025', slug: 'june-2025', periodType: 'month' as const, financialYearId: currentFy?.id ?? null, calendarYear: null, startDate: new Date('2025-06-01'), endDate: new Date('2025-06-30') },
+    { nameEn: 'July 2025', nameHi: 'जुलाई 2025', slug: 'july-2025', periodType: 'month' as const, financialYearId: currentFy?.id ?? null, calendarYear: null, startDate: new Date('2025-07-01'), endDate: new Date('2025-07-31') },
+    { nameEn: 'August 2025', nameHi: 'अगस्त 2025', slug: 'august-2025', periodType: 'month' as const, financialYearId: currentFy?.id ?? null, calendarYear: null, startDate: new Date('2025-08-01'), endDate: new Date('2025-08-31') },
+    { nameEn: 'September 2025', nameHi: 'सितंबर 2025', slug: 'september-2025', periodType: 'month' as const, financialYearId: currentFy?.id ?? null, calendarYear: null, startDate: new Date('2025-09-01'), endDate: new Date('2025-09-30') },
+    { nameEn: 'October 2025', nameHi: 'अक्टूबर 2025', slug: 'october-2025', periodType: 'month' as const, financialYearId: currentFy?.id ?? null, calendarYear: null, startDate: new Date('2025-10-01'), endDate: new Date('2025-10-31') },
+    { nameEn: 'November 2025', nameHi: 'नवंबर 2025', slug: 'november-2025', periodType: 'month' as const, financialYearId: currentFy?.id ?? null, calendarYear: null, startDate: new Date('2025-11-01'), endDate: new Date('2025-11-30') },
+    { nameEn: 'December 2025', nameHi: 'दिसंबर 2025', slug: 'december-2025', periodType: 'month' as const, financialYearId: currentFy?.id ?? null, calendarYear: null, startDate: new Date('2025-12-01'), endDate: new Date('2025-12-31') },
+    { nameEn: 'January 2026', nameHi: 'जनवरी 2026', slug: 'january-2026', periodType: 'month' as const, financialYearId: currentFy?.id ?? null, calendarYear: null, startDate: new Date('2026-01-01'), endDate: new Date('2026-01-31') },
+    { nameEn: 'February 2026', nameHi: 'फ़रवरी 2026', slug: 'february-2026', periodType: 'month' as const, financialYearId: currentFy?.id ?? null, calendarYear: null, startDate: new Date('2026-02-01'), endDate: new Date('2026-02-28') },
+    { nameEn: 'March 2026', nameHi: 'मार्च 2026', slug: 'march-2026', periodType: 'month' as const, financialYearId: currentFy?.id ?? null, calendarYear: null, startDate: new Date('2026-03-01'), endDate: new Date('2026-03-31') },
   ];
   for (const rp of REPORTING_PERIODS) {
-    await prisma.reportingPeriod.upsert({ where: { slug: rp.slug }, update: { nameEn: rp.nameEn, financialYearId: rp.financialYearId }, create: rp });
+    await prisma.reportingPeriod.upsert({
+      where: { slug: rp.slug },
+      update: { ...rp, isActive: true },
+      create: { ...rp, isActive: true },
+    });
   }
   console.log(`  ✓ reporting periods: ${REPORTING_PERIODS.length}`);
 

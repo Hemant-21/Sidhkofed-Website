@@ -190,6 +190,11 @@ export interface PublicDocumentSummaryDto {
   slug: string;
   title_en: string;
   title_hi: string | null;
+  /** Short blurb shown on listing/summary cards (e.g. the homepage Notices band) —
+   *  same underlying field as the detail page's description, surfaced here too so
+   *  cards aren't limited to a title + filename. */
+  description_en: string | null;
+  description_hi: string | null;
   document_type: MasterRef;
   knowledge_category: MasterRef | null;
   communication_type: MasterRef | null;
@@ -212,6 +217,8 @@ export function toPublicDocumentSummaryDto(d: DocumentSummaryRow): PublicDocumen
     slug: d.slug,
     title_en: d.titleEn,
     title_hi: d.titleHi,
+    description_en: d.descriptionEn,
+    description_hi: d.descriptionHi,
     document_type: masterRef(d.documentType),
     knowledge_category: knowledgeCategory,
     communication_type: communicationType,
@@ -229,8 +236,6 @@ export function toPublicDocumentSummaryDto(d: DocumentSummaryRow): PublicDocumen
 
 // ── Public detail (single) ────────────────────────────────────────────────────
 export interface PublicDocumentDetailDto extends PublicDocumentSummaryDto {
-  description_en: string | null;
-  description_hi: string | null;
   commodities: MasterRef[];
   districts: MasterRef[];
 }
@@ -238,8 +243,6 @@ export interface PublicDocumentDetailDto extends PublicDocumentSummaryDto {
 export function toPublicDocumentDetailDto(d: DocumentRow): PublicDocumentDetailDto {
   return {
     ...toPublicDocumentSummaryDto(d),
-    description_en: d.descriptionEn,
-    description_hi: d.descriptionHi,
     commodities: d.commodities.map((c) => masterRef(c.commodity)),
     districts: d.districts.map((x) => masterRef(x.district)),
   };

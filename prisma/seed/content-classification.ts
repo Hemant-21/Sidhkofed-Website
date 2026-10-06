@@ -3,30 +3,39 @@ import { PrismaClient } from '@prisma/client';
 // Slugs are persistent identities: retain them when labels change.
 export const eventGroups = [
   ['trainings', 'Capacity Building & Exposure Visits', 'क्षमता निर्माण एवं अनुभव भ्रमण', [
-    ['training', 'Training'], ['capacity-building', 'Capacity Building'],
-    ['field-visit', 'Field Visit'], ['exposure-visit', 'Exposure Visit'],
+    ['training', 'Training', 'प्रशिक्षण'], ['capacity-building', 'Capacity Building', 'क्षमता निर्माण'],
+    ['field-visit', 'Field Visit', 'क्षेत्र भ्रमण'], ['exposure-visit', 'Exposure Visit', 'परिचयात्मक भ्रमण'],
   ]],
   ['workshops-awareness', 'Workshops & Awareness Programmes', 'कार्यशाला एवं जागरूकता कार्यक्रम', [
-    ['workshop', 'Workshop'], ['awareness-programme', 'Awareness Programme'],
+    ['workshop', 'Workshop', 'कार्यशाला'], ['awareness-programme', 'Awareness Programme', 'जागरूकता कार्यक्रम'],
   ]],
   ['institutional-activities', 'Institutional Activities', 'संस्थागत गतिविधियाँ', [
-    ['meeting', 'Meeting'], ['mou-signing', 'MoU Signing'], ['other-institutional-activity', 'Other Institutional Activity'],
+    ['meeting', 'Meeting', 'बैठक'], ['mou-signing', 'MoU Signing', 'समझौता ज्ञापन हस्ताक्षर'],
+    ['other-institutional-activity', 'Other Institutional Activity', 'अन्य संस्थागत गतिविधि'],
   ]],
-  ['membership-drives', 'Membership Drives', 'सदस्यता अभियान', [['membership-programme', 'Membership Programme']]],
+  ['membership-drives', 'Membership Drives', 'सदस्यता अभियान', [
+    ['membership-programme', 'Membership Programme', 'सदस्यता कार्यक्रम'],
+  ]],
 ] as const;
 
 export const knowledgeGroups = [
-  ['acts-and-rules', 'Acts, Bye-laws and Forms', [['acts', 'Acts'], ['bye-laws', 'Bye-Laws'], ['form', 'Forms']]],
-  ['training-resources', 'Training Resources and Formats', [
-    ['training-material', 'Training Material'], ['manuals', 'Manuals'], ['guideline', 'Guidelines'], ['formats', 'Formats'],
+  ['acts-and-rules', 'Acts, Bye-laws and Taining Resources', 'अधिनियम, उपविधियाँ और प्रशिक्षण संसाधन', [
+    ['acts', 'Acts', 'अधिनियम', 1], ['bye-laws', 'Bye-Laws', 'उपविधियाँ', 2],
+    ['training-material', 'Training Material', 'प्रशिक्षण सामग्री', 4],
   ]],
-  ['research-and-reports', 'Research and Reports', [
-    ['gap-study', 'Gap Study'], ['research-paper', 'Research Paper'], ['report', 'Reports'], ['articles', 'Articles'],
+  ['training-resources', 'Forms and Formats', 'प्रपत्र और प्रारूप', [
+    ['form', 'Forms', 'प्रपत्र', 3], ['manuals', 'Manuals', 'पुस्तिकाएँ', 5],
+    ['guideline', 'Guidelines', 'दिशानिर्देश', 6], ['formats', 'Formats', 'प्रारूप', 7],
+  ]],
+  ['research-and-reports', 'Research and Reports', 'अनुसंधान और प्रतिवेदन', [
+    ['gap-study', 'Gap Study', 'अंतराल अध्ययन', 8], ['research-paper', 'Research Paper', 'शोध पत्र', 9],
+    ['report', 'Reports', 'प्रतिवेदन', 10], ['articles', 'Articles', 'लेख', 11],
   ]],
 ] as const;
 
 export const communicationGroups = [
-  ['notice', 'Notice'], ['office-order', 'Office Order'], ['public-announcement', 'Public Announcement'],
+  ['notice', 'Notice', 'सूचना'], ['office-order', 'Office Order', 'कार्यालय आदेश'],
+  ['public-announcement', 'Public Announcement', 'सार्वजनिक घोषणा'],
 ] as const;
 
 /** Refresh only the approved classification masters. Retire legacy rows without deleting references. */
@@ -36,24 +45,23 @@ export async function seedContentClassification(prisma: PrismaClient): Promise<v
     for (const [index, [slug, nameEn, nameHi, children]] of eventGroups.entries()) {
       const data = { nameEn, nameHi, displayOrder: index + 1, isActive: true };
       const parent = await tx.eventCategory.upsert({ where: { slug }, create: { slug, ...data }, update: data });
-      for (const [childSlug, childName] of children) {
-        const child = { nameEn: childName, eventCategoryId: parent.id, displayOrder: ++eventOrder, isActive: true };
+      for (const [childSlug, childName, childNameHi] of children) {
+        const child = { nameEn: childName, nameHi: childNameHi, eventCategoryId: parent.id, displayOrder: ++eventOrder, isActive: true };
         await tx.eventType.upsert({ where: { slug: childSlug }, create: { slug: childSlug, ...child }, update: child });
       }
     }
-    let documentOrder = 0;
-    for (const [index, [slug, nameEn, children]] of knowledgeGroups.entries()) {
-      const data = { nameEn, displayOrder: index + 1, isActive: true };
+    for (const [index, [slug, nameEn, nameHi, children]] of knowledgeGroups.entries()) {
+      const data = { nameEn, nameHi, displayOrder: index + 1, isActive: true };
       const parent = await tx.knowledgeCategory.upsert({ where: { slug }, create: { slug, ...data }, update: data });
-      for (const [childSlug, childName] of children) {
-        const child = { nameEn: childName, knowledgeCategoryId: parent.id, communicationTypeId: null, displayOrder: ++documentOrder, isActive: true };
+      for (const [childSlug, childName, childNameHi, displayOrder] of children) {
+        const child = { nameEn: childName, nameHi: childNameHi, knowledgeCategoryId: parent.id, communicationTypeId: null, displayOrder, isActive: true };
         await tx.documentType.upsert({ where: { slug: childSlug }, create: { slug: childSlug, ...child }, update: child });
       }
     }
-    for (const [index, [slug, nameEn]] of communicationGroups.entries()) {
-      const data = { nameEn, displayOrder: index + 1, isActive: true };
+    for (const [index, [slug, nameEn, nameHi]] of communicationGroups.entries()) {
+      const data = { nameEn, nameHi, displayOrder: index + 1, isActive: true };
       const parent = await tx.communicationType.upsert({ where: { slug }, create: { slug, ...data }, update: data });
-      const child = { nameEn, knowledgeCategoryId: null, communicationTypeId: parent.id, displayOrder: ++documentOrder, isActive: true };
+      const child = { nameEn, nameHi, knowledgeCategoryId: null, communicationTypeId: parent.id, displayOrder: 12 + index, isActive: true };
       await tx.documentType.upsert({ where: { slug }, create: { slug, ...child }, update: child });
     }
     // Explicit retirement lists leave unrelated, manually-created masters alone.

@@ -366,13 +366,14 @@ export async function seedBlocks(prisma: PrismaClient): Promise<void> {
       const slug = slugify(`${district.slug}-${row.nameEn}`);
       await prisma.block.upsert({
         where: { districtId_nameEn: { districtId: district.id, nameEn: row.nameEn } },
-        update: { nameHi: row.nameHi ?? null, displayOrder: i + 1 },
+        update: { nameHi: row.nameHi ?? null, displayOrder: i + 1, isActive: true },
         create: {
           districtId: district.id,
           nameEn: row.nameEn,
           nameHi: row.nameHi ?? null,
           slug,
           displayOrder: i + 1,
+          isActive: true,
         },
       });
       count += 1;

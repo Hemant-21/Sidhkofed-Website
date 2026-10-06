@@ -2,9 +2,8 @@
  * One-time idempotent seed: populate the real SIDHKOFED office `contact.*` Settings so the
  * public site's contact card isn't blank before an admin ever visits Settings > Contact.
  *
- * Creates a row ONLY if it doesn't exist yet (`update: {}`) — this never overwrites a value an
- * admin (or a previous run) has already set, even if that value happens to be blank. Safe to
- * re-run on every `npm run db:seed`, in every environment.
+ * These values are authoritative baseline data. Re-running the seed replaces stale/demo contact
+ * values so every environment reflects the approved SIDHKOFED office details.
  *
  * `contact.map_url` is included because a real, user-provided Google Maps link is available;
  * unlike the other fixture-only demo data in `fixtures.ts`, these are the site's real values.
@@ -29,7 +28,7 @@ export async function seedContactDefaults(prisma: PrismaClient): Promise<void> {
     const { valueText, valueJson } = encodeForStorage(def, value);
     await prisma.setting.upsert({
       where: { key },
-      update: {}, // never overwrite an existing row — admin edits (or a prior seed) always win
+      update: { valueText, valueJson: valueJson ?? undefined, description: def.description },
       create: { key, valueText, valueJson: valueJson ?? undefined, description: def.description },
     });
   }

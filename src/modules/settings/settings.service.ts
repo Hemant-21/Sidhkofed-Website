@@ -124,6 +124,7 @@ async function setValue(key: string, rawValue: unknown, ctx: AuditContext): Prom
 // ── Typed convenience accessors (avoid raw lookups across the app) ────────────
 const getVideoHomepageLimit = (): Promise<number> => get('limits.video_homepage_limit');
 const getHomepageHighlightLimit = (): Promise<number> => get('limits.homepage_highlight_limit');
+const getFeaturedPartnersLimit = (): Promise<number> => get('homepage.featured_partners_limit');
 const getAllowedImageTypes = (): Promise<string[]> => get('uploads.allowed_image_types');
 const getAllowedDocumentTypes = (): Promise<string[]> => get('uploads.allowed_document_types');
 const getMaxImageBytes = async (): Promise<number> => (await get('uploads.max_image_mb')) * 1024 * 1024;
@@ -139,6 +140,7 @@ export const settingsService = {
   invalidate,
   getVideoHomepageLimit,
   getHomepageHighlightLimit,
+  getFeaturedPartnersLimit,
   getAllowedImageTypes,
   getAllowedDocumentTypes,
   getMaxImageBytes,

@@ -30,6 +30,8 @@
     "prisma:format": "prisma format",
     "db:setup": "psql -U postgres -d postgres -v ON_ERROR_STOP=1 -f scripts/db/00-init-dev-db.sql && npm run db:test:create",
     "db:seed": "prisma db seed",
+    "db:hindi:audit": "tsx scripts/backfill-hindi-content.ts",
+    "db:hindi:backfill": "tsx scripts/backfill-hindi-content.ts --apply",
     "db:test:create": "psql -U postgres -d postgres -v ON_ERROR_STOP=1 -f scripts/db/01-init-test-db.sql",
     "db:test:migrate": "tsx scripts/db/with-test-env.ts prisma migrate deploy",
     "db:test:seed": "tsx scripts/db/with-test-env.ts prisma db seed",

@@ -18,7 +18,9 @@ import { prisma } from '@/db/prisma';
 // ── Filter fragment helpers ────────────────────────────────────────────────────────────────────
 function inClause(column: string, ids: string[]): Prisma.Sql {
   if (ids.length === 0) return Prisma.sql`TRUE`;
-  return Prisma.sql`${Prisma.raw(column)} IN (${Prisma.join(ids)})`;
+  // Filter values arrive as plain strings; cast the (uuid) column to text so the
+  // comparison doesn't fail with "operator does not exist: uuid = text".
+  return Prisma.sql`${Prisma.raw(column)}::text IN (${Prisma.join(ids)})`;
 }
 
 export interface ToolkitItemCountRow {
