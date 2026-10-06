@@ -3,9 +3,9 @@
  *
  * Exposes ONLY a curated allow-list of setting GROUPS to unauthenticated callers —
  * never the raw admin catalog/list (`/admin/settings` stays Super-Admin-only and
- * unchanged). Today just `contact` (office info for the website footer/contact/
- * enquiry pages). Add a group to `PUBLIC_SETTING_GROUPS` to expose more later; nothing
- * else needs to change.
+ * unchanged). `contact` (office info for the website footer/contact/enquiry pages)
+ * and `social` (footer social media links). Add a group to `PUBLIC_SETTING_GROUPS`
+ * to expose more later; nothing else needs to change.
  */
 import type { Request, Response, NextFunction } from 'express';
 import { success } from '@/shared/envelope';
@@ -13,7 +13,7 @@ import { NotFoundError } from '@/shared/errors';
 import { settingsService } from './settings.service';
 import type { SettingGroup } from './settings.catalog';
 
-const PUBLIC_SETTING_GROUPS: readonly SettingGroup[] = ['contact'];
+const PUBLIC_SETTING_GROUPS: readonly SettingGroup[] = ['contact', 'social'];
 
 function isPublicGroup(group: string): group is SettingGroup {
   return (PUBLIC_SETTING_GROUPS as readonly string[]).includes(group);

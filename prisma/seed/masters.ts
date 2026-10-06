@@ -157,6 +157,8 @@ export async function seedMasters(prisma: PrismaClient): Promise<void> {
   // Financial years (Indian FY: 1 Apr – 31 Mar).
   const FINANCIAL_YEARS = [
     { label: 'All Financial Years', startDate: new Date('2000-01-01'), endDate: new Date('2099-12-31'), isAllYearsAggregate: true },
+    { label: '2021-2022', startDate: new Date('2021-11-18'), endDate: new Date('2022-03-31'), isAllYearsAggregate: false },
+    { label: '2022-2023', startDate: new Date('2022-04-01'), endDate: new Date('2023-03-31'), isAllYearsAggregate: false },
     { label: '2023-2024', startDate: new Date('2023-04-01'), endDate: new Date('2024-03-31'), isAllYearsAggregate: false },
     { label: '2024-2025', startDate: new Date('2024-04-01'), endDate: new Date('2025-03-31'), isAllYearsAggregate: false },
     { label: '2025-2026', startDate: new Date('2025-04-01'), endDate: new Date('2026-03-31'), isAllYearsAggregate: false },
