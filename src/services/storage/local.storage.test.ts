@@ -1,5 +1,6 @@
 /** Storage tests — LocalStorageService against the real filesystem (scratchpad keys). */
 import { describe, it, expect, afterAll } from 'vitest';
+import path from 'node:path';
 import { LocalStorageService } from './local.storage';
 import { NotFoundError } from '@/shared/errors';
 
@@ -35,6 +36,22 @@ describe('LocalStorageService', () => {
 
   it('rejects path traversal keys', async () => {
     await expect(storage.get('../../etc/passwd')).rejects.toThrow();
+  });
+
+  it('accepts child keys when storage is mounted at a filesystem or UNC share root', () => {
+    const roots = [path.parse(process.cwd()).root];
+    if (process.platform === 'win32') roots.push('\\\\storage-server\\share\\');
+    const rootStorage = new LocalStorageService() as unknown as {
+      root: string;
+      resolveKey: (key: string) => string;
+    };
+
+    for (const root of roots) {
+      rootStorage.root = path.resolve(root);
+      expect(rootStorage.resolveKey('media/2026/example.png')).toBe(
+        path.resolve(root, 'media/2026/example.png'),
+      );
+    }
   });
 
   it('translates a missing object into a controlled NotFoundError on get (round-2 Issue 2)', async () => {

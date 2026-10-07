@@ -38,7 +38,8 @@ export class LocalStorageService implements StorageService {
   private resolveKey(key: string): string {
     const normalized = path.normalize(key).replace(/^([/\\])+/, '');
     const full = path.resolve(this.root, normalized);
-    if (full !== this.root && !full.startsWith(this.root + path.sep)) {
+    const relative = path.relative(this.root, full);
+    if (relative === '..' || relative.startsWith(`..${path.sep}`) || path.isAbsolute(relative)) {
       throw new BadRequestError('Invalid storage key.');
     }
     return full;
