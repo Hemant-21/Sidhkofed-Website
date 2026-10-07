@@ -19,7 +19,7 @@ export const eventGroups = [
 ] as const;
 
 export const knowledgeGroups = [
-  ['acts-and-rules', 'Acts, Bye-laws and Taining Resources', 'अधिनियम, उपविधियाँ और प्रशिक्षण संसाधन', [
+  ['acts-and-rules', 'Acts, Bye-laws and Training Resources', 'अधिनियम, उपविधियाँ और प्रशिक्षण संसाधन', [
     ['acts', 'Acts', 'अधिनियम', 1], ['bye-laws', 'Bye-Laws', 'उपविधियाँ', 2],
     ['training-material', 'Training Material', 'प्रशिक्षण सामग्री', 4],
   ]],
@@ -67,7 +67,7 @@ export async function seedContentClassification(prisma: PrismaClient): Promise<v
     // Explicit retirement lists leave unrelated, manually-created masters alone.
     await tx.eventType.updateMany({ where: { slug: 'conference' }, data: { isActive: false } });
     await tx.documentType.updateMany({ where: { slug: { in: ['circular', 'mou', 'policy', 'sop', 'publication', 'other'] } }, data: { isActive: false } });
-    await tx.knowledgeCategory.updateMany({ where: { slug: { in: ['bye-laws', 'policies-and-guidelines', 'sops-and-manuals', 'publications', 'forms-and-formats'] } }, data: { isActive: false } });
+    await tx.knowledgeCategory.updateMany({ where: { slug: { in: ['bye-laws', 'policies-and-guidelines', 'sops-and-manuals', 'publications', 'training-resources'] } }, data: { isActive: false } });
     await tx.communicationType.updateMany({ where: { slug: { in: ['circular', 'notification', 'advisory'] } }, data: { isActive: false } });
   }, { timeout: 30000 });
 }
