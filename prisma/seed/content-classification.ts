@@ -23,7 +23,7 @@ export const knowledgeGroups = [
     ['acts', 'Acts', 'अधिनियम', 1], ['bye-laws', 'Bye-Laws', 'उपविधियाँ', 2],
     ['training-material', 'Training Material', 'प्रशिक्षण सामग्री', 4],
   ]],
-  ['training-resources', 'Forms and Formats', 'प्रपत्र और प्रारूप', [
+  ['forms-and-formats', 'Forms and Formats', 'प्रपत्र और प्रारूप', [
     ['form', 'Forms', 'प्रपत्र', 3], ['manuals', 'Manuals', 'पुस्तिकाएँ', 5],
     ['guideline', 'Guidelines', 'दिशानिर्देश', 6], ['formats', 'Formats', 'प्रारूप', 7],
   ]],
