@@ -19,17 +19,19 @@ export const eventGroups = [
 ] as const;
 
 export const knowledgeGroups = [
-  ['acts-and-rules', 'Acts, Bye-laws and Training Resources', 'अधिनियम, उपविधियाँ और प्रशिक्षण संसाधन', [
+  ['policies-guidelines-and-training-resources', 'Policies, Guidelines & Training Resources', 'नीतियाँ, दिशानिर्देश और प्रशिक्षण संसाधन', [
     ['acts', 'Acts', 'अधिनियम', 1], ['bye-laws', 'Bye-Laws', 'उपविधियाँ', 2],
-    ['training-material', 'Training Material', 'प्रशिक्षण सामग्री', 4],
+    ['training-material', 'Training Resources', 'प्रशिक्षण संसाधन', 4], ['manuals', 'Manuals', 'पुस्तिकाएँ', 5],
+    ['guideline', 'Guidelines', 'दिशानिर्देश', 6], ['policy', 'Policy', 'नीति', 15],
   ]],
   ['forms-and-formats', 'Forms and Formats', 'प्रपत्र और प्रारूप', [
-    ['form', 'Forms', 'प्रपत्र', 3], ['manuals', 'Manuals', 'पुस्तिकाएँ', 5],
-    ['guideline', 'Guidelines', 'दिशानिर्देश', 6], ['formats', 'Formats', 'प्रारूप', 7],
+    ['form', 'Forms', 'प्रपत्र', 3], ['formats', 'Formats', 'प्रारूप', 7],
+    ['membership-form', 'Membership Form', 'सदस्यता फार्म', 17],
   ]],
-  ['research-and-reports', 'Research and Reports', 'अनुसंधान और प्रतिवेदन', [
+  ['research-and-reports', 'Research and Reports', 'अनुसंधान और रिपोर्ट', [
     ['gap-study', 'Gap Study', 'अंतराल अध्ययन', 8], ['research-paper', 'Research Paper', 'शोध पत्र', 9],
     ['report', 'Reports', 'प्रतिवेदन', 10], ['articles', 'Articles', 'लेख', 11],
+    ['annual-reports', 'Annual Reports', 'वार्षिक रिपोर्ट', 16],
   ]],
 ] as const;
 
@@ -50,6 +52,15 @@ export async function seedContentClassification(prisma: PrismaClient): Promise<v
         await tx.eventType.upsert({ where: { slug: childSlug }, create: { slug: childSlug, ...child }, update: child });
       }
     }
+    // name_en is unique: a retired/legacy row may still hold a name a target category now uses
+    // (e.g. slug training-resources once carried "Forms and Formats"). Retire and rename it first.
+    const targetSlugs = knowledgeGroups.map(([slug]) => slug as string);
+    for (const [slug, nameEn] of knowledgeGroups) {
+      const clash = await tx.knowledgeCategory.findFirst({ where: { nameEn, slug: { not: slug } } });
+      if (clash && !targetSlugs.includes(clash.slug)) {
+        await tx.knowledgeCategory.update({ where: { id: clash.id }, data: { nameEn: `${nameEn} (retired: ${clash.slug})`, isActive: false } });
+      }
+    }
     for (const [index, [slug, nameEn, nameHi, children]] of knowledgeGroups.entries()) {
       const data = { nameEn, nameHi, displayOrder: index + 1, isActive: true };
       const parent = await tx.knowledgeCategory.upsert({ where: { slug }, create: { slug, ...data }, update: data });
@@ -57,6 +68,11 @@ export async function seedContentClassification(prisma: PrismaClient): Promise<v
         const child = { nameEn: childName, nameHi: childNameHi, knowledgeCategoryId: parent.id, communicationTypeId: null, displayOrder, isActive: true };
         await tx.documentType.upsert({ where: { slug: childSlug }, create: { slug: childSlug, ...child }, update: child });
       }
+      // Documents carry a denormalised category: follow their type if it was re-parented.
+      await tx.document.updateMany({
+        where: { documentType: { knowledgeCategoryId: parent.id }, knowledgeCategoryId: { not: null, notIn: [parent.id] } },
+        data: { knowledgeCategoryId: parent.id },
+      });
     }
     for (const [index, [slug, nameEn, nameHi]] of communicationGroups.entries()) {
       const data = { nameEn, nameHi, displayOrder: index + 1, isActive: true };
@@ -66,8 +82,8 @@ export async function seedContentClassification(prisma: PrismaClient): Promise<v
     }
     // Explicit retirement lists leave unrelated, manually-created masters alone.
     await tx.eventType.updateMany({ where: { slug: 'conference' }, data: { isActive: false } });
-    await tx.documentType.updateMany({ where: { slug: { in: ['circular', 'mou', 'policy', 'sop', 'publication', 'other'] } }, data: { isActive: false } });
-    await tx.knowledgeCategory.updateMany({ where: { slug: { in: ['bye-laws', 'policies-and-guidelines', 'sops-and-manuals', 'publications', 'training-resources'] } }, data: { isActive: false } });
+    await tx.documentType.updateMany({ where: { slug: { in: ['circular', 'mou', 'sop', 'publication', 'other'] } }, data: { isActive: false } });
+    await tx.knowledgeCategory.updateMany({ where: { slug: { in: ['acts-and-rules', 'bye-laws', 'sops-and-manuals', 'publications', 'policies-and-guidelines', 'training-resources'] } }, data: { isActive: false } });
     await tx.communicationType.updateMany({ where: { slug: { in: ['circular', 'notification', 'advisory'] } }, data: { isActive: false } });
   }, { timeout: 30000 });
 }
